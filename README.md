@@ -1,4 +1,38 @@
-# MatrixGame - Space Rangers 2 Planetary Battles Engine
+# MatrixGame Networking
+Forked from https://github.com/vladislavrv/MatrixGame
+
+## Architecture 
+Lockstep with Server Relay
+
+## Roadmap
+
+- Disable enemy's AIs ❌
+- Make red/green/blue robots controlable by the player ❌
+- Harness the Tick() function ❌
+- Add the state manager singleton ❌
+- Remove the player's ability to control robots, construct etc... ❌ 
+- Add Actions, the variable for storing the list of actions for the current frame to StateManager and poll it in loop to apply in game as if they were executed by some side ❌
+- Make player being able to form new Actions adding them to the variable(so it looks like the player can control robots now again) ❌
+- Add fate control with environment variables `CLIENT1`, `CLIENT2` ❌
+- Functionality to launch two instances at once and move them to screen corners ❌
+- Make the Clients freeze at frame 0 waiting for the connection and game to start ❌
+- Add the Relay Server as separate executable ❌
+- Add the ENet library ❌
+- Add Message functionality to allow for Client-Server, Server-Client and Client-Server-Client communication, add message loop handlers to process incoming msgs ❌
+- Add Server command to start the game ❌
+- Send sampled inputs to other clients ❌
+- When there are inputs present for the frame for all the players process next Tick() ❌
+- When there is no sampled inputs for the duration of 1 frame assign Empty List of Actions to the var of Inputs for current frame and send it ❌
+- Make sure at least some basic Determinism is present ❌
+- Add buffer for inputs delay to address jitter(i.e. replace the variable string the List of Actions for the current frame with some kind of data struct storing the Lists of Actions for number of frames) ❌
+- Add more fancy functionality to control the flow of the game. Allow configuring IP addresses to connect, maps to play etc. ❌
+
+The rest is from the original repository:
+
+<hr>
+<hr>
+
+## MatrixGame - Space Rangers 2 Planetary Battles Engine
 
 Original sources: http://snk-games.net/matrixgame.tar.gz<br>
 Mirror of the original sources on Github: https://github.com/twoweeks/MatrixGame<br>
