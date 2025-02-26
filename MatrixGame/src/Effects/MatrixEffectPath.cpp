@@ -134,7 +134,8 @@ void CMatrixEffectPath::GetPos(D3DXVECTOR3 *out, float t) {
 
 void CMatrixEffectPath::BeforeDraw(void) {}
 
-void CMatrixEffectPath::Draw(void) {
+void CMatrixEffectPath::Draw(void) const
+{
     DTRACE();
 
     /*
@@ -167,6 +168,7 @@ void CMatrixEffectPath::Draw(void) {
 
     // CDText::T("P", CStr(cnt) + "/" + CStr(m_DotsCnt));
 }
+
 void CMatrixEffectPath::Takt(float step) {
     DTRACE();
 

@@ -508,7 +508,7 @@ public:
     static void DrawEnd(void);
 
     virtual void BeforeDraw(void) = 0;
-    virtual void Draw(void) = 0;
+    virtual void Draw(void) const = 0;
     virtual void Takt(float step) = 0;
     virtual void Release(void) = 0;
 

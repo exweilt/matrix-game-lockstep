@@ -799,7 +799,7 @@ void CLaser::BeforeDraw()
     m_end.SetAlpha(a);
 }
 
-void CLaser::Draw(void)
+void CLaser::Draw(void) const
 {
     DTRACE();
     m_bl.AddToDrawQueue();
@@ -821,7 +821,8 @@ CVolcano::CVolcano(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, float angle
     m_EffectType = EFFECT_VOLCANO;
 }
 
-void CVolcano::Draw(void) {
+void CVolcano::Draw(void) const
+{
     m_Konus.Draw();
 
     int idx = g_MatrixMap->IsPaused() ? 0 : (IRND(3));

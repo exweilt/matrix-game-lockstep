@@ -12,7 +12,7 @@ struct SPointMoveTo {
 
     void Init(CMatrixEffectMoveto *host, int i);
     void Change(CMatrixEffectMoveto *host, int i, float k);
-    void Draw(CMatrixEffectMoveto *host);
+    void Draw(const CMatrixEffectMoveto *host) const;
 };
 
 class CMatrixEffectMoveto : public CMatrixEffect {
@@ -37,7 +37,7 @@ public:
     friend struct SPointMoveTo;
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float);
     virtual void Release(void);
     virtual int Priority(void) { return MAX_EFFECT_PRIORITY; };

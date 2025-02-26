@@ -226,7 +226,8 @@ void CMatrixCursor::Clear(void) {
     }
 }
 
-void CMatrixCursor::Draw(void) {
+void CMatrixCursor::Draw(void) const
+{
     DTRACE();
 
     if (g_Config.m_SoftwareCursor && FLAG(m_CursorFlags, CURSOR_VISIBLE)) {

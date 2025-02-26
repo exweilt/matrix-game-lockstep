@@ -57,7 +57,8 @@ void CMatrixEffectFirePlasma::Release(void) {
     HDelete(CMatrixEffectFirePlasma, this, m_Heap);
 }
 
-void CMatrixEffectFirePlasma::Draw(void) {
+void CMatrixEffectFirePlasma::Draw(void) const
+{
     DTRACE();
     m_BBLine.AddToDrawQueue();
     m_BB1.Sort(g_MatrixMap->m_Camera.GetViewInversedMatrix());

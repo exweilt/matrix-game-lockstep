@@ -217,7 +217,7 @@ void CMatrixEffectBigBoom::BeforeDraw(void) {
     PrepareDX();
 };
 
-void CMatrixEffectBigBoom::Draw(void) {
+void CMatrixEffectBigBoom::Draw(void) const {
     DTRACE();
 
     if (!IS_VB(m_VB) || !IS_IB(m_IB))

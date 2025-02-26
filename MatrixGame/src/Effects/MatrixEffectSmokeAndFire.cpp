@@ -58,7 +58,8 @@ void CMatrixEffectSmoke::Release(void) {
 
 void CMatrixEffectSmoke::BeforeDraw(void) {}
 
-void CMatrixEffectSmoke::Draw(void) {
+void CMatrixEffectSmoke::Draw(void) const
+{
     DTRACE();
 
     if (!(g_MatrixMap->m_Camera.IsInFrustum(m_Mins, m_Maxs)))
@@ -213,7 +214,7 @@ void CMatrixEffectFire::Release(void) {
 
 void CMatrixEffectFire::BeforeDraw(void) {}
 
-void CMatrixEffectFire::Draw(void) {
+void CMatrixEffectFire::Draw(void) const {
     DTRACE();
 
     if (!(g_MatrixMap->m_Camera.IsInFrustum(m_Mins, m_Maxs)))
@@ -368,7 +369,7 @@ CMatrixEffectFireStream::CMatrixEffectFireStream(const D3DXVECTOR3 &pos0, const 
 
 void CMatrixEffectFireStream::BeforeDraw(void) {}
 
-void CMatrixEffectFireStream::Draw(bool now) {
+void CMatrixEffectFireStream::Draw(bool now) const {
     int idx = g_MatrixMap->IsPaused() ? 2 : (IRND(5));
     if (now) {
         if (idx == 0)
@@ -457,7 +458,7 @@ void CMatrixEffectFireAnim::Takt(float t) {
     }
 }
 
-void CMatrixEffectFireAnim::Draw(bool now) {
+void CMatrixEffectFireAnim::Draw(bool now) const {
     if (now) {
         m_bl[m_Frame].DrawNow(g_MatrixMap->m_Camera.GetDrawNowFC());
     }

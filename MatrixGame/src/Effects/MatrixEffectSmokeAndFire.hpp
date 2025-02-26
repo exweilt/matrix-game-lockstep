@@ -69,7 +69,7 @@ public:
     void SetTTL(float ttl) { m_TTL = ttl; }
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
     virtual int Priority(void) { return 30; };
@@ -108,7 +108,7 @@ public:
     void SetTTL(float ttl) { m_TTL = ttl; }
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
     virtual int Priority(void) { return 30; };
@@ -129,8 +129,8 @@ public:
     CMatrixEffectFireStream(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1);
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void) { Draw(false); };
-    void Draw(bool now);
+    virtual void Draw(void) const override { Draw(false); };
+    void Draw(bool now) const;
     virtual void Takt(float){};
     virtual void Release(void) { HDelete(CMatrixEffectFireStream, this, m_Heap); };
 
@@ -176,8 +176,8 @@ public:
     CMatrixEffectFireAnim(const D3DXVECTOR3 &pos, float w, float h, int ttl);
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void) { Draw(false); };
-    void Draw(bool now);
+    virtual void Draw(void) const override { Draw(false); };
+    void Draw(bool now) const;
     virtual void Takt(float);
     virtual void Release(void) { HDelete(CMatrixEffectFireAnim, this, m_Heap); };
 

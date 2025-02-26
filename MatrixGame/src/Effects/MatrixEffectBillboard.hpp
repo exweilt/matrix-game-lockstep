@@ -85,7 +85,7 @@ public:
         PrepareDX();
         m_Tex->Preload();
     };
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 
@@ -111,7 +111,7 @@ public:
     friend class CMatrixEffect;
 
     virtual void BeforeDraw(void){};
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 
@@ -145,7 +145,7 @@ public:
     friend class CMatrixEffect;
 
     virtual void BeforeDraw(void){};
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 

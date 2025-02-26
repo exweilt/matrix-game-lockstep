@@ -86,7 +86,8 @@ void CMatrixEffectMovingObject::BeforeDraw(void) {
 #endif
     m_Props.object->BeforeDraw();
 }
-void CMatrixEffectMovingObject::Draw(void) {
+void CMatrixEffectMovingObject::Draw(void) const
+{
     DTRACE();
 
 #ifdef _DEBUG
@@ -107,6 +108,7 @@ void CMatrixEffectMovingObject::Draw(void) {
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_LIGHTING, FALSE));
     CVectorObject::DrawEnd();
 }
+
 void CMatrixEffectMovingObject::Takt(float step) {
     DTRACE();
     m_Props.object->Takt(Float2Int(step));
@@ -744,7 +746,8 @@ bool BuoySetupStages([[maybe_unused]] DWORD user_param, int) {
     return false;
 }
 
-void CMatrixEffectBuoy::Draw(void) {
+void CMatrixEffectBuoy::Draw(void) const
+{
     DTRACE();
 
     BYTE a = 255;

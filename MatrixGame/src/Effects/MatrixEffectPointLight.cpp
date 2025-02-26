@@ -664,7 +664,8 @@ void CMatrixEffectPointLight::AddColorData(void)
     //}
 }
 
-void CMatrixEffectPointLight::Draw(void) {
+void CMatrixEffectPointLight::Draw(void) const
+{
     DTRACE();
 
     if (m_Bill)
@@ -730,6 +731,7 @@ void CMatrixEffectPointLight::Draw(void) {
     g_D3DD->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE));
 }
+
 void CMatrixEffectPointLight::Takt(float step) {
     DTRACE();
 

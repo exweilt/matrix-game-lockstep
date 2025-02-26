@@ -97,7 +97,7 @@ void CMatrixEffectElevatorField::UpdateData(const D3DXVECTOR3 &pos0, const D3DXV
 
 void CMatrixEffectElevatorField::BeforeDraw(void) {}
 
-void CMatrixEffectElevatorField::Draw(void) {
+void CMatrixEffectElevatorField::Draw(void) const {
     DTRACE();
 
     for (int i = 0; i < m_AllBBCnt; ++i) {
@@ -126,6 +126,7 @@ void CMatrixEffectElevatorField::Draw(void) {
     }
     */
 }
+
 void CMatrixEffectElevatorField::Takt(float t) {
     DTRACE();
 

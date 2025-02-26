@@ -124,7 +124,8 @@ void CMatrixEffectLightening::Release(void) {
 
 void CMatrixEffectLightening::BeforeDraw(void) {}
 
-void CMatrixEffectLightening::Draw(void) {
+void CMatrixEffectLightening::Draw(void) const
+{
     DTRACE();
 
     if (m_End0)
