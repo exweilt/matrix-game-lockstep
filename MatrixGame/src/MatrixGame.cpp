@@ -149,8 +149,6 @@ static void static_init(void) {
     CVectorObject::StaticInit();
     CVOShadowProj::StaticInit();
     CVOShadowStencil::StaticInit();
-    CBillboard::StaticInit();
-    CBillboardLine::StaticInit();
     CForm::StaticInit();
 
     // Game
