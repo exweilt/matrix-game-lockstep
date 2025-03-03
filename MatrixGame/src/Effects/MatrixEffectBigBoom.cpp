@@ -213,10 +213,7 @@ void CMatrixEffectBigBoom::Release(void) {
 
 void CMatrixEffectBigBoom::BeforeDraw(void) {
     DTRACE();
-    if (FLAG(m_Flags, BIGBOOMF_PREPARED))
-        return;
     m_Tex->Preload();
-    SETFLAG(m_Flags, BIGBOOMF_PREPARED);
     PrepareDX();
 };
 
@@ -226,7 +223,6 @@ void CMatrixEffectBigBoom::Draw(void) {
     if (!IS_VB(m_VB) || !IS_IB(m_IB))
         return;
 
-    RESETFLAG(m_Flags, BIGBOOMF_PREPARED);
     ASSERT_DX(g_D3DD->SetFVF(BB_FVF));
 
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE));

@@ -102,8 +102,6 @@ void CMatrixEffectMoveto::Draw(void) {
     if (!IS_VB(CMatrixEffectBillboard::m_VB))
         return;
 
-    RESETFLAG(m_Flags, MOVETOF_PREPARED);
-
     for (int i = 0; i < 6; ++i) {
         m_Pts[i].Draw(this);
     }
@@ -117,9 +115,5 @@ void CMatrixEffectMoveto::Release(void) {
 
 void CMatrixEffectMoveto::BeforeDraw(void) {
     CMatrixEffectBillboard::PrepareDX();
-
-    if (!FLAG(m_Flags, MOVETOF_PREPARED)) {
-        m_Tex->Preload();
-        SETFLAG(m_Flags, MOVETOF_PREPARED);
-    }
+    m_Tex->Preload();
 }

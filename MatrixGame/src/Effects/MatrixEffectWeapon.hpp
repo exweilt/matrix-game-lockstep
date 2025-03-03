@@ -192,7 +192,7 @@ class CLaser : public CMatrixEffect {
 public:
     CLaser(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1);
 
-    virtual void BeforeDraw(void){};
+    virtual void BeforeDraw(void);
     virtual void Draw(void);
     virtual void Takt(float){};
     virtual void Release(void) { HDelete(CLaser, this, m_Heap); };
