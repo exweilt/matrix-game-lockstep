@@ -9,7 +9,7 @@
 #include "CHeap.hpp"
 #include "CBuf.hpp"
 
-using namespace Base; // TODO: remove
+#include <list>
 
 class CCache;
 
@@ -21,29 +21,23 @@ enum class CacheClass
     VO
 };
 
-class CCacheData : public Base::CMain {
+class CCacheData
+{
 public:
-    CCacheData *m_Prev;
-    CCacheData *m_Next;
-    CCache *m_Cache;
+    CCache *m_Cache{nullptr};
 #ifdef _DEBUG
-    CCacheData *d_Prev;
-    CCacheData *d_Next;
     const char *d_file;
     int d_line;
 #endif
 
-    CacheClass m_Type;
-    std::wstring m_Name;
+    CacheClass m_Type{CacheClass::Unknown};
+    std::wstring m_Name{};
 
-    int m_Ref;  // Кол-во ссылок на эти данные. (Для временных данных)
+    int m_Ref{0};  // Кол-во ссылок на эти данные. (Для временных данных)
 
-    static bool m_dip;  // cache del in progress
 public:
-    static void StaticInit(void);
-
-    CCacheData(void);
-    virtual ~CCacheData(){};
+    CCacheData(void) = default;
+    virtual ~CCacheData() = default;
 
     void RefInc(void) { m_Ref++; }
     void RefDec(void) {
@@ -69,14 +63,14 @@ public:
     virtual void Load(void) = 0;
 };
 
-class CCache : public CMain {
+class CCache
+{
 public:
-    CCacheData *m_First;
-    CCacheData *m_Last;
+    std::list<CCacheData*> _data;
 
 public:
-    CCache(void);
-    ~CCache();
+    CCache() = default;
+    ~CCache() = default;
 
 #ifdef _DEBUG
     static void Dump(void);
@@ -88,8 +82,8 @@ public:
 
     void PreLoad(void);
 
-    CCacheData *Find(CacheClass cc, const wchar *name);
-    CCacheData *Get(CacheClass cc, const wchar *name);
+    CCacheData *Find(CacheClass cc, const std::wstring_view name);
+    CCacheData *Get(CacheClass cc, const std::wstring_view name);
 #ifdef _DEBUG
     static CCacheData *Create(CacheClass cc, const char *file, int line);
 #else
@@ -117,6 +111,5 @@ extern const wchar *CacheExtsTex;
 void CacheInit(void);
 void CacheDeinit(void);
 
-// bool CacheFileGet(std::wstring & outname,const wchar * mname,const wchar * exts=NULL,bool withpar=false);
-void CacheReplaceFileExt(std::wstring &outname, const wchar *mname, const wchar *ext = NULL);
-void CacheReplaceFileNameAndExt(std::wstring &outname, const wchar *mname, const wchar *replname);
+void CacheReplaceFileExt(std::wstring &outname, const std::wstring_view mname, const std::wstring_view ext);
+void CacheReplaceFileNameAndExt(std::wstring &outname, const std::wstring_view mname, const std::wstring_view replname);

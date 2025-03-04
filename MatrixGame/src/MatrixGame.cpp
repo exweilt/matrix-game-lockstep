@@ -145,7 +145,6 @@ static void static_init(void) {
 #if (defined _DEBUG) && !(defined _RELDEBUG)
     CHelper::StaticInit();
 #endif
-    CCacheData::StaticInit();
     CVectorObject::StaticInit();
     CVOShadowProj::StaticInit();
     CVOShadowStencil::StaticInit();
