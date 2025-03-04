@@ -83,7 +83,7 @@ void CFlamePuff::Release(void) {
     HDelete(CFlamePuff, this, m_Owner->m_Heap);
 }
 
-void CFlamePuff::Draw(void) {
+void CFlamePuff::Draw(void) const {
     DTRACE();
 
     for (int i = 0; i < FLAME_NUM_BILLS; ++i) {
@@ -329,7 +329,7 @@ void CMatrixEffectFlame::SubPuff(CFlamePuff *puf) {
 
 void CMatrixEffectFlame::BeforeDraw(void) {}
 
-void CMatrixEffectFlame::Draw(void) {
+void CMatrixEffectFlame::Draw(void) const {
     for (CFlamePuff *p = m_First; p; p = p->m_Next) {
         p->Draw();
     }

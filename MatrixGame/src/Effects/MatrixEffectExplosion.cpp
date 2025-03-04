@@ -530,7 +530,8 @@ void CMatrixEffectExplosion::BeforeDraw(void) {
     SETFLAG(m_before_draw_done, BDDF_EXPLOSION);
 }
 
-void CMatrixEffectExplosion::Draw(void) {
+void CMatrixEffectExplosion::Draw(void) const
+{
     DTRACE();
 
     CVectorObject::DrawBegin();

@@ -76,7 +76,8 @@ void CMatrixEffectShleif::BeforeDraw(void) {
     }
 }
 
-void CMatrixEffectShleif::Draw(void) {
+void CMatrixEffectShleif::Draw(void) const
+{
     DTRACE();
 
     for (int i = 0; i < m_SmokesCnt; ++i) {

@@ -792,15 +792,17 @@ CLaser::CLaser(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1)
     }
 }
 
-void CLaser::Draw(void) {
-    DTRACE();
-
+void CLaser::BeforeDraw()
+{
     BYTE a = g_MatrixMap->IsPaused() ? 240 : (BYTE(FRND(128) + 128));
-
     m_bl.SetAlpha(a);
-    m_bl.AddToDrawQueue();
-
     m_end.SetAlpha(a);
+}
+
+void CLaser::Draw(void) const
+{
+    DTRACE();
+    m_bl.AddToDrawQueue();
     m_end.Sort(g_MatrixMap->m_Camera.GetViewMatrix());
 }
 
@@ -819,7 +821,8 @@ CVolcano::CVolcano(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, float angle
     m_EffectType = EFFECT_VOLCANO;
 }
 
-void CVolcano::Draw(void) {
+void CVolcano::Draw(void) const
+{
     m_Konus.Draw();
 
     int idx = g_MatrixMap->IsPaused() ? 0 : (IRND(3));

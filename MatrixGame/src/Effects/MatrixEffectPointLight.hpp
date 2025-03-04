@@ -194,7 +194,7 @@ public:
 
         SETFLAG(m_before_draw_done, BDDF_PLIGHT);
     };
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 

@@ -91,7 +91,8 @@ void CMatrixEffectKonus::Release(void) {
     HDelete(CMatrixEffectKonus, this, m_Heap);
 }
 
-void CMatrixEffectKonus::Draw(void) {
+void CMatrixEffectKonus::Draw(void) const
+{
     DTRACE();
 
     if (!IS_VB(m_VB))

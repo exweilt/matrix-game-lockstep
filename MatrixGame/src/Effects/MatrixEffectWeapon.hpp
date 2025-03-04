@@ -192,8 +192,8 @@ class CLaser : public CMatrixEffect {
 public:
     CLaser(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1);
 
-    virtual void BeforeDraw(void){};
-    virtual void Draw(void);
+    virtual void BeforeDraw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float){};
     virtual void Release(void) { HDelete(CLaser, this, m_Heap); };
     virtual int Priority(void) { return MAX_EFFECT_PRIORITY; };
@@ -220,7 +220,7 @@ public:
     CVolcano(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, float angle);
 
     virtual void BeforeDraw(void) { m_Konus.BeforeDraw(); };
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float){};
     virtual void Release(void) { HDelete(CVolcano, this, m_Heap); };
 
@@ -292,7 +292,7 @@ public:
     CMatrixMapStatic *GetOwner(void);
 
     virtual void BeforeDraw(void){};
-    virtual void Draw(void){};
+    virtual void Draw(void) const override{};
     virtual void Takt(float step);
     virtual void Release(void);
 

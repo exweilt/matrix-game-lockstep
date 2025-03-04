@@ -62,12 +62,14 @@ void CMatrixEffectZahvat::BeforeDraw(void) {
         m_BBoards[0].BeforeDraw();
 }
 
-void CMatrixEffectZahvat::Draw(void) {
+void CMatrixEffectZahvat::Draw() const
+{
     DTRACE();
 
     for (int i = 0; i < m_Count; ++i)
         m_BBoards[i].Draw();
 }
+
 void CMatrixEffectZahvat::Takt(float) {
     DTRACE();
     // for (int i=0;i<m_Count; ++i) m_BBoards[i].Takt2(step);

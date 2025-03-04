@@ -55,7 +55,7 @@ class CFlamePuff : public CMain {
 public:
     friend class CMatrixEffectFlame;
 
-    void Draw(void);
+    void Draw(void) const;
     void Takt(float step);
     void Release(void);
 };
@@ -88,7 +88,7 @@ public:
     friend class CFlamePuff;
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 

@@ -36,7 +36,7 @@ public:
     }
     ~CMatrixCursor(void) { Clear(); }
 
-    void Draw(void);
+    void Draw(void) const;
 
     void Select(const std::wstring& name);
     void Takt(int ms);

@@ -46,7 +46,7 @@ public:
     void UpdateData(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1, float r, const D3DXVECTOR3 &fwd);
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 

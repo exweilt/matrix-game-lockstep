@@ -504,7 +504,8 @@ void CMatrixEffectLandscapeSpot::Takt(float step) {
     m_Props->func(this, step);
 }
 
-void CMatrixEffectLandscapeSpot::DrawActual() {
+void CMatrixEffectLandscapeSpot::DrawActual() const
+{
     DTRACE();
     if (!IS_VB(m_VB) || !IS_IB(m_IB))
         return;
@@ -522,7 +523,8 @@ void CMatrixEffectLandscapeSpot::DrawActual() {
     g_D3DD->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, m_CntVerts, 0, m_CntTris);
 }
 
-void CMatrixEffectLandscapeSpot::DrawAll(void) {
+void CMatrixEffectLandscapeSpot::DrawAll(void)
+{
     DTRACE();
 
     if (!m_First)

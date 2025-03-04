@@ -73,13 +73,15 @@ void CMatrixEffectSelection::UpdatePositions(void) {
 }
 void CMatrixEffectSelection::BeforeDraw(void) {}
 
-void CMatrixEffectSelection::Draw(void) {
+void CMatrixEffectSelection::Draw(void) const
+{
     DTRACE();
 
     for (int i = 0; i < m_SelCnt; ++i)
         for (int j = 0; j < SEL_BLUR_CNT; ++j)
             m_Points[i].m_Blur[j].Sort(g_MatrixMap->m_Camera.GetViewMatrix());
 }
+
 void CMatrixEffectSelection::Takt(float step) {
     DTRACE();
 

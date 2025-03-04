@@ -10,8 +10,6 @@
 
 #include "VectorObject.hpp"
 #include "CBillboard.hpp"
-
-// #include "MatrixEffectWeapon.hpp"
 enum EWeapon : unsigned int;
 
 #define MAX_EFFECT_DISTANCE_SQ ((3000) * (3000))
@@ -510,7 +508,7 @@ public:
     static void DrawEnd(void);
 
     virtual void BeforeDraw(void) = 0;
-    virtual void Draw(void) = 0;
+    virtual void Draw(void) const = 0;
     virtual void Takt(float step) = 0;
     virtual void Release(void) = 0;
 
@@ -663,32 +661,3 @@ public:
 
     void Takt(float ms);
 };
-
-typedef CEffectSpawner *PCEffectSpawner;
-
-// #include "MatrixEffectExplosion.hpp"
-// #include "MatrixEffectSmokeAndFire.hpp"
-
-// #include "MatrixEffectFirePlasma.hpp"
-// #include "MatrixEffectLandscapeSpot.hpp"
-// #include "MatrixEffectMovingObject.hpp"
-
-// #include "MatrixEffectSelection.hpp"
-// #include "MatrixEffectPath.hpp"
-// #include "MatrixEffectPointLight.hpp"
-
-// #include "MatrixEffectKonus.hpp"
-// #include "MatrixEffectFlame.hpp"
-// #include "MatrixEffectBigBoom.hpp"
-
-// #include "MatrixEffectLightening.hpp"
-// #include "MatrixEffectBillboard.hpp"
-// #include "MatrixEffectZahvat.hpp"
-
-// #include "MatrixEffectElevatorField.hpp"
-// #include "MatrixEffectDust.hpp"
-// #include "MatrixEffectMoveTo.hpp"
-
-// #include "MatrixEffectShleif.hpp"
-// #include "MatrixEffectRepair.hpp"
-// #include "MatrixEffectWeapon.hpp"

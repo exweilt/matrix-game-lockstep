@@ -51,7 +51,8 @@ CMatrixEffectRepair::~CMatrixEffectRepair() {
 
 void CMatrixEffectRepair::BeforeDraw(void) {}
 
-void CMatrixEffectRepair::Draw(void) {
+void CMatrixEffectRepair::Draw(void) const
+{
     DTRACE();
 
     for (int i = 0; i < m_BBCnt; ++i) {

@@ -64,13 +64,15 @@ void CMatrixEffectDust::BeforeDraw(void) {
     //}
 }
 
-void CMatrixEffectDust::Draw(void) {
+void CMatrixEffectDust::Draw() const
+{
     DTRACE();
 
     for (int i = 0; i < DUST_BILLS_CNT; ++i) {
         m_BBoards[i].Draw();
     }
 }
+
 void CMatrixEffectDust::Takt(float time) {
     DTRACE();
     float mul = (float)(pow(0.996, double(time)));

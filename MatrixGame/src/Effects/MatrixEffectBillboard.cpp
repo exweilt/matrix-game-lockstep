@@ -156,7 +156,7 @@ void CMatrixEffectBillboard::Draw(const D3DXMATRIX &m, DWORD color, CTextureMana
         g_D3DD->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 }
 
-void CMatrixEffectBillboard::Draw(void) {
+void CMatrixEffectBillboard::Draw(void) const {
     DTRACE();
     Draw(m_Mat, m_Color, m_Tex, m_Intense != 0);
 }
@@ -230,7 +230,7 @@ void CMatrixEffectBillboardLine::Release(void) {
     HDelete(CMatrixEffectBillboardLine, this, m_Heap);
 }
 
-void CMatrixEffectBillboardLine::Draw(void) {
+void CMatrixEffectBillboardLine::Draw(void) const {
     DTRACE();
 
     // DM("bl","draw");
@@ -409,7 +409,7 @@ CMatrixEffectBillboardScore::~CMatrixEffectBillboardScore() {
     HFree(m_bbs, m_Heap);
 }
 
-void CMatrixEffectBillboardScore::Draw(void) {
+void CMatrixEffectBillboardScore::Draw(void) const {
     for (int i = 0; i < m_bbs_count; ++i) {
         m_bbs[i].bb.Sort(g_MatrixMap->m_Camera.GetViewMatrix());
     }
