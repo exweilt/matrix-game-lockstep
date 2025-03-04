@@ -46,26 +46,15 @@ inline int ConvertTexSize(ETexSize ts) {
 
 class CBaseTexture : public CCacheData {
 protected:
-    CBaseTexture(void) : CCacheData() {
-        LIST_ADD(this, m_TexturesFirst, m_TexturesLast, m_TexturesPrev, m_TexturesNext);
-    }
-
-    static CBaseTexture *m_TexturesFirst;
-    static CBaseTexture *m_TexturesLast;
-    CBaseTexture *m_TexturesPrev;
-    CBaseTexture *m_TexturesNext;
+    CBaseTexture(void);
 
     LPDIRECT3DTEXTURE9 m_Tex;
     DWORD m_Flags;  // TF_*
     CPoint m_Size;
 
 public:
-    static void StaticInit(void) {
-        m_TexturesFirst = NULL;
-        m_TexturesLast = NULL;
-    }
 
-    virtual ~CBaseTexture() { LIST_DEL(this, m_TexturesFirst, m_TexturesLast, m_TexturesPrev, m_TexturesNext); };
+    virtual ~CBaseTexture();
 
     LPDIRECT3DTEXTURE9 DX(void) { return m_Tex; }
     LPDIRECT3DTEXTURE9 LoadTextureFromFile(bool to16bit, D3DPOOL pool = D3DPOOL_DEFAULT);

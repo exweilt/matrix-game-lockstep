@@ -412,7 +412,6 @@ void CCacheData::StaticInit(void) {
     d_Last = NULL;
 #endif
     m_dip = false;
-    CBaseTexture::StaticInit();
 }
 
 void CCache::Destroy(CCacheData *cd) {
