@@ -720,7 +720,7 @@ void CMatrixEffectExplosion::Takt(float step) {
                 deb->ttl = 1;
                 CMatrixEffect::CreateKonusSplash(
                         *pos, D3DXVECTOR3(0, 0, 1), 10, 5, FSRND(M_PI), 1000, true,
-                        (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SPLASH));
+                        (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SPLASH));
                 continue;
             }
         }

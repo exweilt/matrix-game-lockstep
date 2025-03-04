@@ -22,7 +22,7 @@ int CMultiSelection::m_Time;
 #define MAX_SELECTED_ITEMS 30 // i.e. robots
 
 CMultiSelection::CMultiSelection(const Base::CPoint &pos) : m_LT(pos), m_RB(pos), m_Flags(0) {
-    // m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SELBACK);
+    // m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SELBACK);
     // m_Tex->MipmapOff();
     // m_Tex->Preload();
 }

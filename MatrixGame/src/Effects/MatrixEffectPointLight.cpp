@@ -123,7 +123,7 @@ CMatrixEffectPointLight::CMatrixEffectPointLight(const D3DXVECTOR3 &pos, float r
     m_RealDisp.y = 0;
 
     if (!g_Config.m_VertexLight) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_POINTLIGHT);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_POINTLIGHT);
     }
     else {
         m_Tex = NULL;

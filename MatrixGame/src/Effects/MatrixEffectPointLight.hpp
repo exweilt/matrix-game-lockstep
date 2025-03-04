@@ -189,7 +189,7 @@ public:
         if (m_Tex)
             m_Tex->Preload();
 
-        // CTexture *tex = (CTexture *)g_Cache->Get(cc_Texture,TEXTURE_PATH_POINTLIGHT_INV, NULL);
+        // CTexture *tex = (CTexture *)g_Cache->Get(CacheClass::Texture,TEXTURE_PATH_POINTLIGHT_INV, NULL);
         // tex->Preload();
 
         SETFLAG(m_before_draw_done, BDDF_PLIGHT);

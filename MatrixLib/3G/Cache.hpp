@@ -13,7 +13,13 @@ using namespace Base; // TODO: remove
 
 class CCache;
 
-enum CacheClass { cc_Unknown = 0, cc_Texture, cc_TextureManaged, cc_VO };
+enum class CacheClass
+{
+    Unknown = 0,
+    Texture,
+    TextureManaged,
+    VO
+};
 
 class CCacheData : public Base::CMain {
 public:
@@ -95,13 +101,13 @@ public:
 };
 
 #ifdef _DEBUG
-#define CACHE_CREATE_VO()             (CVectorObject *)CCache::Create(cc_VO, __FILE__, __LINE__)
-#define CACHE_CREATE_TEXTURE()        (CTexture *)CCache::Create(cc_Texture, __FILE__, __LINE__)
-#define CACHE_CREATE_TEXTUREMANAGED() (CTextureManaged *)CCache::Create(cc_TextureManaged, __FILE__, __LINE__)
+#define CACHE_CREATE_VO()             (CVectorObject *)CCache::Create(CacheClass::VO, __FILE__, __LINE__)
+#define CACHE_CREATE_TEXTURE()        (CTexture *)CCache::Create(CacheClass::Texture, __FILE__, __LINE__)
+#define CACHE_CREATE_TEXTUREMANAGED() (CTextureManaged *)CCache::Create(CacheClass::TextureManaged, __FILE__, __LINE__)
 #else
-#define CACHE_CREATE_VO()             (CVectorObject *)CCache::Create(cc_VO)
-#define CACHE_CREATE_TEXTURE()        (CTexture *)CCache::Create(cc_Texture)
-#define CACHE_CREATE_TEXTUREMANAGED() (CTextureManaged *)CCache::Create(cc_TextureManaged)
+#define CACHE_CREATE_VO()             (CVectorObject *)CCache::Create(CacheClass::VO)
+#define CACHE_CREATE_TEXTURE()        (CTexture *)CCache::Create(CacheClass::Texture)
+#define CACHE_CREATE_TEXTUREMANAGED() (CTextureManaged *)CCache::Create(CacheClass::TextureManaged)
 #endif
 
 extern CCache *g_Cache;

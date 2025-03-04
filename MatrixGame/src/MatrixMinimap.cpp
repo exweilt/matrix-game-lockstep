@@ -28,7 +28,7 @@ void CMinimap::SMMTex::Load(CBlockPar *mm, const wchar *name) {
     DTRACE();
     if (tex == NULL) {
         const auto& n = mm->ParGet(name);
-        tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, n.GetStrPar(0, L",").c_str());
+        tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, n.GetStrPar(0, L",").c_str());
         tex->MipmapOff();
         tex->Preload();
 

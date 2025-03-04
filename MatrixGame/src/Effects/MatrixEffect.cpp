@@ -302,7 +302,7 @@ void CMatrixEffect::InitEffects(CBlockPar &bp_in) {
     for (int i = 0; i < m_DebrisCnt; ++i) {
         new(&m_Debris[i]) CDebris();
 
-        CVectorObject *vo = (CVectorObject *)g_Cache->Get(cc_VO, bp.ParGet(i).c_str());
+        CVectorObject *vo = (CVectorObject *)g_Cache->Get(CacheClass::VO, bp.ParGet(i).c_str());
         vo->PrepareSpecial(OLF_AUTO, CSkinManager::GetSkin, GSP_ORDINAL);
         m_Debris[i].Init(vo, NULL);
 
@@ -314,46 +314,46 @@ void CMatrixEffect::InitEffects(CBlockPar &bp_in) {
 
     m_SpotProperties[SPOT_CONSTANT].color = 0xFF000000;
     m_SpotProperties[SPOT_CONSTANT].func = SpotTaktConstant;
-    m_SpotProperties[SPOT_CONSTANT].texture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SPOT);
+    m_SpotProperties[SPOT_CONSTANT].texture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SPOT);
     m_SpotProperties[SPOT_CONSTANT].ttl = 15000;
     m_SpotProperties[SPOT_CONSTANT].flags = 0;
 
     m_SpotProperties[SPOT_SELECTION].color = 0x80808080;
     m_SpotProperties[SPOT_SELECTION].func = SpotTaktAlways;
-    m_SpotProperties[SPOT_SELECTION].texture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_OBJSEL);
+    m_SpotProperties[SPOT_SELECTION].texture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_OBJSEL);
     m_SpotProperties[SPOT_SELECTION].texture->MipmapOff();
     m_SpotProperties[SPOT_SELECTION].ttl = 0;
     m_SpotProperties[SPOT_SELECTION].flags = 0;
 
     m_SpotProperties[SPOT_PLASMA_HIT].color = 0xFFFFFFFF;
     m_SpotProperties[SPOT_PLASMA_HIT].func = SpotTaktPlasmaHit;
-    m_SpotProperties[SPOT_PLASMA_HIT].texture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_HIT);
+    m_SpotProperties[SPOT_PLASMA_HIT].texture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_HIT);
     m_SpotProperties[SPOT_PLASMA_HIT].ttl = 3000;
     m_SpotProperties[SPOT_PLASMA_HIT].flags = LSFLAG_SCALE_BY_NORMAL;
 
     // m_SpotProperties[SPOT_MOVE_TO].color = 0x80808080;
     // m_SpotProperties[SPOT_MOVE_TO].func = SpotTaktMoveTo;
-    // m_SpotProperties[SPOT_MOVE_TO].texture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged,TEXTURE_PATH_MOVETO);
+    // m_SpotProperties[SPOT_MOVE_TO].texture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged,TEXTURE_PATH_MOVETO);
     // m_SpotProperties[SPOT_MOVE_TO].ttl = 1500;
     // m_SpotProperties[SPOT_MOVE_TO].flags = LSFLAG_SCALE_BY_NORMAL;
 
     m_SpotProperties[SPOT_POINTLIGHT].color = 0xFFFFFFFF;
     m_SpotProperties[SPOT_POINTLIGHT].func = SpotTaktPointlight;
     m_SpotProperties[SPOT_POINTLIGHT].texture =
-            (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_POINTLIGHT);
+            (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_POINTLIGHT);
     m_SpotProperties[SPOT_POINTLIGHT].ttl = 1500;
     m_SpotProperties[SPOT_POINTLIGHT].flags = LSFLAG_INTENSE;
 
     m_SpotProperties[SPOT_VORONKA].color = 0x00FFFFFF;
     m_SpotProperties[SPOT_VORONKA].func = SpotTaktVoronka;
-    m_SpotProperties[SPOT_VORONKA].texture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_VORONKA);
+    m_SpotProperties[SPOT_VORONKA].texture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_VORONKA);
     m_SpotProperties[SPOT_VORONKA].ttl = 30000;
     m_SpotProperties[SPOT_VORONKA].flags = 0;
 
     m_SpotProperties[SPOT_TURRET].color = 0x80FFFFFF;
     m_SpotProperties[SPOT_TURRET].func = SpotTaktAlways;
     m_SpotProperties[SPOT_TURRET].texture =
-            (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_TURRET_RADIUS);
+            (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_TURRET_RADIUS);
     m_SpotProperties[SPOT_TURRET].texture->MipmapOff();
     m_SpotProperties[SPOT_TURRET].ttl = 0;
     m_SpotProperties[SPOT_TURRET].flags = 0;
@@ -361,21 +361,21 @@ void CMatrixEffect::InitEffects(CBlockPar &bp_in) {
     m_SpotProperties[SPOT_SOLE_TRACK].color = 0xFFFFFFFF;
     m_SpotProperties[SPOT_SOLE_TRACK].func = SpotTaktConstant;
     m_SpotProperties[SPOT_SOLE_TRACK].texture =
-            (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SOLE_TRACK);
+            (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SOLE_TRACK);
     m_SpotProperties[SPOT_SOLE_TRACK].ttl = 30000;
     m_SpotProperties[SPOT_SOLE_TRACK].flags = 0;
 
     m_SpotProperties[SPOT_SOLE_WHEEL].color = 0xFFFFFFFF;
     m_SpotProperties[SPOT_SOLE_WHEEL].func = SpotTaktConstant;
     m_SpotProperties[SPOT_SOLE_WHEEL].texture =
-            (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SOLE_WHEEL);
+            (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SOLE_WHEEL);
     m_SpotProperties[SPOT_SOLE_WHEEL].ttl = 30000;
     m_SpotProperties[SPOT_SOLE_WHEEL].flags = 0;
 
     m_SpotProperties[SPOT_SOLE_PNEUMATIC].color = 0xFFFFFFFF;
     m_SpotProperties[SPOT_SOLE_PNEUMATIC].func = SpotTaktConstant;
     m_SpotProperties[SPOT_SOLE_PNEUMATIC].texture =
-            (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SOLE_PNEUMATIC);
+            (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SOLE_PNEUMATIC);
     m_SpotProperties[SPOT_SOLE_PNEUMATIC].ttl = 30000;
     m_SpotProperties[SPOT_SOLE_PNEUMATIC].flags = 0;
 
@@ -384,8 +384,8 @@ void CMatrixEffect::InitEffects(CBlockPar &bp_in) {
     CBlockPar &bb = *bp_in.BlockGet(PAR_SOURCE_BILLBOARDS);
     CBlockPar &tex = *bb.BlockGet(PAR_SOURCE_BILLBOARDS_TEXTURES);
 
-    CTextureManaged *ts = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, bb.ParGet(PAR_SOURCE_BILLBOARDS_TEXSORT).c_str());
-    // CTextureManaged *ti = (CTextureManaged *)g_Cache->Get(cc_TextureManaged,
+    CTextureManaged *ts = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bb.ParGet(PAR_SOURCE_BILLBOARDS_TEXSORT).c_str());
+    // CTextureManaged *ti = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged,
     // bb.ParGet(PAR_SOURCE_BILLBOARDS_TEXINTENSE));
     ts->Preload();
     // ti->Preload();
@@ -413,7 +413,7 @@ void CMatrixEffect::InitEffects(CBlockPar &bp_in) {
         else {
             SETFLAG(e->flags, BBT_FLAG_INTENSE);
 
-            e->tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, texp.GetStrPar(1, L",").c_str());
+            e->tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, texp.GetStrPar(1, L",").c_str());
             // e->tex->Preload();
         }
     }

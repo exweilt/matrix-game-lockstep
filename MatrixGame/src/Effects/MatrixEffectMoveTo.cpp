@@ -58,7 +58,7 @@ CMatrixEffectMoveto::CMatrixEffectMoveto(const D3DXVECTOR3 &pos) : CMatrixEffect
     }
 
     if (m_RefCnt == 0) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_MOVETO);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_MOVETO);
         m_Tex->RefInc();
     }
     ++m_RefCnt;

@@ -60,7 +60,7 @@ public:
     LPDIRECT3DTEXTURE9 LoadTextureFromFile(bool to16bit, D3DPOOL pool = D3DPOOL_DEFAULT);
     void ParseFlags(const ParamParser& name);
 
-    bool IsTextureManaged(void) const { return m_Type == cc_TextureManaged; };
+    bool IsTextureManaged(void) const { return m_Type == CacheClass::TextureManaged; };
     void MipmapOff(void) { SETFLAG(m_Flags, TF_NOMIPMAP); }
 
     DWORD Flags(void) {
@@ -96,7 +96,7 @@ public:
     CTexture(void) : CBaseTexture() {
         DTRACE();
 
-        m_Type = cc_Texture;
+        m_Type = CacheClass::Texture;
 
         m_Tex = NULL;
         m_Flags = 0;
@@ -122,7 +122,7 @@ public:
     LPDIRECT3DTEXTURE9 Tex(void) {
         if (m_OOM_counter > 0 || FLAG(m_Flags, TF_LOST))
             return NULL;
-        ASSERT(m_Type == cc_Texture);
+        ASSERT(m_Type == CacheClass::Texture);
         if (!m_Tex) {
 #ifdef _DEBUG
             // ASSERT(!FLAG(g_Flags, GFLAG_RENDERINPROGRESS));
@@ -167,7 +167,7 @@ public:
         m_TexFrom(NULL), m_RemindCore(UnloadTextureManaged, (DWORD)this)
 #endif
     {
-        m_Type = cc_TextureManaged;
+        m_Type = CacheClass::TextureManaged;
         m_Tex = NULL;
         m_Flags = 0;
 #ifndef USE_DX_MANAGED_TEXTURES

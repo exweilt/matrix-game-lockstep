@@ -52,7 +52,7 @@ CMatrixEffectBigBoom::CMatrixEffectBigBoom(const D3DXVECTOR3 &pos, float radius,
     m_k3 = FSRND(3);
 
     if (m_VB_ref == 0) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_BIGBOOM);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_BIGBOOM);
         m_Tex->RefInc();
     }
     ++m_VB_ref;

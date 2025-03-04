@@ -15,14 +15,14 @@ static std::list<CBaseTexture*> _textures;
 void CBaseTexture::OnLostDevice(void) {
     for (auto tex : _textures)
     {
-        if (!FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == cc_Texture)
+        if (!FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == CacheClass::Texture)
             ((CTexture *)tex)->OnLostDevice();
     }
 }
 void CBaseTexture::OnResetDevice(void) {
     for (auto tex : _textures)
     {
-        if (FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == cc_Texture)
+        if (FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == CacheClass::Texture)
             ((CTexture *)tex)->OnResetDevice();
     }
 }

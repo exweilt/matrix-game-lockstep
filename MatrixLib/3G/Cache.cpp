@@ -218,7 +218,7 @@ CCacheData::CCacheData() : Base::CMain(), m_Name{} {
     m_Next = NULL;
     m_Cache = NULL;
 
-    m_Type = cc_Unknown;
+    m_Type = CacheClass::Unknown;
 
     m_Ref = 0;
 }
@@ -330,7 +330,7 @@ void CCache::Up(CCacheData *cd) {
 void CCache::PreLoad(void) {
     CCacheData *cd = m_First;
     while (cd) {
-        if (cd->m_Type == cc_VO) {
+        if (cd->m_Type == CacheClass::VO) {
             if (!cd->IsLoaded())
                 cd->Load();
         }
@@ -382,15 +382,15 @@ CCacheData *CCache::Create(CacheClass cc)
     CCacheData *el;
 
     switch (cc) {
-        case cc_Texture: {
+        case CacheClass::Texture: {
             el = HNew(g_CacheHeap) CTexture;
             break;
         }
-        case cc_TextureManaged: {
+        case CacheClass::TextureManaged: {
             el = HNew(g_CacheHeap) CTextureManaged;
             break;
         }
-        case cc_VO: {
+        case CacheClass::VO: {
             el = HNew(g_CacheHeap) CVectorObject;
             break;
         }
@@ -436,11 +436,11 @@ void CCache::Dump(void) {
         ++cnt;
         const char* type = "Unknown       ";
 
-        if (cd->m_Type == cc_Texture)
+        if (cd->m_Type == CacheClass::Texture)
             type = "Texture       ";
-        if (cd->m_Type == cc_TextureManaged)
+        if (cd->m_Type == CacheClass::TextureManaged)
             type = "TextureManaged";
-        if (cd->m_Type == cc_VO)
+        if (cd->m_Type == CacheClass::VO)
             type = "Object        ";
 
         std::string name{(cd->m_Name.empty()) ? std::string{"NULL"} : utils::from_wstring(cd->m_Name.c_str())};

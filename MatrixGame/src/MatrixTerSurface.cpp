@@ -107,7 +107,7 @@ void CTerSurface::Load(BYTE *raw) {
     std::wstring name;
     name = g_MatrixMap->IdsGet(ids).GetStrPar(0, L"?");
 
-    m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, name.c_str());
+    m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, name.c_str());
 
     int par = g_MatrixMap->IdsGet(ids).GetCountPar(L"?");
     if (par > 1) {
@@ -120,7 +120,7 @@ void CTerSurface::Load(BYTE *raw) {
                 std::wstring gloss_name;
                 CacheReplaceFileNameAndExt(gloss_name, name.c_str(), parv.c_str());
                 if (!parv.empty() && CFile::FileExist(name, gloss_name.c_str(), L"png~dds")) {
-                    m_TexGloss = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, gloss_name.c_str());
+                    m_TexGloss = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, gloss_name.c_str());
                     SETFLAG(m_Flags, SURFF_GLOSS);
                 }
             }
@@ -201,7 +201,7 @@ void CTerSurface::LoadM(BYTE *raw) {
     std::wstring name;
     name = g_MatrixMap->IdsGet(ids).GetStrPar(0, L"?");
 
-    m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, name.c_str());
+    m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, name.c_str());
 
     int par = g_MatrixMap->IdsGet(ids).GetCountPar(L"?");
     if (par > 1) {
@@ -214,7 +214,7 @@ void CTerSurface::LoadM(BYTE *raw) {
                 std::wstring gloss_name;
                 CacheReplaceFileNameAndExt(gloss_name, name.c_str(), parv.c_str());
                 if (CFile::FileExist(name, gloss_name.c_str(), L"png~dds")) {
-                    m_TexGloss = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, gloss_name.c_str());
+                    m_TexGloss = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, gloss_name.c_str());
                     SETFLAG(m_Flags, SURFF_GLOSS);
                 }
             }

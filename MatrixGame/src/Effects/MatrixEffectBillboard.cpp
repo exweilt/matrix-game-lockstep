@@ -25,7 +25,7 @@ CMatrixEffectBillboard::CMatrixEffectBillboard(const D3DXVECTOR3 &pos, float rad
 
     m_Intense = true;
 
-    m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, tex);
+    m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, tex);
     m_Tex->RefInc();
 
     CreateGeometry();

@@ -697,7 +697,7 @@ void CMatrixCannon::DIPTakt(float ms) {
                 m_Unit[i].u1.s2.m_TTL = 0;
                 CMatrixEffect::CreateKonusSplash(
                         hitpos, D3DXVECTOR3(0, 0, 1), 10, 5, FSRND(M_PI), 1000, true,
-                        (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_SPLASH));
+                        (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_SPLASH));
                 if (m_Unit[i].m_Smoke.effect) {
                     ((CMatrixEffectSmoke *)m_Unit[i].m_Smoke.effect)->SetTTL(1000);
                     m_Unit[i].m_Smoke.Unconnect();

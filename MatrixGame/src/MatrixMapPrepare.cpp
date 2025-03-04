@@ -1081,7 +1081,7 @@ int CMatrixMap::PrepareMap(CStorage &stor, const std::wstring &mapname) {
         m_SkyAngle = GRAD2RAD((float)skbp->ParGet(L"Angle").GetDouble());
         m_SkyDeltaAngle = GRAD2RAD((float)skbp->ParGet(L"DeltaAngle").GetDouble());
 
-        m_Reflection = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, skbp->ParGet(L"Reflection").c_str());
+        m_Reflection = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, skbp->ParGet(L"Reflection").c_str());
 
         if (g_Config.m_SkyBox != 0) {
             for (int idx = 0; idx < 4; ++idx) {
@@ -1100,7 +1100,7 @@ int CMatrixMap::PrepareMap(CStorage &stor, const std::wstring &mapname) {
                 if (g_Config.m_SkyBox == 2)
                     texname += L"_high";
 
-                m_SkyTex[idx].tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, texname.c_str());
+                m_SkyTex[idx].tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, texname.c_str());
                 CTextureManaged *tex = m_SkyTex[idx].tex;
                 tex->MipmapOff();
                 tex->Prepare();
@@ -1119,7 +1119,7 @@ int CMatrixMap::PrepareMap(CStorage &stor, const std::wstring &mapname) {
     }
 
     if (m_Reflection == NULL) {
-        m_Reflection = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_REFLECTION);
+        m_Reflection = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_REFLECTION);
     }
     m_Reflection->Preload();
 
