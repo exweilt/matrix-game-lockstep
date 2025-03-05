@@ -291,7 +291,7 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
     settings.m_BPP = 32;
     settings.m_ResolutionX = g_ScreenX;
     settings.m_ResolutionY = g_ScreenY;
-    settings.m_RefreshRate = 60;
+    settings.m_RefreshRate = 0;
     settings.m_Brightness = 0.5;
     settings.m_Contrast = 0.5;
     settings.m_FSAASamples = 0;
