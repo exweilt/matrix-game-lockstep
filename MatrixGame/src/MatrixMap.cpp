@@ -232,7 +232,7 @@ void CMatrixMap::RobotPreload(void) {
 
     for (int i = 1; i <= ROBOT_HEAD_CNT; i++) {
         CVectorObject *vo =
-                (CVectorObject *)g_Cache->Get(cc_VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_HEAD, i).c_str());
+                (CVectorObject *)g_Cache->Get(CacheClass::VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_HEAD, i).c_str());
 
         vo->PrepareSpecial(OLF_MULTIMATERIAL_ONLY, CSkinManager::GetSkin, GSP_SIDE);
 
@@ -240,7 +240,7 @@ void CMatrixMap::RobotPreload(void) {
     }
     for (int i = 1; i <= ROBOT_CHASSIS_CNT; i++) {
         CVectorObject *vo =
-                (CVectorObject *)g_Cache->Get(cc_VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_CHASSIS, i).c_str());
+                (CVectorObject *)g_Cache->Get(CacheClass::VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_CHASSIS, i).c_str());
         vo->PrepareSpecial(OLF_MULTIMATERIAL_ONLY, CSkinManager::GetSkin, GSP_SIDE);
 
         if (i == RUK_CHASSIS_PNEUMATIC) {
@@ -251,7 +251,7 @@ void CMatrixMap::RobotPreload(void) {
     }
     for (int i = 1; i <= ROBOT_WEAPON_CNT; i++) {
         CVectorObject *vo =
-                (CVectorObject *)g_Cache->Get(cc_VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_WEAPON, i).c_str());
+                (CVectorObject *)g_Cache->Get(CacheClass::VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_WEAPON, i).c_str());
         vo->PrepareSpecial(OLF_MULTIMATERIAL_ONLY, CSkinManager::GetSkin, GSP_SIDE);
 
         g_LoadProgress->SetCurLPPos(curlp++);
@@ -259,7 +259,7 @@ void CMatrixMap::RobotPreload(void) {
 
     for (int i = 0; i < ROBOT_ARMOR_CNT; i++) {
         CVectorObject *vo =
-                (CVectorObject *)g_Cache->Get(cc_VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_ARMOR, i + 1).c_str());
+                (CVectorObject *)g_Cache->Get(CacheClass::VO, utils::format(L"%ls%d.vo", OBJECT_PATH_ROBOT_ARMOR, i + 1).c_str());
         vo->PrepareSpecial(OLF_MULTIMATERIAL_ONLY, CSkinManager::GetSkin, GSP_SIDE);
         g_LoadProgress->SetCurLPPos(curlp++);
 
@@ -946,7 +946,7 @@ void CMatrixMap::MacrotextureInit(const std::wstring &path) {
 
     MacrotextureClear();
 
-    m_Macrotexture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, path.c_str());
+    m_Macrotexture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, path.c_str());
 
     int cnt = ParamParser{path}.GetCountPar(L"?");
     for (int i = 1; i < cnt; i++) {

@@ -145,7 +145,6 @@ static void static_init(void) {
 #if (defined _DEBUG) && !(defined _RELDEBUG)
     CHelper::StaticInit();
 #endif
-    CCacheData::StaticInit();
     CVectorObject::StaticInit();
     CVOShadowProj::StaticInit();
     CVOShadowStencil::StaticInit();
@@ -292,7 +291,7 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
     settings.m_BPP = 32;
     settings.m_ResolutionX = g_ScreenX;
     settings.m_ResolutionY = g_ScreenY;
-    settings.m_RefreshRate = 60;
+    settings.m_RefreshRate = 0;
     settings.m_Brightness = 0.5;
     settings.m_Contrast = 0.5;
     settings.m_FSAASamples = 0;
@@ -531,7 +530,6 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
 
     D3DDEVICE_CREATION_PARAMETERS params;
     g_D3DD->GetCreationParameters(&params);
-    // ASSERT_DX(g_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT,&d3ddm));
     ASSERT_DX(g_D3D->GetAdapterDisplayMode(params.AdapterOrdinal, &d3ddm));
 
     if (d3ddm.Format == D3DFMT_X8R8G8B8 || d3ddm.Format == D3DFMT_A8R8G8B8) {
@@ -544,7 +542,6 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
 
     bool change_refresh_rate = set.m_RefreshRate != 0 && set.m_RefreshRate != d3ddm.RefreshRate;
     int refresh_rate_required = change_refresh_rate ? set.m_RefreshRate : 0;
-
 
     if (set.m_FSAASamples > 16)
         ERROR_S(L"Invalid multisample type");
@@ -605,7 +602,9 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
             g_D3Dpp.AutoDepthStencilFormat = D3DFMT_D24X8;
 
         if (D3D_OK != g_D3DD->Reset(&g_D3Dpp))
+        {
             ERROR_S(L"Sorry, unable to set this params.");
+        }
         RESETFLAG(g_Flags, GFLAG_STENCILAVAILABLE);
     }
 

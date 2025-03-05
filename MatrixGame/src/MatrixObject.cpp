@@ -708,7 +708,7 @@ void CMatrixMapObject::DrawShadowProj(void) {
 
     // m_ShadowProj->Render();
 
-    // CTexture * tex = (CTexture *)g_Cache->Get(cc_Texture, TEXTURE_PATH_SELECTION, NULL);
+    // CTexture * tex = (CTexture *)g_Cache->Get(CacheClass::Texture, TEXTURE_PATH_SELECTION, NULL);
     // m_ShadowProj->RenderCustom(tex->Tex());
 }
 

@@ -90,7 +90,7 @@ void CMatrixCursor::Select(const std::wstring& name) {
     DCP();
 
     if (g_Config.m_SoftwareCursor) {
-        m_CursorTexture = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, n.c_str());
+        m_CursorTexture = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, n.c_str());
         m_CursorTexture->MipmapOff();
         m_CursorTexture->Load();
         m_CursorInTexLine = m_CursorTexture->GetSizeX() / m_CursorSize;

@@ -27,7 +27,7 @@ CMatrixEffectKonus::CMatrixEffectKonus(const D3DXVECTOR3 &start, const D3DXVECTO
     ++m_VB_ref;
 
     if (!m_Tex)
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_GUN_FIRE);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_GUN_FIRE);
     // m_Tex->Prepare();
     m_Tex->RefInc();
 

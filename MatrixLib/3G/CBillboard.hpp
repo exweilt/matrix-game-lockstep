@@ -29,8 +29,6 @@ class CBillboard : public Base::CMain {
     static CTextureManaged *m_SortableTex;
     // static CTextureManaged * m_IntenseTex;
 
-    mutable int m_Z;
-
     DWORD m_Flags;
 
 public:

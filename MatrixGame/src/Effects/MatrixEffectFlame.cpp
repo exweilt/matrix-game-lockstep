@@ -3,19 +3,15 @@
 // Licensed under GPLv2 or any later version
 // Refer to the LICENSE file included
 
-#include <new>
-
 #include "MatrixEffect.hpp"
 #include "MatrixEffectShleif.hpp"
 #include "../MatrixMap.hpp"
-#include "../MatrixObject.hpp"
-#include "../MatrixObjectRobot.hpp"
-#include "../MatrixObjectCannon.hpp"
-#include "../MatrixFlyer.hpp"
-#include <math.h>
 
 #include "MatrixEffectFlame.hpp"
 #include "MatrixEffectPointLight.hpp"
+
+#include <new>
+#include <math.h>
 
 CFlamePuff::CFlamePuff(CMatrixEffectFlame *owner, const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir,
                        const D3DXVECTOR3 &speed)
