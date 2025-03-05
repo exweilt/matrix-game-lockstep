@@ -6,17 +6,14 @@
 #include "3g.hpp"
 
 #include "CBillboard.hpp"
-#include "Mem.hpp"
 
 #include "preallocated_list.hpp"
+
 #include <algorithm>
+#include <vector>
 
-#define MAX_BBOARDS      8192
-#define MAX_BB_TEXGROUPS 64
-
-static const CBillboard* bboards[MAX_BBOARDS];
-static int bboards_left = MAX_BBOARDS / 2;
-static int bboards_right = MAX_BBOARDS / 2;
+static constexpr int MAX_BB_TEXGROUPS = 64;
+static constexpr int MAX_BBOARDS = 8196;
 
 CTextureManaged* CBillboard::m_SortableTex{nullptr};
 // CTextureManaged * CBillboard::m_IntenseTex{nullptr};
@@ -24,8 +21,9 @@ CTextureManaged* CBillboard::m_SortableTex{nullptr};
 D3D_VB CBillboard::m_VB{nullptr};
 D3D_IB CBillboard::m_IB{nullptr};
 
-static preallocated_list<CBillboard> m_intense_queue;
-static preallocated_list<CBillboardLine> m_draw_queue;
+static std::vector<std::pair<double, const CBillboard*>> _bboards;
+static preallocated_list<CBillboard> _intense_queue;
+static preallocated_list<CBillboardLine> _draw_queue;
 
 /////////////////////////////////////////////////////////////
 
@@ -38,13 +36,15 @@ void CBillboard::SortEndDraw(const D3DXMATRIX &iview, const D3DXVECTOR3 &campos)
     int ns = 0, ni = 0;
     SBillboardVertex *vb;
 
-    if (bboards_left < bboards_right) {
-        ns = (bboards_right - bboards_left);
+    if (!_bboards.empty())
+    {
+        ns = _bboards.size();
 
         LOCK_VB_DYNAMIC(m_VB, &vb);
 
-        for (int i = bboards_left; i < bboards_right; ++i) {
-            bboards[i]->UpdateVBSlot(vb, iview);
+        for (auto bb : _bboards)
+        {
+            bb.second->UpdateVBSlot(vb, iview);
             vb += 4;
         }
     }
@@ -61,7 +61,8 @@ void CBillboard::SortEndDraw(const D3DXMATRIX &iview, const D3DXVECTOR3 &campos)
     SDrawBillGroup groups[MAX_BB_TEXGROUPS];
     int groupscnt = 0;
 
-    if (!m_intense_queue.empty() || !m_draw_queue.empty()) {
+    if (!_intense_queue.empty() || !_draw_queue.empty())
+    {
         int ost = (MAX_BBOARDS * 2) - ns;
 
         if (ns == 0) {
@@ -118,16 +119,16 @@ void CBillboard::SortEndDraw(const D3DXMATRIX &iview, const D3DXVECTOR3 &campos)
             }
         };
 
-        process_queue(m_intense_queue, iview);
+        process_queue(_intense_queue, iview);
 
         if (groupscnt < MAX_BB_TEXGROUPS && ost > 0)
         {
             ASSERT(n == 0);
-            process_queue(m_draw_queue, campos);
+            process_queue(_draw_queue, campos);
             ASSERT((ost > 0 && n == 0) || ost <= 0);
         }
 
-        m_draw_queue.clear();
+        _draw_queue.clear();
 
         UNLOCK_VB(m_VB);
     }
@@ -209,98 +210,60 @@ void CBillboard::SortEndDraw(const D3DXMATRIX &iview, const D3DXVECTOR3 &campos)
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_ALPHAREF, 0x08));
 
     // m_First = NULL;
-    bboards_left = MAX_BBOARDS >> 1;
-    bboards_right = MAX_BBOARDS >> 1;
+    _bboards.clear();
     // m_Root = NULL;
 
-    m_intense_queue.clear();
+    _intense_queue.clear();
 }
 
 void CBillboard::SortIntense(void) const
 {
     auto iter =
         std::find_if(
-            m_intense_queue.begin(),
-            m_intense_queue.end(),
+            _intense_queue.begin(),
+            _intense_queue.end(),
             [&](const auto& item) {
                 return m_Tex == item->m_Tex;
             }
         );
 
-    m_intense_queue.insert(iter, this);
+    _intense_queue.insert(iter, this);
 }
 
 void CBillboard::Sort(const D3DXMATRIX &sort) const
 {
-    if (IsIntense()) {
+    if (IsIntense())
+    {
         SortIntense();
         return;
     }
 
-    bool noleft = (bboards_left <= 0);
-    bool norite = (bboards_right >= MAX_BBOARDS);
-    if (noleft && norite)
-        return;
-
-    m_Z = Double2Int((sort._13 * m_Pos.x + sort._23 * m_Pos.y + sort._33 * m_Pos.z + sort._43) * 256.0);
-
-    if (bboards_left == bboards_right) {
-        bboards[bboards_left] = this;
-        ++bboards_right;
+    if (_bboards.size() == MAX_BBOARDS)
+    {
         return;
     }
-    // seek index
-    int idx;
-    int idx0 = bboards_left;
-    int idx1 = bboards_right;
-    for (;;) {
-        idx = ((idx1 - idx0) >> 1) + idx0;
 
-        if (bboards[idx]->m_Z < m_Z) {
-            // left
-            if (idx == idx0)
-                break;
-            idx1 = idx;
-        }
-        else {
-            // rite
-            ++idx;
-            if (idx == idx1)
-                break;
-            idx0 = idx;
-        }
-    }
-    if (!norite && (idx == bboards_right)) {
-        ++bboards_right;
-        bboards[idx] = this;
-    }
-    else if (!noleft && (idx == bboards_left)) {
-        --bboards_left;
-        bboards[idx - 1] = this;
-    }
-    else {
-        int lc = (idx - bboards_left);
-        int rc = (bboards_right - idx);
-        bool expand_left = norite || ((lc <= rc) && !noleft);
+    // here was a smart-ass optimized algorithm to build a sorted list of billboard in a plain array
+    // trying to minimize memory copying/moving, but still using them to insert the element into
+    // correct position.
+    // i've thrown in away for the sake of code readability. now we'll have a vector here, which will
+    // most probably optimize all the movement under the hood anyway as long as we're storing POD types,
+    // but will do it in 3 lines of code instead of 50.
+    // yes, pessimization. on modern platform most probably it's not. shall not try to optimize it
+    // until performance gain is explicitly proven.
 
-        if (expand_left) {
-            memcpy(&bboards[bboards_left - 1], &bboards[bboards_left], sizeof(CBillboard*) * lc);
-            --bboards_left;
-            bboards[idx - 1] = this;
-        }
-        else {
-            memcopy_back_dword(&bboards[idx + 1], &bboards[idx], rc);
-            ++bboards_right;
-            bboards[idx] = this;
-        }
-    }
+    double z_index = Double2Int((sort._13 * m_Pos.x + sort._23 * m_Pos.y + sort._33 * m_Pos.z + sort._43) * 256.0);
+
+    auto comp = [](const double new_value, const auto item) { return new_value < item.first; };
+    auto position = std::upper_bound(_bboards.begin(), _bboards.end(), z_index, comp);
+    _bboards.emplace(position, z_index, this);
 }
 
 CBillboard::~CBillboard() {
     DTRACE();
     // do nothing!
 #ifdef _DEBUG
-    if (!m_intense_queue.empty())
+    if (!_intense_queue.empty())
     // if (m_FirstIntense != NULL || m_Root != NULL)
     // if (m_FirstIntense != NULL || m_First != NULL)
     {
@@ -318,7 +281,7 @@ void CBillboard::Release(void) {
     DTRACE();
 
 #ifdef _DEBUG
-    if (!m_intense_queue.empty())
+    if (!_intense_queue.empty())
     {
         debugbreak();
     }
@@ -527,7 +490,7 @@ CBillboardLine::~CBillboardLine()
 {
     // do nothing
 #ifdef _DEBUG
-    if (!m_draw_queue.empty())
+    if (!_draw_queue.empty())
     {
         debugbreak();
     }
@@ -545,7 +508,7 @@ void CBillboardLine::Release(void)
 #ifdef _DEBUG
     release_called = true;
 #endif
-    ASSERT(m_draw_queue.empty());
+    ASSERT(_draw_queue.empty());
 }
 
 void CBillboardLine::UpdateVBSlot(SBillboardVertex *vb, const D3DXVECTOR3 &campos) const {
@@ -649,12 +612,12 @@ void CBillboardLine::AddToDrawQueue(void) const
 {
     auto iter =
         std::find_if(
-            m_draw_queue.begin(),
-            m_draw_queue.end(),
+            _draw_queue.begin(),
+            _draw_queue.end(),
             [&](const auto& item) {
                 return m_Tex == item->m_Tex;
             }
         );
 
-    m_draw_queue.insert(iter, this);
+    _draw_queue.insert(iter, this);
 }
