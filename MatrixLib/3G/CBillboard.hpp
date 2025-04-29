@@ -10,9 +10,6 @@
 
 #define SORTABLE_FLAG_INTENSE SETBIT(0)
 
-#define MAX_BBOARDS      8192
-#define MAX_BB_TEXGROUPS 64
-
 #define BILLBOARD_FVF (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 struct SBillboardVertex {
     D3DXVECTOR3 p;  // Vertex position
@@ -26,23 +23,11 @@ struct SBillboardTexture {
 };
 
 class CBillboard : public Base::CMain {
-    typedef CBillboard *PCBillboard;
-
-    static PCBillboard bboards[MAX_BBOARDS];
-    static int bboards_left;
-    static int bboards_rite;
-    static CBillboard *m_FirstIntense;
     static D3D_VB m_VB;
     static D3D_IB m_IB;
 
     static CTextureManaged *m_SortableTex;
     // static CTextureManaged * m_IntenseTex;
-
-    union {
-        int m_Z;
-        CBillboard *m_Next;  // list of billboars
-    };
-    CBillboard *m_NextTex;
 
     DWORD m_Flags;
 
@@ -58,8 +43,8 @@ private:
     DWORD m_Color;  // diffuse color
 
     union {
-        const SBillboardTexture *m_Tex;
-        CTextureManaged *m_TexIntense;
+        const SBillboardTexture *m_Texture;
+        CTextureManaged *m_Tex;
     };
 
     D3DXMATRIX m_Rot;
@@ -67,7 +52,7 @@ private:
     bool IsIntense(void) const { return (m_Flags & SORTABLE_FLAG_INTENSE) != 0; }
     void SetIntense(bool f) { m_Flags = (m_Flags & (~SORTABLE_FLAG_INTENSE)) | (f ? SORTABLE_FLAG_INTENSE : 0); }
 
-    void UpdateVBSlot(SBillboardVertex *vb, const D3DXMATRIX &iview);
+    void UpdateVBSlot(SBillboardVertex *vb, const D3DXMATRIX &iview) const;
 
 public:
     CBillboard(void) {
@@ -76,17 +61,6 @@ public:
 #endif
     };
 
-    static void StaticInit(void) {
-        m_VB = NULL;
-        m_IB = NULL;
-        m_FirstIntense = NULL;
-        bboards_left = MAX_BBOARDS >> 1;
-        bboards_rite = (MAX_BBOARDS >> 1);
-
-        m_SortableTex = NULL;
-        // m_IntenseTex = NULL;
-    }
-
     static void Init(void);    // prepare VB
     static void Deinit(void);  // prepare VB
 
@@ -94,40 +68,15 @@ public:
                const SBillboardTexture *tex);  // sorted
     CBillboard(TRACE_PARAM_DEF const D3DXVECTOR3 &pos, float scale, float angle, DWORD color,
                CTextureManaged *tex);  // intense
-    ~CBillboard() {
-        DTRACE();
-        // do nothing!
-#ifdef _DEBUG
-        if (m_FirstIntense != NULL)
-        // if (m_FirstIntense != NULL || m_Root != NULL)
-        // if (m_FirstIntense != NULL || m_First != NULL)
-        {
-            debugbreak();
-        }
-#endif
-#ifdef _DEBUG
-        if (!release_called) {
-            debugbreak();
-        }
-#endif
-    }
+    ~CBillboard();
 
-    void Release(void) {
-        DTRACE();
-
-#ifdef _DEBUG
-        if (m_FirstIntense != NULL) {
-            debugbreak();
-        }
-        release_called = true;
-#endif
-    }
+    void Release(void);
 
     static void SortEndDraw(const D3DXMATRIX &iview,
                             const D3DXVECTOR3 &campos);  // its actualy draw all sortable from sorted list
 
-    void Sort(const D3DXMATRIX &sort);
-    void SortIntense(void);
+    void Sort(const D3DXMATRIX &sort) const;
+    void SortIntense(void) const;
 
     void DrawNow(const D3DXMATRIX &iview);
 
@@ -158,10 +107,6 @@ public:
 };
 
 class CBillboardLine : public CMain {
-    static CBillboardLine *m_First;
-    CBillboardLine *m_Next;
-    CBillboardLine *m_NextTex;
-
     D3DXMATRIX m_Rot;
 
     float m_Width;
@@ -180,8 +125,6 @@ public:
 public:
     friend void CBillboard::SortEndDraw(const D3DXMATRIX &iview, const D3DXVECTOR3 &campos);
 
-    static void StaticInit(void) { m_First = NULL; }
-
     CBillboardLine(void) {
 #ifdef _DEBUG
         release_called = true;
@@ -189,30 +132,13 @@ public:
     }
     CBillboardLine(TRACE_PARAM_DEF const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1, float width, DWORD color,
                    CTextureManaged *tex);
-    ~CBillboardLine() {
-        // do nothing
-#ifdef _DEBUG
-        if (m_First != NULL) {
-            debugbreak();
-        }
-        if (!release_called) {
-            debugbreak();
-        }
-#endif
-    }
+    ~CBillboardLine();
 
-    void Release(void) {
-        DTRACE();
+    void Release(void);
 
-#ifdef _DEBUG
-        release_called = true;
-#endif
-        ASSERT(m_First == NULL);
-    }
-
-    void DrawNow(const D3DXVECTOR3 &campos);
-    void AddToDrawQueue(void);
-    void UpdateVBSlot(SBillboardVertex *vb, const D3DXVECTOR3 &campos);
+    void DrawNow(const D3DXVECTOR3 &campos) const;
+    void AddToDrawQueue(void) const;
+    void UpdateVBSlot(SBillboardVertex *vb, const D3DXVECTOR3 &campos) const;
 
     void SetPos(const D3DXVECTOR3 &pos0, const D3DXVECTOR3 &pos1) {
         m_Pos0 = pos0;

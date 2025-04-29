@@ -123,7 +123,7 @@ CMatrixEffectPointLight::CMatrixEffectPointLight(const D3DXVECTOR3 &pos, float r
     m_RealDisp.y = 0;
 
     if (!g_Config.m_VertexLight) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_POINTLIGHT);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_POINTLIGHT);
     }
     else {
         m_Tex = NULL;
@@ -664,7 +664,8 @@ void CMatrixEffectPointLight::AddColorData(void)
     //}
 }
 
-void CMatrixEffectPointLight::Draw(void) {
+void CMatrixEffectPointLight::Draw(void) const
+{
     DTRACE();
 
     if (m_Bill)
@@ -730,6 +731,7 @@ void CMatrixEffectPointLight::Draw(void) {
     g_D3DD->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE));
 }
+
 void CMatrixEffectPointLight::Takt(float step) {
     DTRACE();
 

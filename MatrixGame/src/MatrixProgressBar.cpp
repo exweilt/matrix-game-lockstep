@@ -16,7 +16,7 @@ CTextureManaged *CMatrixProgressBar::m_Tex;
 
 CMatrixProgressBar::CMatrixProgressBar(void) {
     if (m_Tex == NULL) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_PB);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_PB);
         m_Tex->MipmapOff();
     }
     m_Tex->RefInc();

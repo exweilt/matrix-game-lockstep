@@ -534,7 +534,7 @@ void CMatrixFlyer::RNeed(DWORD need) {
                     m_Units[uindex].m_Vint.m_Tex = NULL;
                     if (bp->ParCount(L"TextureVint")) {
                         m_Units[uindex].m_Vint.m_Tex =
-                                (CTextureManaged *)g_Cache->Get(cc_TextureManaged, bp->ParGet(L"TextureVint").c_str());
+                                (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bp->ParGet(L"TextureVint").c_str());
                     }
                 }
                 else if (bn == L"Engine") {

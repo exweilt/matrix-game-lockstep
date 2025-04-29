@@ -8,23 +8,35 @@
 #include "CFile.hpp"
 #include "CStorage.hpp"
 
-CBaseTexture *CBaseTexture::m_TexturesFirst;
-CBaseTexture *CBaseTexture::m_TexturesLast;
+#include <list>
+
+static std::list<CBaseTexture*> _textures;
 
 void CBaseTexture::OnLostDevice(void) {
-    CBaseTexture *tex = m_TexturesFirst;
-    for (; tex; tex = tex->m_TexturesNext) {
-        if (!FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == cc_Texture)
+    for (auto tex : _textures)
+    {
+        if (!FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == CacheClass::Texture)
             ((CTexture *)tex)->OnLostDevice();
     }
 }
 void CBaseTexture::OnResetDevice(void) {
-    CBaseTexture *tex = m_TexturesFirst;
-    for (; tex; tex = tex->m_TexturesNext) {
-        if (FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == cc_Texture)
+    for (auto tex : _textures)
+    {
+        if (FLAG(tex->m_Flags, TF_LOST) && tex->m_Type == CacheClass::Texture)
             ((CTexture *)tex)->OnResetDevice();
     }
 }
+
+CBaseTexture::CBaseTexture(void)
+: CCacheData()
+{
+    _textures.push_back(this);
+}
+
+CBaseTexture::~CBaseTexture()
+{
+    _textures.remove(this);
+};
 
 LPDIRECT3DTEXTURE9 CBaseTexture::LoadTextureFromFile(bool to16, D3DPOOL pool) {
     DTRACE();

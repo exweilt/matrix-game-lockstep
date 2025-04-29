@@ -54,7 +54,7 @@ class CMatrixEffectLandscapeSpot : public CMatrixEffect {
 
     CMatrixEffectLandscapeSpot(const D3DXVECTOR2 &pos, float angle, float scale, ESpotType type = SPOT_CONSTANT);
     virtual ~CMatrixEffectLandscapeSpot();
-    void DrawActual(void);
+    void DrawActual(void) const;
 
 #ifdef _DEBUG
     const char *_file;
@@ -83,7 +83,7 @@ public:
         PrepareDX();
         m_Texture->Preload();
     };
-    virtual void Draw(void){};
+    virtual void Draw(void) const override {};
     virtual void Takt(float step);
     virtual void Release(void);
 

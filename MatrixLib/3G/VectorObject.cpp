@@ -36,7 +36,7 @@ static bool FreeObjectResources(uintptr_t user) {
 CVectorObject::CVectorObject(void)
   : CCacheData(), m_RemindCore(FreeObjectResources, reinterpret_cast<uintptr_t>(this)) {
     DTRACE();
-    m_Type = cc_VO;
+    m_Type = CacheClass::VO;
 
     memset(&m_Geometry, 0, sizeof(SVOGeometry));
 
@@ -2258,7 +2258,7 @@ void CVectorObjectGroup::Load(const wchar *filename, CTextureManaged *lt, SKIN_G
     //	if(!m_Obj)
     //       {
     //		m_Obj=HNew(g_CacheHeap) CVectorObjectAnim;
-    //		m_Obj->Init((CVectorObject *)(g_Cache->Get(cc_VO,m_Model.c_str(), m_Reminder)), &m_Skin);
+    //		m_Obj->Init((CVectorObject *)(g_Cache->Get(CacheClass::VO,m_Model.c_str(), m_Reminder)), &m_Skin);
 
     //		m_Obj->VO()->AddName(m_Texture.IsEmpty()?m_Parent->m_Name.c_str():m_Texture.c_str());
     //		m_Obj->VO()->Prepare();
@@ -2322,7 +2322,7 @@ void CVectorObjectGroup::Load(const wchar *filename, CTextureManaged *lt, SKIN_G
         if (texture_mask.empty())
             texture_back.clear();
 
-        CVectorObject *vo = (CVectorObject *)(g_Cache->Get(cc_VO, unit.c_str()));
+        CVectorObject *vo = (CVectorObject *)(g_Cache->Get(CacheClass::VO, unit.c_str()));
         if (texture.empty() && texture_gloss.empty() && texture_mask.empty()) {
             vo->PrepareSpecial(OLF_AUTO, sg, gsp);
             gu->m_Obj->Init(vo, NULL);

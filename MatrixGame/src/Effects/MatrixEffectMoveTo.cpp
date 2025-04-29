@@ -42,7 +42,7 @@ void SPointMoveTo::Change(CMatrixEffectMoveto *host, int i, float k) {
     m._43 = lz + MOVETO_Z * z;
 }
 
-void SPointMoveTo::Draw(CMatrixEffectMoveto *host) {
+void SPointMoveTo::Draw(const CMatrixEffectMoveto *host) const {
     CMatrixEffectBillboard::Draw(m, 0xFFFFFFFF, host->m_Tex, false);
 }
 
@@ -58,7 +58,7 @@ CMatrixEffectMoveto::CMatrixEffectMoveto(const D3DXVECTOR3 &pos) : CMatrixEffect
     }
 
     if (m_RefCnt == 0) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, TEXTURE_PATH_MOVETO);
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_MOVETO);
         m_Tex->RefInc();
     }
     ++m_RefCnt;
@@ -96,13 +96,12 @@ void CMatrixEffectMoveto::Takt(float step) {
     }
 }
 
-void CMatrixEffectMoveto::Draw(void) {
+void CMatrixEffectMoveto::Draw(void) const
+{
     DTRACE();
 
     if (!IS_VB(CMatrixEffectBillboard::m_VB))
         return;
-
-    RESETFLAG(m_Flags, MOVETOF_PREPARED);
 
     for (int i = 0; i < 6; ++i) {
         m_Pts[i].Draw(this);
@@ -117,9 +116,5 @@ void CMatrixEffectMoveto::Release(void) {
 
 void CMatrixEffectMoveto::BeforeDraw(void) {
     CMatrixEffectBillboard::PrepareDX();
-
-    if (!FLAG(m_Flags, MOVETOF_PREPARED)) {
-        m_Tex->Preload();
-        SETFLAG(m_Flags, MOVETOF_PREPARED);
-    }
+    m_Tex->Preload();
 }

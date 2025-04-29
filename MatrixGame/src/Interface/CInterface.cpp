@@ -490,22 +490,22 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
             }
 
             pButton->SetStateImage(
-                    IFACE_NORMAL, (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sNormal").c_str()),
+                    IFACE_NORMAL, (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sNormal").c_str()),
                     (float)pbp2->ParGet(L"sNormalX").GetDouble(), (float)pbp2->ParGet(L"sNormalY").GetDouble(),
                     (float)pbp2->ParGet(L"sNormalWidth").GetDouble(), (float)pbp2->ParGet(L"sNormalHeight").GetDouble());
 
             pButton->SetStateImage(
-                    IFACE_FOCUSED, (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sFocused").c_str()),
+                    IFACE_FOCUSED, (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sFocused").c_str()),
                     (float)pbp2->ParGet(L"sFocusedX").GetDouble(), (float)pbp2->ParGet(L"sFocusedY").GetDouble(),
                     (float)pbp2->ParGet(L"sFocusedWidth").GetDouble(), (float)pbp2->ParGet(L"sFocusedHeight").GetDouble());
 
             pButton->SetStateImage(
-                    IFACE_PRESSED, (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sPressed").c_str()),
+                    IFACE_PRESSED, (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sPressed").c_str()),
                     (float)pbp2->ParGet(L"sPressedX").GetDouble(), (float)pbp2->ParGet(L"sPressedY").GetDouble(),
                     (float)pbp2->ParGet(L"sPressedWidth").GetDouble(), (float)pbp2->ParGet(L"sPressedHeight").GetDouble());
 
             pButton->SetStateImage(
-                    IFACE_DISABLED, (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sDisabled").c_str()),
+                    IFACE_DISABLED, (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sDisabled").c_str()),
                     (float)pbp2->ParGet(L"sDisabledX").GetDouble(), (float)pbp2->ParGet(L"sDisabledY").GetDouble(),
                     (float)pbp2->ParGet(L"sDisabledWidth").GetDouble(), (float)pbp2->ParGet(L"sDisabledHeight").GetDouble());
 
@@ -513,7 +513,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
                 pButton->m_Type == IFACE_CHECK_PUSH_BUTTON) {
                 pButton->SetStateImage(
                         IFACE_PRESSED_UNFOCUSED,
-                        (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sPressedUnFocused").c_str()),
+                        (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sPressedUnFocused").c_str()),
                         (float)pbp2->ParGet(L"sPressedUnFocusedX").GetDouble(),
                         (float)pbp2->ParGet(L"sPressedUnFocusedY").GetDouble(),
                         (float)pbp2->ParGet(L"sPressedUnFocusedWidth").GetDouble(),
@@ -540,7 +540,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
                     frame.pos_x = pButton->m_xPos + 1;
                     frame.pos_y = pButton->m_yPos;
                     frame.pos_z = 0 /*pButton->m_zPos*/;
-                    frame.tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sNormal").c_str());
+                    frame.tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sNormal").c_str());
                     frame.tex_width = (float)pbp2->ParGet(L"sNormalWidth").GetDouble();
                     frame.tex_height = (float)pbp2->ParGet(L"sNormalHeight").GetDouble();
                     frame.ipos_x = m_xPos;
@@ -643,7 +643,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
             }
 
             pStatic->SetStateImage(
-                    IFACE_NORMAL, (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"sNormal").c_str()),
+                    IFACE_NORMAL, (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"sNormal").c_str()),
                     (float)pbp2->ParGet(L"sNormalX").GetDouble(), (float)pbp2->ParGet(L"sNormalY").GetDouble(),
                     (float)pbp2->ParGet(L"sNormalWidth").GetDouble(), (float)pbp2->ParGet(L"sNormalHeight").GetDouble());
 
@@ -684,7 +684,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
             CIFaceImage *image = HNew(g_MatrixHeap) CIFaceImage;
             image->m_strName = pbp2->ParGet(L"Name");
 
-            image->m_Image = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, pbp2->ParGet(L"TextureFile").c_str());
+            image->m_Image = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, pbp2->ParGet(L"TextureFile").c_str());
 
             image->m_xTexPos = (float)pbp2->ParGet(L"TexPosX").GetDouble();
             image->m_yTexPos = (float)pbp2->ParGet(L"TexPosY").GetDouble();

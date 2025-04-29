@@ -95,7 +95,7 @@ public:
     friend class CMatrixEffectMoveto;
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
     virtual int Priority(void) { return MAX_EFFECT_PRIORITY; };
@@ -128,10 +128,11 @@ class CMatrixEffectBuoy : public CMatrixEffectMovingObject {
 
     SEffectHandler m_Light;
     // float   m_Z;
+
 public:
     friend class CMatrixEffect;
 
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float);
 
     void Kill(void);

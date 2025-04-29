@@ -38,7 +38,7 @@ void SInshorewave::Create(int index, const D3DXVECTOR2 &pos, const D3DXVECTOR2 &
     iw.m_Index = index;
 
     if (m_VB_ref == 0) {
-        m_Tex = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, g_MatrixData->BlockGet(PAR_SOURCE_WATER)
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, g_MatrixData->BlockGet(PAR_SOURCE_WATER)
                                                                            ->BlockGet(g_MatrixMap->m_WaterName)
                                                                            ->ParGet(PAR_SOURCE_WATER_INSHORE).c_str());
         g_Cache->Up(m_Tex);
@@ -222,8 +222,8 @@ void CMatrixWater::Init() {
 
     CBlockPar *bp = g_MatrixData->BlockGet(PAR_SOURCE_WATER)->BlockGet(g_MatrixMap->m_WaterName);
 
-    m_WaterTex1 = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, bp->ParGet(PAR_SOURCE_WATER_WATER).c_str());
-    m_WaterTex2 = (CTextureManaged *)g_Cache->Get(cc_TextureManaged, bp->ParGet(PAR_SOURCE_WATER_MIRROR).c_str());
+    m_WaterTex1 = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bp->ParGet(PAR_SOURCE_WATER_WATER).c_str());
+    m_WaterTex2 = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bp->ParGet(PAR_SOURCE_WATER_MIRROR).c_str());
 
     m_WaterTex1->Tex()->SetPriority(0xFFFFFFFF);
     m_WaterTex2->Tex()->SetPriority(0xFFFFFFFF);

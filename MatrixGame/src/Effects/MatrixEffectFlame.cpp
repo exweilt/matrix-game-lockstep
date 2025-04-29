@@ -3,19 +3,15 @@
 // Licensed under GPLv2 or any later version
 // Refer to the LICENSE file included
 
-#include <new>
-
 #include "MatrixEffect.hpp"
 #include "MatrixEffectShleif.hpp"
 #include "../MatrixMap.hpp"
-#include "../MatrixObject.hpp"
-#include "../MatrixObjectRobot.hpp"
-#include "../MatrixObjectCannon.hpp"
-#include "../MatrixFlyer.hpp"
-#include <math.h>
 
 #include "MatrixEffectFlame.hpp"
 #include "MatrixEffectPointLight.hpp"
+
+#include <new>
+#include <math.h>
 
 CFlamePuff::CFlamePuff(CMatrixEffectFlame *owner, const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir,
                        const D3DXVECTOR3 &speed)
@@ -83,7 +79,7 @@ void CFlamePuff::Release(void) {
     HDelete(CFlamePuff, this, m_Owner->m_Heap);
 }
 
-void CFlamePuff::Draw(void) {
+void CFlamePuff::Draw(void) const {
     DTRACE();
 
     for (int i = 0; i < FLAME_NUM_BILLS; ++i) {
@@ -329,7 +325,7 @@ void CMatrixEffectFlame::SubPuff(CFlamePuff *puf) {
 
 void CMatrixEffectFlame::BeforeDraw(void) {}
 
-void CMatrixEffectFlame::Draw(void) {
+void CMatrixEffectFlame::Draw(void) const {
     for (CFlamePuff *p = m_First; p; p = p->m_Next) {
         p->Draw();
     }

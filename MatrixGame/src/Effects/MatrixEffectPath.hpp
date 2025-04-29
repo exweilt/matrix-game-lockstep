@@ -61,7 +61,7 @@ public:
     void AddPos(const D3DXVECTOR3 &pos);
 
     virtual void BeforeDraw(void);
-    virtual void Draw(void);
+    virtual void Draw(void) const override;
     virtual void Takt(float step);
     virtual void Release(void);
 
