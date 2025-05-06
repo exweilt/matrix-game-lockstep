@@ -46,7 +46,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 
     int numarg;
     wchar **args = CommandLineToArgvW(cmd, &numarg);
-    wchar *map = NULL;
+    wchar *map = nullptr;
 
     std::filesystem::path app_path{args[0]};
 
@@ -58,10 +58,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     }
 
     try {
-        CGame game;
-
-        uint32_t seed = (unsigned)time(NULL);
-        game.Init(hInstance, NULL, map, seed);
+        uint32_t seed = (unsigned)time(nullptr);
+        CGame::Init(hInstance, nullptr, map, seed);
 
         CFormMatrixGame *formgame = HNew(NULL) CFormMatrixGame();
         FormChange(formgame);
@@ -90,7 +88,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 
         timeEndPeriod(1);
 
-        game.Deinit();
+        CGame::Deinit();
 
         FormChange(NULL);
         HDelete(CFormMatrixGame, formgame, NULL);

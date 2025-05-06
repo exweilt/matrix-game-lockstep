@@ -31,10 +31,17 @@ extern SMenuItemText *g_PopupHull;
 extern SMenuItemText *g_PopupChassis;
 extern CHistory *g_ConfigHistory;
 
+/**
+ * @brief Stateless class, which only holds functions, but no data responsive for game engine operation: start, run,
+ * end.
+ *
+ * TODO: It is similar to a "static class" or a namespace. Consider bringing it to a more logical form, maybe rename,
+ *      maybe move global variables inside as members.
+ */
 class CGame {
 public:
-    CGame() = default;
-    ~CGame() = default;
+    CGame() = delete;
+    ~CGame() = delete;
 
     /**
      * @brief Initializes the game engine.
@@ -56,7 +63,7 @@ public:
      * @param txt_loss Optional: Text displayed at the end of the map, if you lose.
      * @param planet Optional: Planet name.
      */
-    void Init(
+    static void Init(
         HINSTANCE hInstance,
         HWND wnd,
         const wchar *map = nullptr,
@@ -68,11 +75,17 @@ public:
         const wchar *txt_loss = nullptr,
         const wchar *planet = nullptr
     );
-    void Deinit();
-    void SafeFree();
-    void RunGameLoop(CFormMatrixGame *formGame);
-    void SaveResult(SRobotGameState *state);
+    static void Deinit();
+    static void SafeFree();
+
+    /**
+     * @brief An envelope over L3GRun() function to account for DLL multiple windows form change.
+     *
+     * @param formGame The form(i.e. Window) of the game.
+     */
+    static void RunGameLoop(CFormMatrixGame *formGame);
+    static void SaveResult(SRobotGameState *state);
 
 private:
-    void ApplyVideoParams(SRobotsSettings &settings);
+    static void ApplyVideoParams(SRobotsSettings &settings);
 };

@@ -74,21 +74,18 @@ int __stdcall Support() {
 
 int __stdcall Run(HINSTANCE hinst, HWND hwnd, wchar *map, SRobotsSettings *settings, wchar *lang, wchar *txt_start,
                   wchar *txt_win, wchar *txt_loss, wchar *planet, SRobotGameState *rgs) {
+    uint32_t seed = (unsigned)time(nullptr);
 
-    CGame game{};
-
-    uint32_t seed = (unsigned)time(NULL);
-
-    game.Init(hinst, hwnd, map, seed, settings, lang, txt_start, txt_win, txt_loss, planet);
+    CGame::Init(hinst, hwnd, map, seed, settings, lang, txt_start, txt_win, txt_loss, planet);
     
     CFormMatrixGame formgame;
 
-    game.RunGameLoop(&formgame);
+    CGame::RunGameLoop(&formgame);
 
-    game.SaveResult(rgs);
-    game.SafeFree();
+    CGame::SaveResult(rgs);
+    CGame::SafeFree();
 
-    ClipCursor(NULL);
+    ClipCursor(nullptr);
 
     if (FLAG(g_Flags, GFLAG_EXITLOOP))
         return g_ExitState;
