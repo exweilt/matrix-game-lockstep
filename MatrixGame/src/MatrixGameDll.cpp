@@ -72,14 +72,14 @@ int __stdcall Support() {
     return SUPE_OK;
 }
 
-int __stdcall Run(HINSTANCE hinst, HWND hwnd, wchar *map, SRobotsSettings *set, wchar *lang, wchar *txt_start,
+int __stdcall Run(HINSTANCE hinst, HWND hwnd, wchar *map, SRobotsSettings *settings, wchar *lang, wchar *txt_start,
                   wchar *txt_win, wchar *txt_loss, wchar *planet, SRobotGameState *rgs) {
 
     CGame game{};
 
     uint32_t seed = (unsigned)time(NULL);
 
-    game.Init(hinst, hwnd, map, seed, set, lang, txt_start, txt_win, txt_loss, planet);
+    game.Init(hinst, hwnd, map, seed, settings, lang, txt_start, txt_win, txt_loss, planet);
     
     CFormMatrixGame formgame;
 

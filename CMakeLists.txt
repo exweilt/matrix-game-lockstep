@@ -62,12 +62,14 @@ else()
         -Wno-sign-compare
         -Wno-unused-function
         -Wno-unused-variable
+        -Wno-unused-parameter
         -Wno-class-memaccess
         -Wno-parentheses
         -Wno-switch
         -Wno-strict-aliasing
         -Wno-empty-body
         -Wno-pedantic
+        -Wno-uninitialized
     )
 
     set(LINK_OPTIONS

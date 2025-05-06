@@ -134,6 +134,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     return 1;
 }
 
+/**
+ * Goes through and initializes all static variables.
+ */
 static void static_init(void) {
     // Base
     CMain::BaseInit();
@@ -168,8 +171,10 @@ static void static_init(void) {
     g_Flags = 0;  // GFLAG_FORMACCESS;
 }
 
-void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSettings *set, wchar *lang,
-                 wchar *txt_start, wchar *txt_win, wchar *txt_loss, wchar *planet) {
+void CGame::Init(HINSTANCE inst, HWND wnd, const wchar *map,uint32_t seed, const SRobotsSettings *provided_settings,
+                const wchar *lang, const wchar *txt_start, const wchar *txt_win, const wchar *txt_loss,
+                const wchar *planet)
+{
     random::seed(seed);
     static_init();
 
@@ -187,36 +192,43 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
     CStorage stor_cfg(g_MatrixHeap);
     bool stor_cfg_present = false;
     std::wstring stor_cfg_name;
-    std::wstring conf_file{FILE_CONFIGURATION_LOCATION};
-    if (lang != NULL) {
-        conf_file += lang;
-        conf_file += L"\\";
+    std::wstring conf_file{FILE_CONFIGURATION_LOCATION}; // generate the .dat file path
+    {
+        if (lang != nullptr)
+        {
+            conf_file += lang;
+            conf_file += L"\\";
+        }
+        conf_file += FILE_CONFIGURATION;
     }
-    conf_file += FILE_CONFIGURATION;
+
     if (CFile::FileExist(stor_cfg_name, conf_file.c_str())) {
         stor_cfg.Load(conf_file.c_str());
         stor_cfg_present = true;
     }
 
     g_MatrixData = HNew(g_MatrixHeap) CBlockPar{};
-    if (stor_cfg_present) {
+    if (stor_cfg_present)
+    {
         stor_cfg.RestoreBlockPar(L"da", *g_MatrixData);
         // stor_cfg.RestoreBlockPar(L"if", *g_MatrixData);
         // g_MatrixData->SaveInTextFile(L"bbb.txt");
 
-        if (CFile::FileExist(stor_cfg_name, L"cfg\\robots\\cfg.txt")) {
+        if (CFile::FileExist(stor_cfg_name, L"cfg\\robots\\cfg.txt"))
+        {
             CBlockPar *bpc = g_MatrixData->BlockGet(L"Config");
             bpc->LoadFromTextFile(L"cfg\\robots\\cfg.txt");
         }
     }
-    else {
+    else
+    {
         g_MatrixData->LoadFromTextFile(L"cfg\\robots\\data.txt");
     }
 
+    // init menu replaces
+    // TODO: extract texts automatically from cfg.
     {
         CBlockPar *repl = g_MatrixData->BlockGetAdd(PAR_REPLACE);
-
-        // init menu replaces
 
         CBlockPar *rr = g_MatrixData->BlockGet(IF_LABELS_BLOCKPAR)->BlockGet(L"Replaces");
         int cnt = rr->ParCount();
@@ -269,41 +281,36 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
     g_MatrixData->BlockGet(L"Config")->SaveInTextFile(L"g_ConfigDump.txt");
 #endif
 
-    if (set)
-        L3GInitAsDLL(inst, *g_MatrixData->BlockGet(L"Config"), L"MatrixGame", L"Matrix Game", wnd, set->FDirect3D,
-                     set->FD3DDevice);
+    SRobotsSettings settings; // Actual settings
+    if (provided_settings != nullptr)
+    {
+        settings = *provided_settings;
+    }
     else
-        L3GInitAsEXE(inst, *g_MatrixData->BlockGet(L"Config"), L"MatrixGame", L"Matrix Game");
+    {
+        settings = SRobotsSettings::generate_default_settings();
+    }
 
-    //=========================================================================
-    // this shit is pretending to be a settings provided by a main game
-    // when this engine is used as dll. dirty solution, but seems to be
-    // necessary to make it working in a standalone (exe) mode.
-    SRobotsSettings settings;
-    settings.m_ShowStencilShadows = 1;
-    settings.m_ShowProjShadows = 1;
-    settings.m_IzvratMS = 0;
-    settings.m_LandTexturesGloss = 1;
-    settings.m_ObjTexturesGloss = 1;
-    settings.m_SoftwareCursor = 0;
-    settings.m_SkyBox = 2;
-    settings.m_RobotShadow = 1;
-    settings.m_BPP = 32;
+    // Init the 3d engine
+#ifdef BUILD_DLL
+    L3GInitAsDLL(
+            inst,
+            *g_MatrixData->BlockGet(L"Config"),
+            L"MatrixGame",
+            L"Matrix Game",
+            wnd,
+            settings.FDirect3D,
+            settings.FD3DDevice
+        );
+
+    g_ScreenX = settings.m_ResolutionX;
+    g_ScreenY = settings.m_ResolutionY;
+#else
+    L3GInitAsEXE(inst, *g_MatrixData->BlockGet(L"Config"), L"MatrixGame", L"Matrix Game");
     settings.m_ResolutionX = g_ScreenX;
     settings.m_ResolutionY = g_ScreenY;
-    settings.m_RefreshRate = 0;
-    settings.m_Brightness = 0.5;
-    settings.m_Contrast = 0.5;
-    settings.m_FSAASamples = 0;
-    settings.m_AFDegree = 0;
-    settings.m_MaxDistance = 1;
-    settings.m_VSync = 1;
-    //=========================================================================
+#endif
 
-    if (set) {
-        g_ScreenX = set->m_ResolutionX;
-        g_ScreenY = set->m_ResolutionY;
-    }
 
     g_Render = HNew(g_MatrixHeap) CRenderPipeline;  // prepare pipelines
 
@@ -314,18 +321,11 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
 
     g_Config.SetDefaults();
     g_Config.ReadParams();
-    if (set)
-    {
-        g_Config.ApplySettings(set);
-        g_Sampler.ApplySettings(set);
-        SetMaxCameraDistance(set->m_MaxDistance);
-    }
-    else
-    {
-        g_Config.ApplySettings(&settings);
-        g_Sampler.ApplySettings(&settings);
-        SetMaxCameraDistance(settings.m_MaxDistance);
-    }
+
+    g_Config.ApplySettings(&settings);
+    g_Sampler.ApplySettings(&settings);
+    SetMaxCameraDistance(settings.m_MaxDistance);
+
 
     DCP();
 
@@ -342,32 +342,38 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
     CStorage stor;
     DCP();
 
+    // Process map name
     std::wstring mapname;
-
-    if (map) {
-        if (wcschr(map, '\\') == NULL) {
+    if (map != nullptr)
+    {
+        if (wcschr(map, '\\') == nullptr)
+        {
+            // Format map name to include package .dat path
             mapname = L"Matrix\\Map\\";
             mapname += map;
         }
-        else {
+        else
+        {
             mapname = map;
         }
     }
-    else {
+    else
+    {
         mapname = g_MatrixData->BlockGet(L"Config")->ParGet(L"Map");
     }
 
     stor.Load(mapname.c_str());
     DCP();
 
-    if (0 > g_MatrixMap->PrepareMap(stor, mapname)) {
+    if (0 > g_MatrixMap->PrepareMap(stor, mapname))
+    {
         ERROR_S(L"Unable to load map. Error happens.");
     }
     DCP();
 
-    std::wstring mn(g_MatrixMap->MapName());
-    utils::to_lower(mn);
-    if (mn.find(L"demo") != std::wstring::npos)
+    std::wstring mapname_lowercase(g_MatrixMap->MapName()); // MapName() is actually the same as "mapname"
+    utils::to_lower(mapname_lowercase);
+    if (mapname_lowercase.find(L"demo") != std::wstring::npos)
     {
         SETFLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE | MMFLAG_FLYCAM | MMFLAG_FULLAUTO);
     }
@@ -429,14 +435,7 @@ void CGame::Init(HINSTANCE inst, HWND wnd, wchar *map, uint32_t seed, SRobotsSet
         new(&g_PopupChassis[i]) SMenuItemText(g_MatrixHeap);
     }
 
-    if (set)
-    {
-        ApplyVideoParams(*set);
-    }
-    else
-    {
-        ApplyVideoParams(settings);
-    }
+    ApplyVideoParams(settings);
 
     CIFaceMenu::m_MenuGraphics = HNew(g_MatrixHeap) CInterface;
 
