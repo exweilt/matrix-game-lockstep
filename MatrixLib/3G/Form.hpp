@@ -23,6 +23,14 @@ enum ESysEvent {
     SYSEV_ACTIVATED,
 };
 
+/**
+ * @brief Probably represents an abstract logical Window.
+ *
+ * Is double-linked chained (i.e. it's an element of all other Forms Linked List.)
+ *
+ * Yet it seems like its ability to have multiple forms is never used,
+ *      or it could be used inside of Map Editor, source code of which is not available.
+ */
 class CForm : public Base::CMain {
 private:
     CForm *m_FormPrev;
@@ -39,12 +47,19 @@ public:
 
     virtual void Enter(void) = 0;
     virtual void Leave(void) = 0;
+
+    /**
+     * @brief Execute draw logic for this window?
+     */
     virtual void Draw(void) = 0;
 
-    virtual void Takt(int) = 0;
+    /**
+     * @brief Execute logic frame for this window?
+     */
+    virtual void Takt(int delta_ms) = 0;
 
-    virtual void MouseMove(int, int) = 0;
-    virtual void MouseKey(ButtonStatus, int, int, int) = 0;
+    virtual void MouseMove(int x, int y) = 0;
+    virtual void MouseKey(ButtonStatus status, int key, int x, int y) = 0;
 
     virtual void Keyboard(bool, uint8_t) = 0;
 

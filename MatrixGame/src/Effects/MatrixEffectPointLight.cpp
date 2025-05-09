@@ -596,7 +596,7 @@ void CMatrixEffectPointLight::BuildLandV(void) {
 }
 
 void CMatrixEffectPointLight::UpdateData(void) {
-    DTRACE();
+    DTRACE(); // TODO: fix crashes happening after this trace sometimes when game is ongoing, yet rare.
     Clear();
 
     if (m_Bill) {

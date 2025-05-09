@@ -198,7 +198,7 @@ struct SMatrixPlace {
 };
 
 struct SMatrixPlaceList {
-    int m_Sme;
+    int m_Sme; // Does it mean "Smeshienie" i.e. "shift"? - xwlt 08/05/2025
     int m_Cnt;
 };
 

@@ -457,7 +457,7 @@ int L3GRun()
     {
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
-            DispatchMessage(&msg);
+            DispatchMessage(&msg); // Effectively calls L3GWndProc() handler
         }
         if (FLAG(g_Flags, GFLAG_APPCLOSE) || FLAG(g_Flags, GFLAG_EXITLOOP))
         {
@@ -515,11 +515,16 @@ int L3GRun()
     return 1;
 }
 
-// returns true if input should be propagated, false otherwise
+/**
+ * @brief Calls corresponding input handlers on the game's form.
+ *
+ * @return true if input should be propagated to the OS for additional handling
+ *          (for example if we don't handle such messages), false otherwise
+ */
 bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int16_t hi_lparam = HIWORD(lParam);
-    int16_t lo_lparam = LOWORD(lParam);
+    int16_t mouse_y = HIWORD(lParam);
+    int16_t mouse_x = LOWORD(lParam);
     int16_t hi_wparam = HIWORD(wParam);
 
     bool propagate = false;
@@ -527,34 +532,34 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
         case WM_MOUSEWHEEL:
-            g_FormCur->MouseKey(B_WHEEL, hi_wparam / 120, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_WHEEL, hi_wparam / 120, mouse_x, mouse_y);
             break;
         case WM_MOUSEMOVE:
-            g_FormCur->MouseMove(lo_lparam, hi_lparam);
+            g_FormCur->MouseMove(mouse_x, mouse_y);
             break;
         case WM_LBUTTONDOWN:
-            g_FormCur->MouseKey(B_DOWN, VK_LBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_DOWN, VK_LBUTTON, mouse_x, mouse_y);
             break;
         case WM_LBUTTONDBLCLK:
-            g_FormCur->MouseKey(B_DOUBLE, VK_LBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_DOUBLE, VK_LBUTTON, mouse_x, mouse_y);
             break;
         case WM_RBUTTONDOWN:
-            g_FormCur->MouseKey(B_DOWN, VK_RBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_DOWN, VK_RBUTTON, mouse_x, mouse_y);
             break;
         case WM_RBUTTONDBLCLK:
-            g_FormCur->MouseKey(B_DOUBLE, VK_RBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_DOUBLE, VK_RBUTTON, mouse_x, mouse_y);
             break;
         case WM_MBUTTONDOWN:
-            g_FormCur->MouseKey(B_DOWN, VK_MBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_DOWN, VK_MBUTTON, mouse_x, mouse_y);
             break;
         case WM_LBUTTONUP:
-            g_FormCur->MouseKey(B_UP, VK_LBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_UP, VK_LBUTTON, mouse_x, mouse_y);
             break;
         case WM_RBUTTONUP:
-            g_FormCur->MouseKey(B_UP, VK_RBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_UP, VK_RBUTTON, mouse_x, mouse_y);
             break;
         case WM_MBUTTONUP:
-            g_FormCur->MouseKey(B_UP, VK_MBUTTON, lo_lparam, hi_lparam);
+            g_FormCur->MouseKey(B_UP, VK_MBUTTON, mouse_x, mouse_y);
             break;
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
@@ -574,6 +579,11 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
     return propagate;
 }
 
+/**
+ * @brief Window message callback handler.
+ *
+ * Called either by DispatchMessage() or by other means.
+ */
 LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)

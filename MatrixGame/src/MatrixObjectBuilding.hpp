@@ -235,6 +235,13 @@ public:
     CMatrixBuilding(void);
     ~CMatrixBuilding();
 
+    /**
+     * Call for reinforcements with this building as the point of arrival.
+     *
+     * Maintenance is a result of a bad translation very long time ago. Now it seems questionable to rename
+     * "Maintenance" to "Reinforcement" because it is known as Maintenance in too many parts of the Engine and inside
+     * CFG files.
+     */
     void Maintenance(void);
 
     bool BuildFlyer(EFlyerKind kind);

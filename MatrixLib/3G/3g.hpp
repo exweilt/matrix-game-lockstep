@@ -274,10 +274,34 @@ public:
 #define ASSERT_DX(x) FAILED_DX(x)
 #endif
 
+/**
+ * @brief Creates a window and sets up rendering DirectX context.
+ */
 void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const wchar* captionname);
+
+/**
+ * @brief Sets up the given window hwnd as a rendering surface inside DirectX context.
+ *
+ * Sets no video parameters, assumes ApplyVideoParams() is called later.
+ */
 void L3GInitAsDLL(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const wchar* captionname, HWND hwnd, uintptr_t FDirect3D,
                   uintptr_t FD3DDevice);
 void L3GDeinit(void);
+
+/**
+ *  @brief Runs the main game loop.
+ *
+ *  Runs in eternal while(true) loop:
+ *
+ *  - Poll the window events, handle them and close if need to exit.
+ *  - Calculate delta time since the last frame.
+ *  - Process the frame logic with:
+ *      SRemindCore::Takt(delta); and
+ *      g_FormCur->Takt(delta);
+ *  - Draw new frame: g_FormCur->Draw();
+ *
+ *  TODO: find out what L3G stands for. Probably it is a name of the engine and 3G could mean "3D Graphics"
+ */
 int L3GRun(void);
 
 void S3D_Default(void);

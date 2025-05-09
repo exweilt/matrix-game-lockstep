@@ -22,6 +22,10 @@ enum EBehFlag {
 
 struct SMatrixSkin;
 
+/**
+ * @brief Child class of CMatrixMapStatic specifically for map objects(OBJECT_TYPE_MAPOBJECT) such as rocks, debris,
+ *       palms, gates, turtles etc.
+ */
 class CMatrixMapObject : public CMatrixMapStatic {
     struct SObjectShadowTexture {
         CTextureManaged *tex;

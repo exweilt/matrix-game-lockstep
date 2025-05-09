@@ -14,13 +14,28 @@ typedef bool (*REMIND_HANDLER)(uintptr_t param);  // returns true, if core is de
 
 #define CHECK_TIME 10
 
+/**
+ * @brief A timer based callback scheduler, usually used to clean up after resources are no longer needed.
+ *
+ * Each scheduled callback is represented as an independent SRemindCore object inside a double linked list.
+ *
+ * It is called as soon as possible(yet with some minimal delay) after you add it initially, but you can postpone it using Use().
+ * The way it is used in the game is that Use is called frequently so the callback is only ever called when this constant
+ * call of Use() is stopped(i.e. the object is no longer drawn). Usually the free of resources(i.e. textures) is
+ * triggered afterwards inside of callback. It is similar to a very simple yet stupid garbage collector.
+ *
+ * It seems like it does not give you a good guarantee as of exact timing of the callback execution.
+ *
+ * REMIND_HANDLER handler is pointer to the callback function which should take void* as a parameter and returns bool:
+ *                  false if the scheduler has to be deleted or true otherwise.
+ */
 struct SRemindCore {
     static SRemindCore *first;
     static SRemindCore *last;
     static SRemindCore *current;
 
-    static int gtime;
-    static int ctime;
+    static int gtime; // Global time
+    static int ctime; // Checking time (increases in steps)
 
     SRemindCore *next;
     SRemindCore *prev;
@@ -45,6 +60,11 @@ struct SRemindCore {
         LIST_DEL_CLEAR(this, first, last, prev, next);
     }
 
+    /**
+     * @brief "touch" this reminder, so the callback's call is postponed for "nexttime".
+     *
+     * @param nexttime time until callback is called in ms. Can be overridden by another Use().
+     */
     void Use(int nexttime) {
         if (first != nullptr) {
             if ((((uintptr_t)next) | ((uintptr_t)prev)) == 0 && (this != first)) {

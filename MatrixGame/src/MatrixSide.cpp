@@ -471,10 +471,10 @@ void CMatrixSideUnit::LogicTakt(int ms) {
         }
 
         DCP();
-        TaktHL();
+        TaktHL(); // Run high level logic on side played by bot
         DCP();
         //        dword t2=timeGetTime();
-        TaktTL();
+        TaktTL(); // Run "Team" Logic
         DCP();
         //        dword t3=timeGetTime();
         //        DM(L"TaktTL",std::wstring().Format(L"<i>",t3-t2).Get());
@@ -2202,6 +2202,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
     int i;
     CEnemy *enemy;
 
+    // Find bomb carrying robot if it is present.
     CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
     for (; ms; ms = ms->GetNextLogic()) {
         if (!ms->IsLiveRobot())
@@ -5991,7 +5992,6 @@ void CMatrixSideUnit::AssignPlace(CMatrixRobotAI *robot, int region) {
     }
 }
 
-// Назначаем места в регионе или места близкие к этому региону
 void CMatrixSideUnit::AssignPlace(int group, int region) {
     float f;
     CPoint tp, tp2;
@@ -6330,6 +6330,9 @@ float CMatrixSideUnit::BuildRobotMinStrange(CMatrixBuilding *base) {
     return std::max(0.0f, minstrange * 0.7f);  // Занижаем минимальную силу
 }
 
+/**
+ * @brief Orders some robots, used only by computer playing sides.
+ */
 void CMatrixSideUnit::BuildRobot(void) {
     int i, k, r, u, cnt, lwcnt, ik, uk;
     CMatrixBuilding *base = NULL;
@@ -6865,6 +6868,7 @@ void CMatrixSideUnit::BuildCannon(void) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+// Look inside MatrixSide.h file for documentation
 void CMatrixSideUnit::TaktPL(int onlygroup) {
     DTRACE();
 

@@ -346,7 +346,7 @@ void CGame::Init(HINSTANCE inst, HWND wnd, const wchar *map,uint32_t seed, const
     {
         if (wcschr(map, '\\') == nullptr)
         {
-            // Format map name to include package .dat path
+            // Format map name to include package .pkg path (although the map file can be inside "Matrix/Map/" directory as well)
             mapname = L"Matrix\\Map\\";
             mapname += map;
         }
