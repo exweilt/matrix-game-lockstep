@@ -169,7 +169,7 @@ static void static_init(void) {
     g_Flags = 0;  // GFLAG_FORMACCESS;
 }
 
-void CGame::Init(HINSTANCE inst, HWND wnd, const wchar *map,uint32_t seed, const SRobotsSettings *provided_settings,
+void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uint32_t seed, const SRobotsSettings *provided_settings,
                 const wchar *lang, const wchar *txt_start, const wchar *txt_win, const wchar *txt_loss,
                 const wchar *planet)
 {
