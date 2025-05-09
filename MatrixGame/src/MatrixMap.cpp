@@ -1146,18 +1146,18 @@ void CMatrixMap::BeforeDraw(void) {
             m_DI.T(L"Under cursor", L"Mesh", 1000);
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
             m_DI.T(L"Under cursor",
-                   utils::format(L"Robot %llx   S%d T%d G%d",
-                                 uintptr_t(m_TraceStopObj),
+                   utils::format(L"Robot %x   S%d T%d G%d",
+                                 reinterpret_cast<uintptr_t>(m_TraceStopObj),
                                  m_TraceStopObj->GetSide(),
-                                 ((CMatrixRobotAI *)m_TraceStopObj)->GetTeam(),
-                                 ((CMatrixRobotAI *)m_TraceStopObj)->GetGroupLogic())
+                                 static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetTeam(),
+                                 static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetGroupLogic())
                            .c_str(),
                    1000);
         }
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_CANNON)
             m_DI.T(L"Under cursor", L"Cannon", 1000);
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_BUILDING) {
-            m_DI.T(L"Under cursor", utils::format(L"Building: 0x%llx", reinterpret_cast<uintptr_t>((void*)m_TraceStopObj)).c_str(), 1000);
+            m_DI.T(L"Under cursor", utils::format(L"Building: 0x%x", reinterpret_cast<uintptr_t>((void*)m_TraceStopObj)).c_str(), 1000);
         }
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_FLYER)
             m_DI.T(L"Under cursor", L"Flyer", 1000);
