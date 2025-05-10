@@ -94,3 +94,9 @@ target_link_options(
     PRIVATE
         ${LINK_OPTIONS}
 )
+
+# Copy the CFG directory
+if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CFG)
+    message(STATUS "Copying the CFG/ directory to " ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY CFG DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif ()
