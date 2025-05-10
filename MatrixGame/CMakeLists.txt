@@ -95,8 +95,48 @@ target_link_options(
         ${LINK_OPTIONS}
 )
 
-# Copy the CFG directory
-if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CFG)
-    message(STATUS "Copying the CFG/ directory to " ${CMAKE_CURRENT_BINARY_DIR})
-    file(COPY CFG DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# Copy the CFG directory from the MatrixGame/
+if (NOT MATRIXGAME_BUILD_DLL)
+    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CFG)
+        message(STATUS "Copying the CFG/ directory to ${CMAKE_CURRENT_BINARY_DIR}")
+        file(COPY CFG DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    endif ()
+endif ()
+
+# Copy the DATA/robots.pkg file from the game
+if (NOT MATRIXGAME_BUILD_DLL)
+    if (NOT MATRIXGAME_PKG_SPACE_RANGERS)
+        set(MATRIXGAME_PKG_SPACE_RANGERS "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Space Rangers HD A War Apart" CACHE PATH "Space Rangers 2 path to copy robots.pkg from.")
+    endif ()
+    option(MATRIXGAME_PKG_BRING_FROM_GAME "Get the robots.pkg file from the game." TRUE)
+    option(MATRIXGAME_PKG_SYMLINK "Create symlink instead of copying(requires admin)." FALSE) # Requires admin privileges on Windows but frees from duplicating 200+ MB.
+
+    # Create DATA directory
+    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/DATA)
+        message(STATUS "Creating directory ${CMAKE_CURRENT_BINARY_DIR}/DATA")
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA)
+    endif ()
+
+    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/DATA/robots.pkg AND MATRIXGAME_PKG_BRING_FROM_GAME)
+        if (EXISTS ${MATRIXGAME_PKG_SPACE_RANGERS}/DATA/robots.pkg)
+            if(MATRIXGAME_PKG_SYMLINK)
+                message(STATUS "Symlinking DATA/robots.pkg file.")
+                file(CREATE_LINK
+                        ${MATRIXGAME_PKG_SPACE_RANGERS}/DATA/robots.pkg
+                        ${CMAKE_CURRENT_BINARY_DIR}/DATA/robots.pkg
+                        SYMBOLIC
+                )
+            else ()
+                message(STATUS "Copying DATA/robots.pkg file.")
+                file(COPY
+                        ${MATRIXGAME_PKG_SPACE_RANGERS}/DATA/robots.pkg
+                        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/DATA
+                )
+            endif ()
+        else()
+            message(STATUS "Space Rangers 2 not found at `${MATRIXGAME_PKG_SPACE_RANGERS}`")
+            message(STATUS "Skipping copying DATA/robots.pkg file.")
+            message(STATUS "You'll need to bring the DATA/robots.pkg file yourself in order to start MatrixGame.exe!")
+        endif()
+    endif ()
 endif ()
