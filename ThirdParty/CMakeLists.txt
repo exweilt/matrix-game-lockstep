@@ -2,6 +2,13 @@ include(ExternalProject)
 
 cmake_policy(SET CMP0097 NEW) # skip updating submodules
 
+# Only define TOOLCHAIN_ARGS if CMAKE_TOOLCHAIN_FILE is set. Needed for linux cross compilation.
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(TOOLCHAIN_ARGS "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_POLICY_VERSION_MINIMUM=3.5")
+else()
+  set(TOOLCHAIN_ARGS "")
+endif()
+
 ExternalProject_Add(zlib-external
   GIT_REPOSITORY https://github.com/madler/zlib
   GIT_TAG        v1.2.11
@@ -9,6 +16,7 @@ ExternalProject_Add(zlib-external
   UPDATE_DISCONNECTED false
   PREFIX         zlib
   CMAKE_ARGS
+    ${TOOLCHAIN_ARGS}
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/zlib
     -DBUILD_SHARED_LIBS=False
   INSTALL_COMMAND
@@ -40,6 +48,7 @@ ExternalProject_Add(libpng-external
   PREFIX         libpng
   DEPENDS        zlib-external
   CMAKE_ARGS
+    ${TOOLCHAIN_ARGS}
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libpng
     -DPNG_SHARED=Off      # don't build shared libs
     -DPNG_TESTS=Off       # don't build tests
