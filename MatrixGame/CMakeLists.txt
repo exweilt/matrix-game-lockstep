@@ -70,8 +70,13 @@ if(MATRIXGAME_BUILD_DLL)
     add_library(MatrixGame SHARED)
     # remove lib prefix from the DLL name (for GCC build)
     set_target_properties(MatrixGame PROPERTIES PREFIX "")
-    add_compile_definitions(BUILD_DLL) # source files should know whether they are built for dll or exe!
 else()
+    set_source_files_properties(
+            src/MatrixFormGame.cpp
+            src/MatrixGame.cpp
+            PROPERTIES
+            COMPILE_DEFINITIONS BUILD_EXE
+    )
     add_executable(MatrixGame)
 endif()
 

@@ -30,6 +30,9 @@ Depending on the build options, the output artifact is either a standalone execu
 Options:
 - `MATRIXGAME_BUILD_DLL` - build DLL [default: `TRUE`]<br>
 - `MATRIXGAME_CHEATS` - enable in-game cheats [default: `TRUE`]
+- `MATRIXGAME_PKG_BRING_FROM_GAME` - if you build EXE then auto copy PKG files from the Space Rangers 2 game [default: `TRUE`]
+- `MATRIXGAME_PKG_SPACE_RANGERS` - if you want to copy PKG file for EXE build this is the path of the game [default: `C:/Program Files (x86)/Steam/steamapps/common/Space Rangers HD A War Apart`]
+- `MATRIXGAME_PKG_SYMLINK` - Symlink the PKG file instead of copying to avoid extra space consumption. Requires admin on Windows! 
 
 There are different approaches to build the project, just choose the one you like.
 

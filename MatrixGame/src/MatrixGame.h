@@ -49,7 +49,7 @@ public:
      * Initializes statics, loads .pkg and .dat files, initializes 3D rendering engine,
      * initializes rendering pipeline, loads map, applies video settings, loads interface.
      *
-     * BUILD_DLL environment variable determines whether to initialize as a standalone executable or as DLL.
+     * BUILD_EXE environment variable determines whether to initialize as a standalone executable or as DLL.
      *
      * @param inst Windows process handle.
      * @param wnd Windows' window handle. Basically an id to the window to draw.

@@ -284,7 +284,7 @@ void CFormMatrixGame::Draw(void) {
 
     if (FLAG(g_Flags, GFLAG_STENCILAVAILABLE))
     {
-#if defined _DEBUG || !defined BUILD_DLL
+#if defined _DEBUG || defined BUILD_EXE
         ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL | D3DCLEAR_TARGET,
                                 D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0));
 #else

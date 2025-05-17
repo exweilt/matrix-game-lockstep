@@ -191,14 +191,13 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     bool stor_cfg_present = false;
     std::wstring stor_cfg_name;
     std::wstring conf_file{FILE_CONFIGURATION_LOCATION}; // generate the .dat file path
+
+    if (lang != nullptr)
     {
-        if (lang != nullptr)
-        {
-            conf_file += lang;
-            conf_file += L"\\";
-        }
-        conf_file += FILE_CONFIGURATION;
+        conf_file += lang;
+        conf_file += L"\\";
     }
+    conf_file += FILE_CONFIGURATION;
 
     if (CFile::FileExist(stor_cfg_name, conf_file.c_str())) {
         stor_cfg.Load(conf_file.c_str());
@@ -290,23 +289,23 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     }
 
     // Init the 3d engine
-#ifdef BUILD_DLL
-    L3GInitAsDLL(
-            inst,
-            *g_MatrixData->BlockGet(L"Config"),
-            L"MatrixGame",
-            L"Matrix Game",
-            wnd,
-            settings.FDirect3D,
-            settings.FD3DDevice
-        );
-
-    g_ScreenX = settings.m_ResolutionX;
-    g_ScreenY = settings.m_ResolutionY;
-#else
+#ifdef BUILD_EXE
     L3GInitAsEXE(inst, *g_MatrixData->BlockGet(L"Config"), L"MatrixGame", L"Matrix Game");
     settings.m_ResolutionX = g_ScreenX;
     settings.m_ResolutionY = g_ScreenY;
+#else
+    L3GInitAsDLL(
+                inst,
+                *g_MatrixData->BlockGet(L"Config"),
+                L"MatrixGame",
+                L"Matrix Game",
+                wnd,
+                settings.FDirect3D,
+                settings.FD3DDevice
+            );
+
+    g_ScreenX = settings.m_ResolutionX;
+    g_ScreenY = settings.m_ResolutionY;
 #endif
 
 
