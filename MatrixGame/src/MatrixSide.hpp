@@ -537,8 +537,8 @@ public:
     void Select(ESelType type, CMatrixMapStatic *object);
     void Reselect();
     void ShowOrderState(void);
-    bool MouseToLand(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
-    CMatrixMapStatic *MouseToLand();
+    static bool GetObjectUnderCursor(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
+    CMatrixMapStatic *GetObjectUnderCursor();
     void OnRButtonDown(const CPoint &mouse);
     void OnRButtonDouble(const CPoint &mouse);
     void OnLButtonDown(const CPoint &mouse);

@@ -565,10 +565,13 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
 
             if (1 /*cbs.calls > 0*/) {
                 DCP();
-                if (ps->GetCurSelGroup()->GetFlyersCnt() > 1 || ps->GetCurSelGroup()->GetRobotsCnt() > 1 ||
-                    (ps->GetCurSelGroup()->GetFlyersCnt() + ps->GetCurSelGroup()->GetRobotsCnt()) > 1) {
+                if (ps->GetCurSelGroup()->GetFlyersCnt() > 1 ||
+                    ps->GetCurSelGroup()->GetRobotsCnt() > 1 ||
+                    (ps->GetCurSelGroup()->GetFlyersCnt() + ps->GetCurSelGroup()->GetRobotsCnt()) > 1)
+                {
                     ps->GetCurSelGroup()->RemoveBuildings();
-                    if (isKeyPressed(KA_SHIFT) && ps->GetCurGroup()) {
+                    if (isKeyPressed(KA_SHIFT) && ps->GetCurGroup())
+                    {
                         CMatrixGroupObject *go = ps->GetCurSelGroup()->m_FirstObject;
                         while (go) {
                             if (ps->GetCurGroup()->FindObject(go->GetObject())) {
@@ -667,8 +670,11 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         }
         else if (status == B_DOWN && key == VK_LBUTTON) {
             DCP();
-            if (CMultiSelection::m_GameSelection == NULL && !g_MatrixMap->GetPlayerSide()->IsArcadeMode() &&
-                !IS_PREORDERING_NOSELECT && !(g_MatrixMap->GetPlayerSide()->m_CurrentAction == BUILDING_TURRET)) {
+            if (CMultiSelection::m_GameSelection == NULL &&
+                !g_MatrixMap->GetPlayerSide()->IsArcadeMode() &&
+                !IS_PREORDERING_NOSELECT &&
+                g_MatrixMap->GetPlayerSide()->m_CurrentAction != BUILDING_TURRET)
+            {
                 int dx = 0, dy = 0;
                 if (IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj) && IS_TRACE_UNIT(g_MatrixMap->m_TraceStopObj)) {
                     dx = 2;

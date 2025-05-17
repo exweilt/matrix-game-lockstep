@@ -995,37 +995,38 @@ void CMatrixMap::LoadSide(CBlockPar &bp) {
     for (int i = 0; i < m_SideCnt; i++)
         new(&m_Side[i]) CMatrixSideUnit();
 
-    int idx = 0;
-    for (int i = 0; i < cnt; i++) {
+    for (int i = 0; i < cnt; i++)
+    {
         int id = bp.ParGetName(i).GetInt();
         const auto name = bp.ParGet(i);
         DWORD color = (DWORD(name.GetStrPar(1, L",").GetInt() & 255) << 16) | (DWORD(name.GetStrPar(2, L",").GetInt() & 255) << 8) |
                       DWORD(name.GetStrPar(3, L",").GetInt() & 255);
         DWORD colorMM = (DWORD(name.GetStrPar(5, L",").GetInt() & 255) << 16) | (DWORD(name.GetStrPar(6, L",").GetInt() & 255) << 8) |
-                        DWORD(name.GetStrPar(7, L",").GetInt() & 255);
+                        DWORD(name.GetStrPar(7, L",").GetInt() & 255); // Color on minimap
 
-        if (id == 0) {
+        if (id == 0)
+        {
             m_NeutralSideColor = color;
             m_NeutralSideColorMM = colorMM;
-            continue;
         }
+        else
+        {
+            const int side_idx = i - 1;
+            ASSERT(side_idx >= 0 && side_idx < m_SideCnt);
 
-        m_Side[idx].m_Id = id;
-
-        m_Side[idx].m_Constructor->SetSide(id);
-        m_Side[idx].m_Color = color;
-        m_Side[idx].m_ColorMM = colorMM;
-        m_Side[idx].m_ColorTexture = NULL;
-        m_Side[idx].m_Name = name.GetStrPar(0, L",");
-        ++idx;
-
-        if (id == PLAYER_SIDE) {
-            m_PlayerSide = m_Side;
-            m_Side->InitPlayerSide();
+            m_Side[side_idx].m_Id = id;
+            m_Side[side_idx].m_Constructor->SetSide(id);
+            m_Side[side_idx].m_Color = color;
+            m_Side[side_idx].m_ColorMM = colorMM;
+            m_Side[side_idx].m_ColorTexture = NULL;
+            m_Side[side_idx].m_Name = name.GetStrPar(0, L",");
+            if (id == PLAYER_SIDE)
+            {
+                m_PlayerSide = m_Side;
+                m_Side[side_idx].InitPlayerSide();
+            }
         }
     }
-
-    /*m_PlayerSide = GetSideById(PLAYER_SIDE);*/
 }
 
 void CMatrixMap::WaterClear() {

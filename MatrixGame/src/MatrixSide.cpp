@@ -627,7 +627,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE)
         return;
@@ -773,7 +773,7 @@ void CMatrixSideUnit::OnLButtonDouble(
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE ||
         !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == PLAYER_SIDE))
@@ -813,7 +813,7 @@ void CMatrixSideUnit::OnLButtonUp(const CPoint &) {
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE)
         return;
@@ -835,7 +835,7 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     }
     DCP();
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
     DCP();
 
     int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
@@ -906,7 +906,7 @@ void CMatrixSideUnit::OnRButtonDouble(const CPoint &) {
     //   if(m_CurrentAction == BUILDING_TURRET)
     //       return;
 
-    //   CMatrixMapStatic* pObject = MouseToLand();
+    //   CMatrixMapStatic* pObject = GetObjectUnderCursor();
     //   if(pObject == TRACE_STOP_NONE) return;
     //
     // 	if(pObject == TRACE_STOP_LANDSCAPE){
@@ -1154,7 +1154,7 @@ void CMatrixSideUnit::ShowOrderState() {
         RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_PROTECT_ON);
 }
 
-bool CMatrixSideUnit::MouseToLand(const CPoint &, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY) {
+bool CMatrixSideUnit::GetObjectUnderCursor(const CPoint &, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY) {
     DTRACE();
     if (g_MatrixMap->m_TraceStopObj) {
         *pMapX = int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE);
@@ -1166,7 +1166,7 @@ bool CMatrixSideUnit::MouseToLand(const CPoint &, float *pWorldX, float *pWorldY
     return FALSE;
 }
 
-CMatrixMapStatic *CMatrixSideUnit::MouseToLand() {
+CMatrixMapStatic *CMatrixSideUnit::GetObjectUnderCursor() {
     return g_MatrixMap->m_TraceStopObj;
 }
 
