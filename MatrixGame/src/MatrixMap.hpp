@@ -11,6 +11,7 @@
 #include "MatrixGame.h"
 
 #include "CStorage.hpp"
+#include "Network/StateManager.hpp"
 
 #include <vector>
 
@@ -74,6 +75,7 @@
 #include "MatrixObjectRobot.hpp"
 #include "MatrixFlyer.hpp"
 #include "MatrixTransition.hpp"
+#include "Network/StateManager.hpp"
 
 inline bool CMatrixMapStatic::FitToMask(DWORD mask) {
     if (IsLiveRobot())
@@ -242,7 +244,7 @@ struct SGroupVisibility {
 #define MMFLAG_TERRON_DEAD  SETBIT(26)
 #define MMFLAG_TERRON_ONMAP SETBIT(27)
 
-#define MMFLAG_SPECIAL_BROKEN SETBIT(28)
+#define MMFLAG_SPECIAL_BROKEN SETBIT(28) // Special is a type of object that when broken leads to victory on some maps.
 
 struct SSkyTex {
     CTextureManaged *tex;
@@ -559,7 +561,7 @@ public:
     DWORD GetSideColor(int id);
     DWORD GetSideColorMM(int id);
     CTexture *GetSideColorTexture(int id);
-    inline CTexture *GetPlayerSideColorTexture(void) { return m_PlayerSide->m_ColorTexture; };
+    //inline CTexture *GetPlayerSideColorTexture(void) { return m_PlayerSide->m_ColorTexture; };
     void ClearSide(void);
 
     void LoadSide(CBlockPar &bp);
@@ -567,6 +569,9 @@ public:
 
     CMatrixSideUnit *GetSideById(int id);
     CMatrixSideUnit *GetPlayerSide(void) { return m_PlayerSide; };
+    [[nodiscard]] CMatrixSideUnit *GetControllableSide() const {
+        return m_Side + controllable_side_id - 1;
+    };
 
     void WaterClear(void);
     void WaterInit(void);

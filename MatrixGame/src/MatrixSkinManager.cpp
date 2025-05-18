@@ -83,6 +83,8 @@ const SSkin *CSkinManager::GetSkin(const wchar *textures, DWORD gsp) {
             sk.m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, temp.c_str());
 
             sk.m_Tex->Preload();
+            // gsp = GSP_SIDE_NOALPHA;
+            // ATTENTION
             if ((sk.m_Tex->Flags() & TF_ALPHABLEND) == 0) {
                 if (gsp == GSP_SIDE)
                     gsp = GSP_SIDE_NOALPHA;

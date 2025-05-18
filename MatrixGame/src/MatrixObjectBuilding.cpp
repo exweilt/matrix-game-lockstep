@@ -292,8 +292,8 @@ bool CMatrixBuilding::Damage(
 
     bool friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
     float damagek =
-            (friendly_fire || m_Side != PLAYER_SIDE) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == PLAYER_SIDE)
+            (friendly_fire || m_Side != controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
+    if (friendly_fire && m_Side == controllable_side_id)
         damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
 
     int idx = Weap2Index(weap);
@@ -322,7 +322,7 @@ bool CMatrixBuilding::Damage(
         }
     }
 
-    if (m_Side == PLAYER_SIDE && !friendly_fire) {
+    if (m_Side == controllable_side_id && !friendly_fire) {
         if (m_UnderAttackTime == 0) {
             int ss = IRND(3);
             if (ss == 0)
@@ -336,7 +336,7 @@ bool CMatrixBuilding::Damage(
     }
 
     if (m_HitPoint <= 0) {
-        if (m_Side == PLAYER_SIDE) {
+        if (m_Side == controllable_side_id) {
             bool bu = FRND(1) < 0.7f;
             if (bu) {
                 if (m_Kind == BUILDING_BASE) {
@@ -373,7 +373,7 @@ void CMatrixBuilding::OnOutScreen(void) {}
 void CMatrixBuilding::Takt(int cms) {
     DTRACE();
 
-    if (m_Side == PLAYER_SIDE && FLAG(m_ObjectState, BUILDING_NEW_INCOME)) {
+    if (m_Side == controllable_side_id && FLAG(m_ObjectState, BUILDING_NEW_INCOME)) {
         RESETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
         switch (m_Kind) {
             case BUILDING_TITAN:
@@ -393,7 +393,7 @@ void CMatrixBuilding::Takt(int cms) {
                         L"b10", D3DXVECTOR3(GetGeoCenter().x, GetGeoCenter().y, GetGeoCenter().z + 40.0f), 0xFFFFFFFF);
                 break;
             case BUILDING_BASE: {
-                int fu = g_MatrixMap->GetPlayerSide()->GetResourceForceUp();
+                int fu = g_MatrixMap->GetControllableSide()->GetResourceForceUp();
                 int prihod = RESOURCES_INCOME_BASE * fu / 100;
                 CMatrixEffect::CreateBillboardScore(utils::format(L"a%d", prihod).c_str(), m_TopPoint, 0xFFFFFFFF);
                 // if(m_BaseRCycle == 0){
@@ -1137,7 +1137,7 @@ ECaptureStatus CMatrixBuilding::Capture(CMatrixRobotAI *by) {
 
                 if (m_TrueColor.m_ColoredCnt == MAX_ZAHVAT_POINTS) {
                     int side = by->GetSide();
-                    if (side == PLAYER_SIDE)
+                    if (side == controllable_side_id)
                         CSound::Play(S_ENEMY_FACTORY_CAPTURED);
                     m_Side = side;
                     m_BS.ClearStack();
@@ -1185,7 +1185,7 @@ ECaptureStatus CMatrixBuilding::Capture(CMatrixRobotAI *by) {
                 m_InCaptureNextTimePaint = g_MatrixMap->GetTime() + g_Config.m_CaptureTimePaint;
 
                 if (m_TrueColor.m_ColoredCnt == 0) {
-                    if (m_Side == PLAYER_SIDE)
+                    if (m_Side == controllable_side_id)
                         CSound::Play(S_PLAYER_FACTORY_CAPTURED);
 
                     m_TrueColor.m_Color = 0;
@@ -1321,8 +1321,8 @@ void CMatrixBuilding::ReleaseMe(void) {
 
     DeletePlacesShow();
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-    if (GetSide() == PLAYER_SIDE) {
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+    if (GetSide() == controllable_side_id) {
         if (ps->m_ActiveObject == this) {
             ps->PLDropAllActions();
         }
@@ -1600,7 +1600,7 @@ void CBuildStack::TickTimer(int ms) {
         return;
     }
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     m_Timer += ms;
 
     if (m_Items && m_Top->IsRobot()) {
@@ -1619,7 +1619,7 @@ void CBuildStack::TickTimer(int ms) {
             m_PB.KillClone(PBC_CLONE1);
         }
         if (m_Timer >= g_Config.m_Timings[UNIT_ROBOT] && m_ParentBase->m_State == BASE_CLOSED) {
-            if (m_Top->GetSide() == PLAYER_SIDE && !FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE)) {
+            if (m_Top->GetSide() == controllable_side_id && !FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE)) {
                 if (g_MatrixMap->Rnd(0, 1)) {
                     CSound::Play(S_ROBOT_BUILD_END, SL_ALL);
                 }
@@ -1633,7 +1633,7 @@ void CBuildStack::TickTimer(int ms) {
 
             // produce robot, del from stack
             // STUB:
-            if (m_ParentBase->GetSide() == PLAYER_SIDE) {
+            if (m_ParentBase->GetSide() == controllable_side_id) {
                 g_IFaceList->DeleteStackIcon(1, m_ParentBase);
             }
             // m_ParentBase->m_BusyFlag.SetBusy((CMatrixRobotAI*)m_Top); // do not busy flag while building robot
@@ -1708,7 +1708,7 @@ void CBuildStack::TickTimer(int ms) {
             m_PB.KillClone(PBC_CLONE1);
         }
         if (m_Timer >= g_Config.m_Timings[UNIT_TURRET]) {
-            if (m_Top->GetSide() == PLAYER_SIDE) {
+            if (m_Top->GetSide() == controllable_side_id) {
                 if (m_Top->AsCannon()->m_Num == 1) {
                     CSound::Play(S_TURRET_BUILD_0, SL_ALL);
                 }
@@ -1736,9 +1736,9 @@ void CBuildStack::TickTimer(int ms) {
             }
 
             // STUB:
-            if (m_ParentBase->GetSide() == PLAYER_SIDE) {
+            if (m_ParentBase->GetSide() == controllable_side_id) {
                 g_IFaceList->DeleteStackIcon(1, m_ParentBase);
-                if (g_MatrixMap->GetPlayerSide()->m_ActiveObject == m_ParentBase) {
+                if (g_MatrixMap->GetControllableSide()->m_ActiveObject == m_ParentBase) {
                     g_IFaceList->CreateDynamicTurrets(m_ParentBase);
                 }
             }
@@ -1772,7 +1772,7 @@ void CBuildStack::AddItem(CMatrixMapStatic *item) {
         LIST_ADD(item, m_Top, m_Bottom, m_PrevStackItem, m_NextStackItem);
         m_Items++;
         // STUB:
-        if (item->GetSide() == PLAYER_SIDE) {
+        if (item->GetSide() == controllable_side_id) {
             g_IFaceList->CreateStackIcon(m_Items, m_ParentBase, item);
         }
     }
@@ -1785,7 +1785,7 @@ int CBuildStack::DeleteItem(int no) {
             m_PB.KillClone(PBC_CLONE1);
         }
         // STUB:
-        if (m_ParentBase->GetSide() == PLAYER_SIDE) {
+        if (m_ParentBase->GetSide() == controllable_side_id) {
             g_IFaceList->DeleteStackIcon(no, m_ParentBase);
         }
 
@@ -1885,7 +1885,7 @@ int CBuildStack::GetRobotsCnt(void) const {
 
 void CBuildStack::ClearStack() {
     while (DeleteItem(1)) {}
-    if (m_ParentBase->m_Side == PLAYER_SIDE) {
+    if (m_ParentBase->m_Side == controllable_side_id) {
         CInterface *ifs = g_IFaceList->m_First;
         while (ifs) {
             if (ifs->m_strName == IF_MAIN) {

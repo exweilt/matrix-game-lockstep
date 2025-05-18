@@ -29,6 +29,9 @@ namespace Base {
 
 // lint -e1401
 
+/**
+ * @brief Point in screen(?) space.
+ */
 class CPoint {
 public:
     int x, y;

@@ -900,26 +900,31 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         {
             // Camera & Select
             ms = CMatrixMapStatic::GetFirstLogic();
-            for (; ms; ms = ms->GetNextLogic()) {
-                if (ms->GetObjectType() == OBJECT_TYPE_BUILDING) {
+            for (; ms; ms = ms->GetNextLogic())
+            {
+                if (ms->GetObjectType() == OBJECT_TYPE_BUILDING)
+                {
                     CMatrixBuilding *bu = (CMatrixBuilding *)ms;
-                    if (bu->m_Kind == BUILDING_BASE && bu->GetSide() == PLAYER_SIDE) {
+                    if (bu->m_Kind == BUILDING_BASE && bu->GetSide() == controllable_side_id)
+                    {
                         float si = TableSin(m_CameraAngle);
                         float co = TableCos(m_CameraAngle);
 
                         D3DXVECTOR2 bup(bu->m_Pos.x - 100 * si, bu->m_Pos.y + 100 * co);
 
-                        if (ic >= 0) {
+                        if (ic >= 0)
+                        {
                             auto tmp = bup - cpp;
-                            if (D3DXVec2LengthSq(&tmp) < POW2(300)) {
-                                g_MatrixMap->GetPlayerSide()->Select(BUILDING, ms);
+                            if (D3DXVec2LengthSq(&tmp) < POW2(300))
+                            {
+                                g_MatrixMap->GetControllableSide()->Select(BUILDING, ms);
                                 break;
                             }
 
                             continue;
                         }
 
-                        g_MatrixMap->GetPlayerSide()->Select(BUILDING, ms);
+                        g_MatrixMap->GetControllableSide()->Select(BUILDING, ms);
                         g_MatrixMap->m_Camera.SetXYStrategy(bup);
 
                         break;
@@ -1608,7 +1613,7 @@ void CMatrixMap::StaticPrepare2(void* robots) {
             r->MapPosCalc();
 
             // use a group: item.group
-            if (side != PLAYER_SIDE) {
+            if (side != controllable_side_id) {
                 if (item.group >= 1 && item.group <= 3)
                     r->SetTeam(item.group - 1);
                 else

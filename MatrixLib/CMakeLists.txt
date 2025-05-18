@@ -60,6 +60,7 @@ set(BASE_HEADERS
     Base/Pack.hpp
     Base/Registry.hpp
     Base/Tracer.hpp
+    Base/Types.hpp
 )
 
 set(BITMAP_SOURCES

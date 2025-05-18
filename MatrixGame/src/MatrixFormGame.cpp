@@ -554,7 +554,8 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
 
     if (status == B_UP && key == VK_LBUTTON) {
         DCP();
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+        // CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
         if (CMultiSelection::m_GameSelection) {
             SCallback cbs;
             cbs.mp = CPoint(-1, -1);
@@ -566,9 +567,11 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
             if (1 /*cbs.calls > 0*/) {
                 DCP();
                 if (ps->GetCurSelGroup()->GetFlyersCnt() > 1 || ps->GetCurSelGroup()->GetRobotsCnt() > 1 ||
-                    (ps->GetCurSelGroup()->GetFlyersCnt() + ps->GetCurSelGroup()->GetRobotsCnt()) > 1) {
+                    (ps->GetCurSelGroup()->GetFlyersCnt() + ps->GetCurSelGroup()->GetRobotsCnt()) > 1)
+                {
                     ps->GetCurSelGroup()->RemoveBuildings();
-                    if (isKeyPressed(KA_SHIFT) && ps->GetCurGroup()) {
+                    if (isKeyPressed(KA_SHIFT) && ps->GetCurGroup())
+                    {
                         CMatrixGroupObject *go = ps->GetCurSelGroup()->m_FirstObject;
                         while (go) {
                             if (ps->GetCurGroup()->FindObject(go->GetObject())) {
@@ -663,12 +666,15 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         DCP();
         if (status == B_DOWN && key == VK_RBUTTON) {
             DCP();
-            g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
         }
         else if (status == B_DOWN && key == VK_LBUTTON) {
             DCP();
-            if (CMultiSelection::m_GameSelection == NULL && !g_MatrixMap->GetPlayerSide()->IsArcadeMode() &&
-                !IS_PREORDERING_NOSELECT && !(g_MatrixMap->GetPlayerSide()->m_CurrentAction == BUILDING_TURRET)) {
+            // return;
+            if (CMultiSelection::m_GameSelection == NULL && !g_MatrixMap->GetControllableSide()->IsArcadeMode() &&
+                !IS_PREORDERING_NOSELECT && g_MatrixMap->GetControllableSide()->m_CurrentAction != BUILDING_TURRET)
+            {
                 int dx = 0, dy = 0;
                 if (IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj) && IS_TRACE_UNIT(g_MatrixMap->m_TraceStopObj)) {
                     dx = 2;
@@ -685,7 +691,8 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                                                              TRACE_ROBOT | TRACE_BUILDING, selcallback, (uintptr_t)&cbs);
                 }
             }
-            g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_RBUTTON) {
             DCP();
@@ -698,7 +705,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         }
         else if (status == B_DOUBLE && key == VK_LBUTTON) {
             DCP();
-            g_MatrixMap->GetPlayerSide()->OnLButtonDouble(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonDouble(CPoint(x, y));
         }
         else if (status == B_DOUBLE && key == VK_RBUTTON) {
             DCP();
@@ -870,7 +877,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             }
         }
         else {
-            CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+            CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
             if (!FLAG(g_IFaceList->m_IfListFlags, ORDERING_MODE) /*!IS_PREORDERING_NOSELECT*/) {
                 //Если мы не в режиме приказа
 
@@ -996,7 +1003,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                             CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
                             for (; ms; ms = ms->GetNextLogic()) {
                                 if (ms == ps->m_ActiveObject && ms->IsLiveBuilding() &&
-                                    ms->AsBuilding()->m_Side == PLAYER_SIDE) {
+                                    ms->AsBuilding()->m_Side == controllable_side_id) {
                                     ms->AsBuilding()->CreatePlacesShow();
                                     break;
                                 }
@@ -1158,7 +1165,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == PLAYER_SIDE) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1188,7 +1195,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == PLAYER_SIDE) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1287,7 +1294,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 prev_key_time = g_MatrixMap->GetTime();
 
                 while (o) {
-                    if (o->GetSide() == PLAYER_SIDE) {
+                    if (o->GetSide() == controllable_side_id) {
                         if (o->IsLiveRobot() && o->AsRobot()->GetCtrlGroup() == vk) {
                             if (!prev_unselected) {
                                 prev_unselected = true;
@@ -1361,7 +1368,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             sb.m_Weapon[4].m_Unit.m_nKind = RUK_WEAPON_MORTAR;
             sb.m_Head.m_nKind = RUK_HEAD_BLOCKER;
 
-            int side_id = PLAYER_SIDE;
+            int side_id = controllable_side_id;
             CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
 
             if (side->GetRobotsCnt() + side->GetRobotsInStack() >= side->GetMaxSideRobots()) {

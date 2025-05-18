@@ -60,7 +60,7 @@ void CIFaceCounter::DivRes() {
 void CIFaceCounter::CheckUp() {
     // check for robot_summ * m_Counter <= player_res
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     // SPrice price;
     // ps->m_ConstructPanel->m_Configs[ps->m_ConstructPanel->m_CurrentConfig].CalcConfigPrice(&price);
     int resources[MAX_RESOURCES];

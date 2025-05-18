@@ -325,6 +325,7 @@ void CMatrixRobot::RNeed(dword need) {
 
                 name = path.c_str();
 
+                // ATTENTION
                 if (m_Side != PLAYER_SIDE) {
                     name_e = path + L"_e";
                     if (CFile::FileExist(name_e, name_e.c_str(), L"dds~png")) {
@@ -534,7 +535,8 @@ void CMatrixRobot::RNeed(dword need) {
                 m._12 = -th.x;
 
                 if (g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this &&
-                    m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC) {
+                    m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC)
+                {
                     p = g_MatrixMap->GetPlayerSide()->CorrectArcadedRobotArmorP(p, this);
                 }
 
@@ -1277,9 +1279,10 @@ bool CMatrixRobot::Carry(CMatrixFlyer *cargo, bool quick_connect) {
 }
 
 void CMatrixRobot::ClearSelection(void) {
-    if (g_MatrixMap->GetPlayerSide()->m_CurrSel == ROBOT_SELECTED &&
-        g_MatrixMap->GetPlayerSide()->m_ActiveObject == this)
-        g_MatrixMap->GetPlayerSide()->Select(NOTHING, NULL);
+    if (g_MatrixMap->GetControllableSide()->m_CurrSel == ROBOT_SELECTED && g_MatrixMap->GetSideById(2)->m_ActiveObject == this)
+    {
+        g_MatrixMap->GetControllableSide()->Select(NOTHING, NULL);
+    }
 }
 
 void CMatrixRobot::SwitchAnimation(EAnimation a) {

@@ -206,7 +206,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
     Const = pbp1->ParGet(L"ConstPresent").GetInt();
 
     if (Const) {
-        g_MatrixMap->GetPlayerSide()->m_Constructor->SetRenderProps(
+        g_MatrixMap->GetControllableSide()->m_Constructor->SetRenderProps(
                 (float)pbp1->ParGet(L"ConstX").GetDouble() + m_xPos, (float)pbp1->ParGet(L"ConstY").GetDouble() + m_yPos,
                 pbp1->ParGet(L"ConstWidth").GetInt(), pbp1->ParGet(L"ConstHeight").GetInt());
     }
@@ -251,16 +251,16 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
                     pButton->m_strName == IF_BASE_PILON3 || pButton->m_strName == IF_BASE_PILON4 ||
                     pButton->m_strName == IF_BASE_PILON5 || pButton->m_strName == IF_BASE_HEAD_EMPTY ||
                     pButton->m_strName == IF_BASE_WEAPON_EMPTY) {
-                    FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetPlayerSide()->m_Constructor,
+                    FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetControllableSide()->m_Constructor,
                          CConstructor::RemoteOperateUnit);
-                    FSET(ON_FOCUS, pButton, g_MatrixMap->GetPlayerSide()->m_ConstructPanel,
+                    FSET(ON_FOCUS, pButton, g_MatrixMap->GetControllableSide()->m_ConstructPanel,
                          CConstructorPanel::RemoteFocusElement);
-                    FSET(ON_UN_FOCUS, pButton, g_MatrixMap->GetPlayerSide()->m_ConstructPanel,
+                    FSET(ON_UN_FOCUS, pButton, g_MatrixMap->GetControllableSide()->m_ConstructPanel,
                          CConstructorPanel::RemoteUnFocusElement);
                     pButton->m_nId = POPUP_REACTION_ELEMENT_ID;
                 }
                 else if (pButton->m_strName == IF_BASE_CONST_BUILD) {
-                    FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetPlayerSide()->m_Constructor,
+                    FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetControllableSide()->m_Constructor,
                          CConstructor::RemoteBuild);
                 }
                 else if (pButton->m_strName == IF_BASE_CONST_CANCEL) {
@@ -275,7 +275,7 @@ bool CInterface::Load(CBlockPar &bp, const wchar *name) {
                 FSET(ON_UN_PRESS, pButton, &g_MatrixMap->m_Minimap, CMinimap::ButtonZoomOut);
             }
             else if (pButton->m_strName == IF_BUILD_RO) {
-                FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetPlayerSide(), CMatrixSideUnit::PlayerAction);
+                FSET(ON_UN_PRESS, pButton, g_MatrixMap->GetControllableSide(), CMatrixSideUnit::PlayerAction);
             }
             else if (pButton->m_strName == IF_AORDER_FROBOT_ON) {
                 FSET(ON_UN_PRESS, pButton, g_IFaceList, CIFaceList::PlayerAction);
@@ -982,10 +982,10 @@ void CInterface::BeforeRender(void) {
                 pObjectsList = pObjectsList->m_NextElement;
                 DCP();
             }
-            if (g_MatrixMap->GetPlayerSide()->m_CurrSel == BASE_SELECTED &&
-                g_MatrixMap->GetPlayerSide()->m_ConstructPanel->IsActive()) {
+            if (g_MatrixMap->GetControllableSide()->m_CurrSel == BASE_SELECTED &&
+                g_MatrixMap->GetControllableSide()->m_ConstructPanel->IsActive()) {
                 DCP();
-                g_MatrixMap->GetPlayerSide()->m_Constructor->BeforeRender();
+                g_MatrixMap->GetControllableSide()->m_Constructor->BeforeRender();
             }
             DCP();
         }
@@ -1006,9 +1006,9 @@ void CInterface::Render() {
             if (pObjectsList->GetVisibility()) {
                 pObjectsList->Render(pObjectsList->m_VisibleAlpha);
                 if (pObjectsList->m_strName == IF_BASE_CONSTRUCTION_RIGHT) {
-                    if (g_MatrixMap->GetPlayerSide()->m_CurrSel == BASE_SELECTED &&
-                        g_MatrixMap->GetPlayerSide()->m_ConstructPanel->IsActive()) {
-                        g_MatrixMap->GetPlayerSide()->m_Constructor->Render();
+                    if (g_MatrixMap->GetControllableSide()->m_CurrSel == BASE_SELECTED &&
+                        g_MatrixMap->GetControllableSide()->m_ConstructPanel->IsActive()) {
+                        g_MatrixMap->GetControllableSide()->m_Constructor->Render();
                     }
                 }
             }
@@ -1145,7 +1145,7 @@ bool CInterface::OnMouseLBDown() {
                         pObjectsList->OnMouseLBDown();
                     }
                     else if (IS_GROUP_ICON(pObjectsList->m_nId)) {
-                        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+                        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
                         if (Input::isKeyPressed(KA_SHIFT))
                         {
@@ -1153,7 +1153,7 @@ bool CInterface::OnMouseLBDown() {
                             ps->RemoveObjectFromSelectedGroup(o);
                         }
                         else {
-                            if (g_MatrixMap->GetPlayerSide()->GetCurSelNum() == pObjectsList->m_nId - GROUP_ICONS_ID) {
+                            if (g_MatrixMap->GetControllableSide()->GetCurSelNum() == pObjectsList->m_nId - GROUP_ICONS_ID) {
                                 if (ps->GetCurSelObject() &&
                                     ps->GetCurSelObject()->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
                                     ps->CreateGroupFromCurrent(ps->GetCurSelObject());
@@ -1166,14 +1166,14 @@ bool CInterface::OnMouseLBDown() {
                                 }
                             }
                             else {
-                                g_MatrixMap->GetPlayerSide()->SetCurSelNum(pObjectsList->m_nId - GROUP_ICONS_ID);
+                                g_MatrixMap->GetControllableSide()->SetCurSelNum(pObjectsList->m_nId - GROUP_ICONS_ID);
                             }
                         }
                         return TRUE;
                     }
                     else if (IS_STACK_ICON(pObjectsList->m_nId)) {
                         CIFaceElement *ne = pObjectsList->m_NextElement;
-                        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+                        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
                         ((CMatrixBuilding *)ps->m_ActiveObject)
                                 ->m_BS.DeleteItem((pObjectsList->m_nId - STACK_ICON) + 1);
                         pObjectsList = ne;
@@ -1182,7 +1182,7 @@ bool CInterface::OnMouseLBDown() {
                     else if (pObjectsList->m_strName == IF_MAP_PANEL) {
                         if (IS_PREORDERING_NOSELECT) {
                             RESETFLAG(g_IFaceList->m_IfListFlags, MINIMAP_BUTTON_DOWN);
-                            g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(0, 0));
+                            g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(0, 0));
                         }
                         else {
                             SETFLAG(g_IFaceList->m_IfListFlags, MINIMAP_BUTTON_DOWN);
@@ -1219,7 +1219,7 @@ bool CInterface::OnMouseRBDown() {
             if (pObjectsList->GetVisibility()) {
                 if (pObjectsList->ElementCatch(g_MatrixMap->m_Cursor.GetPos())) {
                     if (pObjectsList->m_strName == IF_MAP_PANEL) {
-                        g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(0, 0));
+                        g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(0, 0));
                         if (IS_PREORDERING_NOSELECT) {
                             SETFLAG(g_IFaceList->m_IfListFlags, MINIMAP_BUTTON_DOWN);
                         }
@@ -1271,7 +1271,7 @@ void CInterface::Init(void) {
 
     int nC = 0;
     CIFaceElement *pElement = m_FirstElement;
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     if (m_AlwaysOnTop) {
         m_VisibleAlpha = IS_VISIBLEA;
@@ -1411,7 +1411,7 @@ void CInterface::Init(void) {
             }
 
             if (work_group) {
-                g_MatrixMap->GetSideById(PLAYER_SIDE)->ShowOrderState();
+                g_MatrixMap->GetSideById(controllable_side_id)->ShowOrderState();
                 if (gsel) {
                     int bombers_cnt = 0;
                     int repairers_cnt = 0;
@@ -2084,7 +2084,7 @@ void CInterface::Init(void) {
                 }
                 else if (player_side->m_ConstructPanel->IsActive() &&
                          (pElement->m_strName == IF_BASE_WARNING1 || pElement->m_strName == IF_BASE_WARNING_LABEL)) {
-                    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+                    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
                     if (ps->GetRobotsCnt() + ps->GetRobotsInStack() >= ps->GetMaxSideRobots())
                         pElement->SetVisibility(true);
                 }
@@ -3127,7 +3127,7 @@ CIFaceStatic *CInterface::CreateStaticFromImage(float x, float y, float z, const
 }
 
 void CInterface::LogicTakt(int ms) {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (g_IFaceList->m_FocusedInterface == this) {
         if (FLAG(m_InterfaceFlags, (INTERFACE_SLIDE_LEFT | INTERFACE_SLIDE_RIGHT))) {
             SlideStep();
@@ -3524,7 +3524,7 @@ void CIFaceList::LogicTakt(int ms) {
     }
     ShowInterface();
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     // Cursor logic
     if (/*если мы в аркадном режиме*/ ps->IsArcadeMode() && ps->GetArcadedObject()->IsLiveRobot()) {
@@ -3573,7 +3573,7 @@ void CIFaceList::LogicTakt(int ms) {
                 if (/*под прицелом находится не игроковское здание*/ IS_TRACE_STOP_OBJECT(
                             g_MatrixMap->m_TraceStopObj) &&
                     g_MatrixMap->m_TraceStopObj->GetObjectType() == OBJECT_TYPE_BUILDING &&
-                    g_MatrixMap->m_TraceStopObj->GetSide() != PLAYER_SIDE) {
+                    g_MatrixMap->m_TraceStopObj->GetSide() != controllable_side_id) {
                     //устанавливаем курсор CROSS_RED
                     g_MatrixMap->m_Cursor.Select(CURSOR_CROSS_RED);
                 }
@@ -3598,10 +3598,11 @@ void CIFaceList::LogicTakt(int ms) {
 void CIFaceList::CreateWeaponDynamicStatics() {
     DTRACE();
     DeleteWeaponDynamicStatics();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     if (!FLAG(m_IfListFlags, SINGLE_MODE) && !player_side->IsArcadeMode())
         return;
+    return;
     if ((player_side->GetCurGroup()->m_FirstObject &&
          player_side->GetCurGroup()->m_FirstObject->GetObject()->GetObjectType() != OBJECT_TYPE_ROBOTAI))
         return;
@@ -3700,7 +3701,7 @@ void CIFaceList::CreateWeaponDynamicStatics() {
 
 void CIFaceList::DeleteWeaponDynamicStatics() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     if (!(player_side))
         return;
@@ -3727,7 +3728,7 @@ void CIFaceList::DeleteWeaponDynamicStatics() {
 void CIFaceList::CreateItemPrice(int *price) {
     DTRACE();
     DeleteItemPrice();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     CInterface *interfaces = m_First;
 
     int *res = price;
@@ -3779,7 +3780,7 @@ void CIFaceList::CreateItemPrice(int *price) {
 
 void CIFaceList::DeleteItemPrice() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     CInterface *interfaces = m_First;
     while (interfaces) {
@@ -3802,7 +3803,7 @@ void CIFaceList::DeleteItemPrice() {
 void CIFaceList::CreateSummPrice(int multiplier) {
     DTRACE();
     DeleteSummPrice();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     CInterface *interfaces = m_First;
 
@@ -3884,7 +3885,7 @@ void CIFaceList::CreateSummPrice(int multiplier) {
 
 void CIFaceList::DeleteSummPrice() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     CInterface *interfaces = m_First;
     while (interfaces) {
@@ -3982,7 +3983,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
         return;
 
     CIFaceElement *element = (CIFaceElement *)object;
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     if (element->m_strName == IF_MAIN_MENU_BUTTON) {
         g_MatrixMap->EnterDialogMode(TEMPLATE_DIALOG_MENU);
@@ -4151,7 +4152,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
 
 void CIFaceList::CreateGroupSelection(CInterface *iface) {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    // CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     int sel_objs = 9;
 
     float x = 225, y = 49, z = 0.000001f;
@@ -4182,7 +4183,7 @@ void CIFaceList::CreateGroupSelection(CInterface *iface) {
 
 void CIFaceList::DeleteGroupSelection() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     CMatrixMapStatic *so = CMatrixMapStatic::GetFirstLogic();
 
@@ -4216,7 +4217,7 @@ void CIFaceList::DeleteGroupSelection() {
 }
 void CIFaceList::DeleteProgressBars(CMatrixMapStatic *from) {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     if (!player_side->GetCurGroup()) {
         return;
     }
@@ -4259,8 +4260,9 @@ void CIFaceList::DeleteProgressBars(CMatrixMapStatic *from) {
 
 void CIFaceList::CreateGroupIcons() {
     DTRACE();
+    //return;
     DeleteGroupIcons();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     if (!player_side->GetCurGroup()) {
         return;
     }
@@ -4347,7 +4349,7 @@ void CIFaceList::CreateGroupIcons() {
 
 void CIFaceList::DeleteGroupIcons() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     CMatrixMapStatic *so = CMatrixMapStatic::GetFirstLogic();
 
@@ -4371,7 +4373,8 @@ void CIFaceList::DeleteGroupIcons() {
 
 void CIFaceList::CreatePersonal() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    //return;
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     if (!player_side->GetCurGroup()) {
         return;
     }
@@ -4470,7 +4473,7 @@ void CIFaceList::CreatePersonal() {
 
 void CIFaceList::DeletePersonal() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     // icon
 
@@ -4511,7 +4514,7 @@ void CIFaceList::DeletePersonal() {
 
 void CIFaceList::CreateOrdersGlow(CInterface *iface) {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     int orders = 6;
 
     float x = 419, y = 47, z = 0.0000001f;
@@ -4537,7 +4540,7 @@ void CIFaceList::CreateOrdersGlow(CInterface *iface) {
 
 void CIFaceList::ResetOrderingMode() {
     DTRACE();
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (ps->m_ActiveObject && ps->m_ActiveObject->IsBuilding()) {
         ((CMatrixBuilding *)ps->m_ActiveObject)->DeletePlacesShow();
     }
@@ -4769,7 +4772,7 @@ void CIFaceList::DeleteStackIcon(int num, CMatrixBuilding *base) {
 }
 
 void CIFaceList::ConstructorButtonsInit() {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (!ps)
         return;
 
@@ -5024,7 +5027,7 @@ bool CIFaceList::CorrectCoordinates(int screen_width, int screen_height, int &po
 
 void CIFaceList::AddHintReplacements(const std::wstring &element_name) {
     CBlockPar *repl = g_MatrixData->BlockGet(PAR_REPLACE);
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     if (element_name == L"thz") {
         int base_i, fa_i;
@@ -5163,7 +5166,7 @@ bool CIFaceList::CheckShowHintLogic(const std::wstring &element_name) {
 
 void __stdcall CIFaceList::JumpToBuilding(void*)
 {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     if (ps->m_CurrSel == BUILDING_SELECTED ||
         ps->m_CurrSel == BASE_SELECTED && ps->m_ActiveObject && ps->m_ActiveObject->IsBuilding()) {
@@ -5174,7 +5177,7 @@ void __stdcall CIFaceList::JumpToBuilding(void*)
 
 void __stdcall CIFaceList::JumpToRobot(void*)
 {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     if (!ps->GetCurGroup())
         return;
@@ -5242,7 +5245,7 @@ void CIFaceList::CreateDynamicTurrets(CMatrixBuilding *building) {
 
 void CIFaceList::DeleteDynamicTurrets() {
     DTRACE();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     // icon
 
@@ -5265,7 +5268,7 @@ void CIFaceList::DeleteDynamicTurrets() {
 }
 
 void CIFaceList::BeginBuildTurret(int no) {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (!ps->IsEnoughResources(g_Config.m_CannonsProps[no - 1].m_Resources))
         return;
 
@@ -5273,7 +5276,7 @@ void CIFaceList::BeginBuildTurret(int no) {
     CMatrixCannon *cannon = HNew(g_MatrixHeap) CMatrixCannon;
     cannon->m_Pos.x = g_MatrixMap->m_TraceStopPos.x;
     cannon->m_Pos.y = g_MatrixMap->m_TraceStopPos.y;
-    cannon->SetSide(PLAYER_SIDE);
+    cannon->SetSide(controllable_side_id);
     cannon->UnitInit(no);
     cannon->m_Angle = 0;
 

@@ -72,6 +72,7 @@ add_matrix_directory(src/Effects)
 add_matrix_directory(src/Interface)
 add_matrix_directory(src/Logic)
 add_matrix_directory(src/Text)
+add_matrix_directory(src/Network)
 
 if(MATRIXGAME_BUILD_DLL)
     add_library(MatrixGame SHARED)

@@ -28,7 +28,8 @@ CVectorObjectAnim *LoadObject(const wchar *name, CHeap *heap, bool side, const w
     CVectorObjectAnim *voa = HNew(heap) CVectorObjectAnim();
     CVectorObject *vo = (CVectorObject *)g_Cache->Get(CacheClass::VO, name);
 
-    GSParam gsp = side ? GSP_SIDE : GSP_ORDINAL;
+    // ATTENTION
+    GSParam gsp = side ? GSP_SIDE_NOALPHA : GSP_ORDINAL;
 
     if (tex) {
         vo->PrepareSpecial(OLF_MULTIMATERIAL_ONLY, CSkinManager::GetSkin, gsp);

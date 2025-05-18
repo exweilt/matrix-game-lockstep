@@ -364,7 +364,7 @@ void CIFaceMenu::CreateMenu(
     // bm_dest.SaveInPNG(L"test_menu.png");
     SETFLAG(g_IFaceList->m_IfListFlags, POPUP_MENU_ACTIVE);
     m_CurMenuPos = -1;
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     if (m_RobotConfig) {
         HDelete(SRobotConfig, m_RobotConfig, g_MatrixHeap);
@@ -380,7 +380,7 @@ void CIFaceMenu::SetSelectorPos(const float &x, const float &y, int pos) {
     m_CurMenuPos = pos;
     m_Selector->RecalcPos(x, y, false);
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (!ps)
         return;
 
@@ -400,7 +400,7 @@ void CIFaceMenu::OnMenuItemPress() {
 }
 
 void CIFaceMenu::ResetMenu(bool canceled) {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     // restore saved robot configuration
     if (m_RobotConfig) {
@@ -449,7 +449,7 @@ void CIFaceMenu::ResetMenu(bool canceled) {
 }
 
 void CIFaceMenu::CalcSelectedItem(bool set) {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     if (!ps || m_InterfaceParent == MENU_PARENT_UNDEF)
         return;
 

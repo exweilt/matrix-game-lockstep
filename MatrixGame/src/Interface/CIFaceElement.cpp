@@ -153,7 +153,7 @@ void CIFaceElement::BeforeRender(void) {
 }
 
 void CIFaceElement::Render(BYTE alpha) {
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    // CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     g_Sampler.SetState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
     g_Sampler.SetState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
@@ -310,7 +310,7 @@ void CIFaceElement::LogicTakt(int ms) {
         m_Animation->LogicTakt(ms);
 
     if (m_nId == GROUP_SELECTOR_ID) {
-        CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
         int i = player_side->GetCurSelNum();
         float pos = (i + 1.0f) / 3.0f;
 

@@ -1017,12 +1017,12 @@ void CMatrixMap::LoadSide(CBlockPar &bp) {
         m_Side[idx].m_ColorMM = colorMM;
         m_Side[idx].m_ColorTexture = NULL;
         m_Side[idx].m_Name = name.GetStrPar(0, L",");
-        ++idx;
 
+        m_Side[idx].InitPlayerSide();
         if (id == PLAYER_SIDE) {
             m_PlayerSide = m_Side;
-            m_Side->InitPlayerSide();
         }
+        idx++;
     }
 
     /*m_PlayerSide = GetSideById(PLAYER_SIDE);*/
@@ -1197,7 +1197,8 @@ void CMatrixMap::BeforeDraw(void) {
 
     if (player_side->m_ActiveObject != m_TraceStopObj && player_side->m_ActiveObject &&
         player_side->m_ActiveObject->GetObjectType() == OBJECT_TYPE_FLYER &&
-        Input::isKeyPressed(KA_AUTO) && g_IFaceList->m_InFocus != INTERFACE) {
+        Input::isKeyPressed(KA_AUTO) && g_IFaceList->m_InFocus != INTERFACE)
+    {
         CMatrixFlyer *fl = (CMatrixFlyer *)player_side->m_ActiveObject;
 
         SPlane hp;
@@ -1209,7 +1210,7 @@ void CMatrixMap::BeforeDraw(void) {
             fl->SetTarget(D3DXVECTOR2(m_Camera.GetFrustumCenter().x + m_MouseDir.x * t,
                                       m_Camera.GetFrustumCenter().y + m_MouseDir.y * t));
 
-            CMatrixSideUnit *player_side = GetPlayerSide();
+            // CMatrixSideUnit *player_side = GetPlayerSide();
             // if (player_side->HasFlyer()) player_side->Select(HELICOPTER, NULL);
 
             // D3DXVECTOR3 p = m_Camera.GetFrustumCenter() + vdir * t;
@@ -1637,7 +1638,7 @@ void CMatrixMap::DrawObjects(void) {
 
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_LIGHTING, FALSE));
 
-    CMatrixSideUnit *player_side = GetPlayerSide();
+    CMatrixSideUnit *player_side = GetControllableSide();
     if (player_side->m_CannonForBuild.m_Cannon) {
         if (player_side->m_CannonForBuild.m_Cannon->IsVisible())
             player_side->m_CannonForBuild.m_Cannon->Draw();
@@ -3289,7 +3290,7 @@ void CMatrixMap::EnterDialogMode(const wchar *hint_i) {
     m_DialogModeName = hint_i;
 
     if (0 != wcscmp(hint_i, TEMPLATE_DIALOG_BEGIN)) {
-        g_MatrixMap->GetPlayerSide()->PLDropAllActions();
+        g_MatrixMap->GetControllableSide()->PLDropAllActions();
     }
 
     CBlockPar *bp = g_MatrixData->BlockGet(PAR_TEMPLATES);
@@ -3446,7 +3447,7 @@ bool CMatrixMap::IsTraceNonPlayerObj() {
         (g_MatrixMap->m_TraceStopObj->IsRobot() || g_MatrixMap->m_TraceStopObj->IsBuilding() ||
          g_MatrixMap->m_TraceStopObj->IsCannon() || g_MatrixMap->m_TraceStopObj->GetObjectType() == OBJECT_TYPE_FLYER ||
          g_MatrixMap->m_TraceStopObj->IsSpecial()) &&
-        (g_MatrixMap->m_TraceStopObj->GetSide() != PLAYER_SIDE))
+        (g_MatrixMap->m_TraceStopObj->GetSide() != controllable_side_id))
         return true;
 
     return false;

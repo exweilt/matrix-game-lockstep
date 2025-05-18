@@ -69,7 +69,7 @@ void CHistory::DelConfig(SRobotConfig *config) {
 void CHistory::LoadCurrentConfigToConstructor() {
     DTRACE();
     if (m_CurrentConfig) {
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
         ps->m_Constructor->SuperDjeans(MRT_HEAD, m_CurrentConfig->m_Head.m_nKind, 0, true);
         ps->m_Constructor->SuperDjeans(MRT_ARMOR, m_CurrentConfig->m_Hull.m_Unit.m_nKind, 0, true);
         for (int i = 0; i < MAX_WEAPON_CNT; i++) {

@@ -451,8 +451,9 @@ void CMatrixSideUnit::LogicTakt(int ms) {
     }
 
     DCP();
-    if (g_MatrixMap->GetPlayerSide() != this || FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE)) {
-        if (m_Id == PLAYER_SIDE) {
+    if (g_MatrixMap->GetControllableSide() != this || FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE))
+    {
+        if (false && m_Id == controllable_side_id) {
             if (!g_MatrixMap->MaintenanceDisabled()) {
                 if (g_MatrixMap->BeforeMaintenanceTime() == 0 && (FRND(1) < 0.05f)) {
                     CMatrixMapStatic *b = NULL;
@@ -471,15 +472,18 @@ void CMatrixSideUnit::LogicTakt(int ms) {
         }
 
         DCP();
-        TaktHL();
+        //TaktHL();
         DCP();
         //        dword t2=timeGetTime();
         TaktTL();
+        //TaktTL();
+        TaktPL();
         DCP();
         //        dword t3=timeGetTime();
         //        DM(L"TaktTL",std::wstring().Format(L"<i>",t3-t2).Get());
     }
-    else {
+    else
+    {
         DCP();
         if (CMultiSelection::m_GameSelection) {
             SCallback cbs;
@@ -518,7 +522,7 @@ void CMatrixSideUnit::LogicTakt(int ms) {
     // m_ElectronicCnt = 0;
 
     DCP();
-    if (this == g_MatrixMap->GetPlayerSide()) {
+    if (this == g_MatrixMap->GetControllableSide()) {
         if (m_CurrSel == BUILDING_SELECTED && m_ActiveObject) {
             if (((CMatrixBuilding *)m_ActiveObject)->m_Side != m_Id) {
                 // Select(FLYER, NULL);
@@ -729,7 +733,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE)) {
             // Capture
-            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != PLAYER_SIDE) {
+            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != controllable_side_id) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE | ORDERING_MODE);
 
                 PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
@@ -757,7 +761,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_REPAIR)) {
             // Repair our robots please
-            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLive() && pObject->GetSide() == PLAYER_SIDE) {
+            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLive() && pObject->GetSide() == controllable_side_id) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_REPAIR | ORDERING_MODE);
 
                 PGOrderRepair(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
@@ -776,10 +780,10 @@ void CMatrixSideUnit::OnLButtonDouble(
     CMatrixMapStatic *pObject = MouseToLand();
 
     if (pObject == TRACE_STOP_NONE ||
-        !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == PLAYER_SIDE))
+        !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == controllable_side_id))
         return;
 
-    if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == PLAYER_SIDE) {
+    if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == controllable_side_id) {
         D3DXVECTOR3 o_pos = pObject->GetGeoCenter();
         CMatrixMapStatic *st = CMatrixMapStatic::GetFirstLogic();
 
@@ -789,7 +793,7 @@ void CMatrixSideUnit::OnLButtonDouble(
         }
 
         while (st) {
-            if (st->GetSide() == PLAYER_SIDE && st->IsLiveRobot()) {
+            if (st->GetSide() == controllable_side_id && st->IsLiveRobot()) {
                 auto tmp = o_pos - st->GetGeoCenter();
                 if (D3DXVec3LengthSq(&tmp) <=
                     FRIENDLY_SEARCH_RADIUS * FRIENDLY_SEARCH_RADIUS) {
@@ -859,7 +863,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         return;
 
     if (!IS_PREORDERING &&
-        (m_CurrSel == GROUP_SELECTED || m_CurrSel == ROBOT_SELECTED || m_CurrSel == FLYER_SELECTED)) {
+        (m_CurrSel == GROUP_SELECTED || m_CurrSel == ROBOT_SELECTED || m_CurrSel == FLYER_SELECTED))
+    {
         if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != m_Id) {
             // Capture
             PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
@@ -1005,7 +1010,7 @@ void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
     }
 
     if (type == GROUP || type == FLYER || type == ROBOT) {
-        if (m_Id == PLAYER_SIDE) {
+        if (m_Id == controllable_side_id) {
             int rnd = g_MatrixMap->Rnd(0, 6);
             if (!rnd) {
                 CSound::Play(S_SELECTION_1, SL_SELECTION);
@@ -1115,7 +1120,8 @@ void CMatrixSideUnit::ShowOrderState() {
 
     CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
     while (objs) {
-        if (objs->GetObject() && objs->GetObject()->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
+        if (objs->GetObject() && objs->GetObject()->GetObjectType() == OBJECT_TYPE_ROBOTAI)
+        {
             CMatrixRobotAI *robot = (CMatrixRobotAI *)(objs->GetObject());
             if (robot->IsLiveRobot()) {
                 if (robot->GetGroupLogic() >= 0 &&
@@ -1763,8 +1769,9 @@ void SideSelectionCallBack(CMatrixMapStatic *ms, uintptr_t param) {
     DTRACE();
     if (!ms ||
         (ms->GetObjectType() != OBJECT_TYPE_ROBOTAI && ms->GetObjectType() != OBJECT_TYPE_FLYER &&
-         ms->GetObjectType() != OBJECT_TYPE_BUILDING) ||
-        ms->GetSide() != PLAYER_SIDE)
+         ms->GetObjectType() != OBJECT_TYPE_BUILDING)
+        // || ms->GetSide() != PLAYER_SIDE)
+        )
         return;
 
     if (ms->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
@@ -1777,7 +1784,8 @@ void SideSelectionCallBack(CMatrixMapStatic *ms, uintptr_t param) {
             return;
     }
 
-    CMatrixSideUnit *my_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *my_side = g_MatrixMap->GetControllableSide();
+    // CMatrixSideUnit *my_side = g_MatrixMap->GetPlayerSide();
     CMatrixGroup *cursel = my_side->GetCurSelGroup();
 
     static CPoint prev_mp(0, 0);
@@ -2240,7 +2248,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
         if (ms->GetSide() != m_Id)
             continue;
         CMatrixRobotAI *robot = ms->AsRobot();
-        if (m_Id == PLAYER_SIDE && robot->GetGroupLogic() >= 0 &&
+        if (m_Id == controllable_side_id && robot->GetGroupLogic() >= 0 &&
             m_PlayerGroup[robot->GetGroupLogic()].Order() < mpo_AutoCapture)
             continue;
 
@@ -2293,7 +2301,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
         if (ms == skip_normal || ms == skip_withbomb)
             continue;
         CMatrixRobotAI *robot = ms->AsRobot();
-        if (m_Id == PLAYER_SIDE && robot->GetGroupLogic() >= 0 &&
+        if (m_Id == controllable_side_id && robot->GetGroupLogic() >= 0 &&
             m_PlayerGroup[robot->GetGroupLogic()].Order() < mpo_AutoCapture)
             continue;
 
@@ -2408,7 +2416,7 @@ void CMatrixSideUnit::GroupNoTeamRobot() {
     int g, i, u, cnt, sme;
     float cx, cy;
 
-    if (m_Id == PLAYER_SIDE)
+    if (m_Id == controllable_side_id)
         return;
 
     for (i = 0; i < MAX_LOGIC_GROUP; i++)
@@ -2518,9 +2526,9 @@ void CMatrixSideUnit::CalcMaxSpeed() {
     }
 
     for (i = 0; i < MAX_LOGIC_GROUP; i++) {
-        if (m_Id == PLAYER_SIDE && m_PlayerGroup[i].m_RobotCnt <= 0)
+        if (m_Id == controllable_side_id && m_PlayerGroup[i].m_RobotCnt <= 0)
             continue;
-        else if (m_Id != PLAYER_SIDE && m_LogicGroup[i].RobotsCnt() <= 0)
+        else if (m_Id != controllable_side_id && m_LogicGroup[i].RobotsCnt() <= 0)
             continue;
 
         float cx = 0.0f;
@@ -10502,7 +10510,7 @@ void CMatrixSideUnit::PGCalcRegionPath(SMatrixPlayerGroup *pg, int rend, byte mm
 ////////////////////////////////////////////////////////////////////////////////
 
 inline bool PrepareBreakOrder(CMatrixMapStatic *robot) {
-    return !(((CMatrixRobotAI *)robot)->GetEnv()->m_OrderNoBreak = !robot->AsRobot()->CanBreakOrder());
+    return !((((CMatrixRobotAI *)robot)->GetEnv()->m_OrderNoBreak = !robot->AsRobot()->CanBreakOrder()));
 }
 
 inline bool IsLiveUnit(CMatrixMapStatic *obj) {

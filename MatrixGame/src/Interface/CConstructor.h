@@ -145,6 +145,9 @@ public:
     void StackRobot(void *pObject, int team = 0);
     void BeforeRender(void);
 
+    /**
+     * @brief Renders the resulting robot inside GUI constructor.
+     */
     void Render();
 
     // STUB: FAKE FUNCTIONS MOTHERFUCKERS

@@ -394,10 +394,11 @@ public:
         return m_CurrState == ROBOT_IN_SPAWN || m_CurrState == ROBOT_BASE_MOVEOUT || m_CurrState == ROBOT_BASE_CAPTURE;
     }
     bool CanBreakOrder(void) {
-        if (m_Side != PLAYER_SIDE || FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO)) {
+        if (m_Side != PLAYER_SIDE || FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
+        {
             CMatrixBuilding *cf = GetCaptureFactory();
-            if (cf) {
-                return false;  // DO NOT BREAK CAPTURING!!!!!!!!!!!!!!!!!!!!!!!! NEVER!!!!!!!!!!
+            // if (cf) {
+            //     return false;  // DO NOT BREAK CAPTURING!!!!!!!!!!!!!!!!!!!!!!!! NEVER!!!!!!!!!!
                 // if (cf->IsBase()) return false;
                 // if (cf->GetSide()!=robot->GetSide())
                 //{
@@ -407,11 +408,11 @@ public:
                 //        (1.0-(robot->AsRobot()->GetHitPoint()*1.1f)/robot->AsRobot()->GetMaxHitPoint())
                 //    ) return false;
                 //}
-            }
+            // }
         }
 
         return !IsAutomaticMode() &&
-               ((m_Side != PLAYER_SIDE) || (g_MatrixMap->GetPlayerSide()->GetArcadedObject() != this));
+               ((m_Side != controllable_side_id) || (g_MatrixMap->GetControllableSide()->GetArcadedObject() != this));
     }
 
     void OBBToAABBCollision(int nHeight, int nWidth);

@@ -6,8 +6,8 @@ Lockstep with Server Relay
 
 ## Roadmap
 
-- Disable enemy's AIs ❌
-- Make red/green/blue robots controlable by the player ❌
+- Disable enemy's AIs ✔️
+- Make red/green/blue robots controllable by the player ✔️
 - Harness the Tick() function ❌
 - Add the state manager singleton ❌
 - Remove the player's ability to control robots, construct etc... ❌ 

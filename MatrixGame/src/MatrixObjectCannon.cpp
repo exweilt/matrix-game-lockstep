@@ -1280,8 +1280,8 @@ bool CMatrixCannon::Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTO
 
     friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
     damagek =
-            (friendly_fire || m_Side != PLAYER_SIDE) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == PLAYER_SIDE)
+            (friendly_fire || m_Side != controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
+    if (friendly_fire && m_Side == controllable_side_id)
         damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
 
     idx = Weap2Index(weap);
@@ -1316,7 +1316,7 @@ bool CMatrixCannon::Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTO
         }
     }
 
-    if (m_Side == PLAYER_SIDE && !friendly_fire) {
+    if (m_Side == controllable_side_id && !friendly_fire) {
         if (m_UnderAttackTime == 0) {
             int ss = IRND(3);
             if (ss == 0)
@@ -1464,7 +1464,7 @@ void CMatrixCannon::ReleaseMe(void) {
             }
         }
 
-        if (g_MatrixMap->GetPlayerSide()->m_ActiveObject == m_ParentBuilding) {
+        if (g_MatrixMap->GetControllableSide()->m_ActiveObject == m_ParentBuilding) {
             g_IFaceList->CreateDynamicTurrets(m_ParentBuilding);
         }
     }
