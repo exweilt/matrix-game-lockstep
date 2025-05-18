@@ -50,6 +50,11 @@ struct SMatrixPath {
     float m_EndX, m_EndY;
 };
 
+/**
+ * @brief Abstraction over MatrixMap which includes Navigation and several other important things.
+ *
+ * There is a global static "g_MatrixMap" defined in "MatrixGame.h"
+ */
 class CMatrixMapLogic : public CMatrixMap {
 public:
     //		SMatrixMapZone * m_Zone[5];
@@ -103,7 +108,18 @@ public:
         return smm->GetType(nsh);
     }
 
-    //        bool PlaceFindNear(int nsh,int size,int & mx,int & my);
+    /**
+     * @brief Finds a point on the map closest to the specified if possible.
+     *
+     * @param nsh
+     * @param size
+     * @param mx Warning: both input and output!
+     * @param my Warning: both input and output!
+     * @param other_cnt
+     * @param other_size
+     * @param other_des
+     * @return true if found some point, false otherwise
+     */
     bool PlaceFindNear(int nsh, int size, int &mx, int &my, int other_cnt, int *other_size, CPoint *other_des);
     //        bool PlaceFindNear(int nsh,int size,int & mx,int & my,const D3DXVECTOR2 & vdir,int other_cnt,int *
     //        other_size,CPoint * other_des);

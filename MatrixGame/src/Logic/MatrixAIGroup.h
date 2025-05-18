@@ -27,7 +27,11 @@ class CMatrixTactics;
     CHARLIE
 };*/
 
-//
+/**
+ * @brief Envelope over CMatrixMapStatic object.
+ *
+ * CMatrixGroup consists of CMatrixGroupObject objects.
+ */
 class CMatrixGroupObject : public CMain {
 public:
     int m_Team;
@@ -58,6 +62,13 @@ public:
     ~CMatrixGroupObject();
 };
 
+/**
+ * @brief Group of objects united by something. Used both by player side and computer sides.
+ *
+ * Calculates the center position and the average velocity of the objects consisting the group once every JUST_PERIOD time.
+ *
+ * Is a double linked list element by the way. So multiple groups can be stored as list elements.
+ */
 class CMatrixGroup : public CMain {
 public:
     int m_Team;

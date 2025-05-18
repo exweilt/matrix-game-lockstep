@@ -2,7 +2,7 @@
 #include <stupid_logger.hpp>
 #include <utils.hpp>
 
-#include <D3dx9core.h>
+#include <d3dx9core.h>
 
 #include <algorithm>
 #include <functional>

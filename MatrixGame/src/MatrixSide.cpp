@@ -471,10 +471,10 @@ void CMatrixSideUnit::LogicTakt(int ms) {
         }
 
         DCP();
-        TaktHL();
+        TaktHL(); // Run high level logic on side played by bot
         DCP();
         //        dword t2=timeGetTime();
-        TaktTL();
+        TaktTL(); // Run "Team" Logic
         DCP();
         //        dword t3=timeGetTime();
         //        DM(L"TaktTL",std::wstring().Format(L"<i>",t3-t2).Get());
@@ -627,7 +627,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE)
         return;
@@ -773,7 +773,7 @@ void CMatrixSideUnit::OnLButtonDouble(
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE ||
         !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == PLAYER_SIDE))
@@ -813,7 +813,7 @@ void CMatrixSideUnit::OnLButtonUp(const CPoint &) {
     if (IsArcadeMode())
         return;
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE)
         return;
@@ -835,7 +835,7 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     }
     DCP();
 
-    CMatrixMapStatic *pObject = MouseToLand();
+    CMatrixMapStatic *pObject = GetObjectUnderCursor();
     DCP();
 
     int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
@@ -906,7 +906,7 @@ void CMatrixSideUnit::OnRButtonDouble(const CPoint &) {
     //   if(m_CurrentAction == BUILDING_TURRET)
     //       return;
 
-    //   CMatrixMapStatic* pObject = MouseToLand();
+    //   CMatrixMapStatic* pObject = GetObjectUnderCursor();
     //   if(pObject == TRACE_STOP_NONE) return;
     //
     // 	if(pObject == TRACE_STOP_LANDSCAPE){
@@ -1154,7 +1154,7 @@ void CMatrixSideUnit::ShowOrderState() {
         RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_PROTECT_ON);
 }
 
-bool CMatrixSideUnit::MouseToLand(const CPoint &, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY) {
+bool CMatrixSideUnit::GetObjectUnderCursor(const CPoint &, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY) {
     DTRACE();
     if (g_MatrixMap->m_TraceStopObj) {
         *pMapX = int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE);
@@ -1166,7 +1166,7 @@ bool CMatrixSideUnit::MouseToLand(const CPoint &, float *pWorldX, float *pWorldY
     return FALSE;
 }
 
-CMatrixMapStatic *CMatrixSideUnit::MouseToLand() {
+CMatrixMapStatic *CMatrixSideUnit::GetObjectUnderCursor() {
     return g_MatrixMap->m_TraceStopObj;
 }
 
@@ -2202,6 +2202,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
     int i;
     CEnemy *enemy;
 
+    // Find bomb carrying robot if it is present.
     CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
     for (; ms; ms = ms->GetNextLogic()) {
         if (!ms->IsLiveRobot())
@@ -5991,7 +5992,6 @@ void CMatrixSideUnit::AssignPlace(CMatrixRobotAI *robot, int region) {
     }
 }
 
-// Назначаем места в регионе или места близкие к этому региону
 void CMatrixSideUnit::AssignPlace(int group, int region) {
     float f;
     CPoint tp, tp2;
@@ -6330,6 +6330,9 @@ float CMatrixSideUnit::BuildRobotMinStrange(CMatrixBuilding *base) {
     return std::max(0.0f, minstrange * 0.7f);  // Занижаем минимальную силу
 }
 
+/**
+ * @brief Orders some robots, used only by computer playing sides.
+ */
 void CMatrixSideUnit::BuildRobot(void) {
     int i, k, r, u, cnt, lwcnt, ik, uk;
     CMatrixBuilding *base = NULL;
@@ -6865,6 +6868,7 @@ void CMatrixSideUnit::BuildCannon(void) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+// Look inside MatrixSide.h file for documentation
 void CMatrixSideUnit::TaktPL(int onlygroup) {
     DTRACE();
 

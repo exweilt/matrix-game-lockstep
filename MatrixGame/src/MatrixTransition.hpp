@@ -8,6 +8,9 @@
 
 #include "MatrixInstantDraw.hpp"
 
+/**
+ * @brief Probably the loading screen.
+ */
 class CTransition : public CMain {
     struct SGeom {
         D3DXVECTOR2 pos;

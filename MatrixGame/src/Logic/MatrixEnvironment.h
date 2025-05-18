@@ -12,6 +12,13 @@
 class CMatrixRobotAI;
 class CMatrixMapStatic;
 
+/**
+ * @brief Represents an enemy be it a robot or a turret or a building some robot may be interested in attacking.
+ *
+ * Corresponds to a CMatrixMapStatic object.
+ *
+ * Used by all sides.
+ */
 class CEnemy : public CMain {
 public:
     uint32_t m_EnemyKind;
@@ -35,6 +42,11 @@ public:
     void ClassifyEnemy(CMatrixMapStatic *relTo);
 };
 
+/**
+ * @brief Information on the state of low level AI associated with EACH robot.
+ *
+ * Usually can be retrieved by GetEnv() on the robot object.
+ */
 class CInfo : public CMain {
 public:
     int m_EnemyCnt;

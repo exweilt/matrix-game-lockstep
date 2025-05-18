@@ -74,7 +74,7 @@ private:
     const Type m_Type;
 
     std::wstring m_Name;
-    std::wstring m_Com;
+    std::wstring m_Com; // Seems like Com is a comment inside of .dat
     union {
         std::wstring *m_Par;
         CBlockPar *m_Block;
@@ -95,6 +95,26 @@ private:
     CBlockParUnit& operator = (const CBlockParUnit& that);
 };
 
+/**
+ * @brief Block Par is a configuration database format used by Space Rangers and Planetary Battles.
+ *
+ * The database is normally stored inside of "cfg/robots.dat" file.
+ *
+ * But the game engine doesn't actually need .dat file at all, if there is no robots.dat file then it will use
+ * "cfg/robots/data.txt" and "cfg/robots/iface.txt" if they are present.
+ *
+ * The robots.dat file cannot be opened by BlockParEditor utility because the file format is slightly different from the main
+ * game. The game engine can pack .txt config files at "cfg/robots/" into .dat format using "BUILDCFG" console command,
+ * but now there is a segmentation fault crash when you try to do this.
+ *
+ * Because of the segfault you can use prebuilt engine which allows packing .txt's into .dat file if you need it.
+ * https://web.archive.org/web/20240616123046/https://snk-games.net/files/rangers_tools/robots.zip
+ *
+ *
+ * The name "BlockPar" means "Blocks of Parameters". You can think of parameters as of files which can have any content or value.
+ * You can think of blocks as of directories which can hold any number of children sub-directories or files(parameters).
+ * One interesting thing is that it is possible to have multiple parameters with the same name at the same path.
+ */
 class BASE_API CBlockPar : public CMain
 {
     friend BPCompiler;

@@ -1277,9 +1277,11 @@ bool CMatrixRobot::Carry(CMatrixFlyer *cargo, bool quick_connect) {
 }
 
 void CMatrixRobot::ClearSelection(void) {
-    if (g_MatrixMap->GetPlayerSide()->m_CurrSel == ROBOT_SELECTED &&
-        g_MatrixMap->GetPlayerSide()->m_ActiveObject == this)
+    if (g_MatrixMap->GetPlayerSide()->m_CurrSel == ROBOT_SELECTED
+        && g_MatrixMap->GetPlayerSide()->m_ActiveObject == this)
+    {
         g_MatrixMap->GetPlayerSide()->Select(NOTHING, NULL);
+    }
 }
 
 void CMatrixRobot::SwitchAnimation(EAnimation a) {

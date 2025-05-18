@@ -70,6 +70,10 @@ static void hLog(
     }
 }
 
+/**
+ * @brief Generates a .dat file using loaded .txt config files at "cfg/robots/"
+ *  TODO: fix segfault when attempting to buildcfg
+ */
 static void hBuildCFG(
     [[maybe_unused]] const std::wstring& cmd,
     [[maybe_unused]] const std::wstring& params)
