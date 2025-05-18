@@ -198,7 +198,7 @@ struct SMatrixPlace {
 };
 
 struct SMatrixPlaceList {
-    int m_Sme;
+    int m_Sme; // "Sme" means "offset" ("Smeshienie" from russian)
     int m_Cnt;
 };
 

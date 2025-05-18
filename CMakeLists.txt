@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CONFIGURATION_TYPES Release Debug)
@@ -68,6 +68,7 @@ else()
         -Wno-strict-aliasing
         -Wno-empty-body
         -Wno-pedantic
+        -Wno-uninitialized
     )
 
     set(LINK_OPTIONS

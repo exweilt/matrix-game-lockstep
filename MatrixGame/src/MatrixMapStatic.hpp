@@ -128,6 +128,9 @@ class CMatrixMapStatic;
 #include "stdio.h"
 #endif
 
+/**
+ *  @brief Bound two way to a CMatrixMapStatic object and it holds its transformation matrix and type.
+ */
 struct SObjectCore {
 #ifdef _DEBUG
     SDebugCallInfo m_dci;
@@ -138,7 +141,7 @@ struct SObjectCore {
     float m_Radius;
     D3DXVECTOR3 m_GeoCenter;
     EObjectType m_Type;  // 0-empty 2-CMatrixMapObject 3-CMatrixRobotAI 4-CMatrixBuilding 5-CMatrixCannon
-    DWORD m_TerainColor;
+    DWORD m_TerainColor; // WTF?? some sort of reflection faking?
     int m_Ref;
 
     CMatrixMapStatic *m_Object;
@@ -203,8 +206,16 @@ class CMatrixFlyer;
 
 class CMatrixMapStatic;
 typedef CMatrixMapStatic *PCMatrixMapStatic;
+/**
+ * @brief A physical object in the world.
+ *
+ * Could be: robot, turret, helicopter, building or map object(props which have mesh i.e. rocks, debris, palms, gates
+ * etc.)
+ *
+ * P.S. why is it called static? - exweilt 07/05/2025
+ */
 class CMatrixMapStatic : public CMain {
-    SRemindCore m_RemindCore;
+    SRemindCore m_RemindCore; // frees object's resources if not used for some time.
 
     int m_ObjectStateTTLAblaze;
     int m_ObjectStateTTLShorted;
@@ -221,8 +232,8 @@ class CMatrixMapStatic : public CMain {
     static CMatrixMapStatic *m_FirstVisOld;
     static CMatrixMapStatic *m_LastVisOld;
 
-    CMatrixMapStatic *m_NextVis;
-    CMatrixMapStatic *m_PrevVis;
+    CMatrixMapStatic *m_NextVis; // Not used
+    CMatrixMapStatic *m_PrevVis; // Not used
 
 protected:
     struct SEVH_data {
@@ -236,6 +247,7 @@ protected:
 
     SObjectCore *m_Core;
 
+    // Shorted and Ablaze applies only for robots and turrets.
     void SetShortedTTL(int ttl) { m_ObjectStateTTLShorted = ttl; };
     void SetAblazeTTL(int ttl) { m_ObjectStateTTLAblaze = ttl; };
     int GetShortedTTL(void) { return m_ObjectStateTTLShorted; }
@@ -247,11 +259,13 @@ protected:
     void UnmarkAblaze(void) { RESETFLAG(m_ObjectState, OBJECT_STATE_ABLAZE); }
     void UnmarkShorted(void) { RESETFLAG(m_ObjectState, OBJECT_STATE_SHORTED); }
 
+    // List of only those objects which have some logic(i.e. NO rocks, NO trees...), probably an optimization
     static CMatrixMapStatic *m_FirstLogicTemp;
     static CMatrixMapStatic *m_LastLogicTemp;
     CMatrixMapStatic *m_PrevLogicTemp;
     CMatrixMapStatic *m_NextLogicTemp;
 
+    // seems like it's the list of all chunks the object lies inside of.
     PCMatrixMapGroup m_InGroups[MAX_GROUPS_PER_OBJECT];  // max size of object is MAX_GROUPS_PER_OBJECT groups
     int m_InCnt;
 
@@ -475,7 +489,20 @@ public:
     static bool EnumVertsHandler(const SVOVertex &v, uintptr_t data);
     virtual bool InRect(const CRect &rect) const = 0;
 
+    /**
+     * @brief Recalculates the list of groups(terrain chunks) this object lies inside of.
+     *
+     * Always call this function whenever the object has changed its location! If you don't then the object will not be
+     *      rendered when the chunk it was initially bound to is not visible by camera,
+     *      also many interactions (i.e. collision checks, detection of presence) stop working correctly.
+     *
+     * CMatrixMapGroup is meant by a group.
+     */
     void JoinToGroup(void);
+
+    /**
+     * @brief Clears bindings of the object to all groups(chunks).
+     */
     void UnjoinGroup(void);
 
     bool RenderToTexture(SRenderTexture *rt, int n, /*float *fff=NULL,*/ float anglez = GRAD2RAD(30),

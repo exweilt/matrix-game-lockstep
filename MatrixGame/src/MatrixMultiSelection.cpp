@@ -205,11 +205,15 @@ void CMultiSelection::Update(
     CRect r(m_LT.x, m_LT.y, m_RB.x, m_RB.y);
     r.Normalize();
 
-    bool only_one = (abs(r.right - r.left) * abs(r.bottom - r.top)) < 9;
+    // This is optimization.
+    // The maximum selection area that results in selection of only 1 object so full iteration can be skipped.
+    constexpr int MAX_AREA_FOR_SINGLE_SELECT = 9;
+    const bool only_one = (abs(r.right - r.left) * abs(r.bottom - r.top)) < MAX_AREA_FOR_SINGLE_SELECT;
 
     RemoveSelItems();
-    int n = CMatrixMapStatic::GetVisObjCnt();
-    for (int i = 0; i < n; ++i) {
+    const int n = CMatrixMapStatic::GetVisObjCnt();
+    for (int i = 0; i < n; ++i)
+    {
         CMatrixMapStatic *o = CMatrixMapStatic::GetVisObj(i);
 
         //

@@ -76,8 +76,22 @@ struct SBottomGeometry {
 
 struct SObjectCore;
 
+/**
+ * @brief A group is basically a chunk a map terrain consists from.
+ *
+ * This is done for optimization purposes to enable frustum culling and other techniques.
+ *
+ * Includes a group of geometry to draw, integrates VBO, IBO etc.
+ *
+ * Seems like all static objects (including mesh map objects and robots) are bound to a chunk(or multiple chunks),
+ *      and are drawn only if this chunk is drawn itself(if the chunk is visible)
+ *
+ * It also includes inshore waves! They are rendered in chunks as well.
+ */
 class CMatrixMapGroup : public CMain {
-    SRemindCore m_RemindCore;  // must be at begining of class!!!!!!!!
+    // must be at begining of class!!!!!!!!
+    // Effectively releases resources after some seconds of not using them by calling DX_Free()
+    SRemindCore m_RemindCore;
 
     // static CBigVB<SMapZVertex>              *m_BigVB_Z;
     static CBigVB<SMatrixMapVertexBottom> *m_BigVB_bottom;
@@ -203,6 +217,10 @@ public:
         m_BigIB_bottom->BeforeDraw();
     };
     void BeforeDraw(void);
+
+    /**
+     * @brief Draws the bottom layer terrain.
+     */
     void Draw(void);
     // void DrawZ(void);
 
@@ -218,6 +236,9 @@ public:
 
     void DrawInshorewaves(void);
     void SortObjects(const D3DXMATRIX &sort);
+    /**
+     * @brief Draws inshore waves (flushes) near beaches.
+     */
     void GraphicTakt(int step);
     void PauseTakt(int step);
 

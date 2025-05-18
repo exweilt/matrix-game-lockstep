@@ -158,6 +158,11 @@ struct SPneumaticData {
     DWORD newlink;
 };
 
+/**
+ * @brief Robot specific child class of CMatrixMapStatic.
+ *
+ * For difference between CMatrixRobot and CMatrixRobotAI see CMatrixRobotAI.
+ */
 class CMatrixRobot : public CMatrixMapStatic {
     EAnimation m_Animation;
     CMatrixBuilding *m_Base;  //база из который вышел робот

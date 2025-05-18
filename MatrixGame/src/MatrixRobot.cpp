@@ -668,7 +668,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                     data.norm * (data.nearest->GetRadius() * 0.5f + m_Core->m_Radius * 0.5f - dist);
         }
 
-        DWORD tc = g_MatrixMap->GetColor(m_Core->m_GeoCenter.x, m_Core->m_GeoCenter.y);
+        //DWORD tc = g_MatrixMap->GetColor(m_Core->m_GeoCenter.x, m_Core->m_GeoCenter.y);
         // m_Core->m_TerainColor = LIC(tc,g_MatrixMap->m_Terrain2ObjectTargetColor,
         // g_MatrixMap->m_Terrain2ObjectInfluence);
         m_Core->m_TerainColor = 0xFFFFFFFF;
@@ -4598,7 +4598,7 @@ void CMatrixRobotAI::GatherInfo(int type) {
             DCP();
             if (this != obj && obj->GetObjectType() == OBJECT_TYPE_ROBOTAI && obj->GetSide() == GetSide()) {
                 DCP();
-                if (obj->AsRobot()->m_GroupLogic == m_GroupLogic) {  // Если водной группе
+                if (obj->AsRobot()->m_GroupLogic == m_GroupLogic) {  // Если в одной группе
                     DCP();
                     CEnemy *enemie = obj->AsRobot()->m_Environment.m_FirstEnemy;
                     while (enemie) {

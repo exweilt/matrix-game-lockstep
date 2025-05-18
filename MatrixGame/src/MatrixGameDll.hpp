@@ -43,6 +43,41 @@ struct SRobotsSettings {
     int m_AFDegree;
     float m_MaxDistance;
     bool m_VSync;
+
+    /**
+     *  Explicit constructor for SRobotsSettings object.
+     *
+     *  Used inside EXE build as default settings.
+     *
+     *  Note: I am afraid that adding a "real" constructor could break compatibility with
+     *  Space Rangers because they could be relying on the implicit default "zero value" constructor
+     *  which would be overridden.
+     */
+    static SRobotsSettings generate_default_settings()
+    {
+        SRobotsSettings settings;
+
+        settings.m_ShowStencilShadows = 1;
+        settings.m_ShowProjShadows = 1;
+        settings.m_IzvratMS = 0;
+        settings.m_LandTexturesGloss = 1;
+        settings.m_ObjTexturesGloss = 1;
+        settings.m_SoftwareCursor = 0;
+        settings.m_SkyBox = 2;
+        settings.m_RobotShadow = 1;
+        settings.m_BPP = 32;
+        // settings.m_ResolutionX = screen_width; // unfortunatelly can't set this up now without reading .dat file.
+        // settings.m_ResolutionY = screen_height;
+        settings.m_RefreshRate = 0;
+        settings.m_Brightness = 0.5;
+        settings.m_Contrast = 0.5;
+        settings.m_FSAASamples = 0;
+        settings.m_AFDegree = 0;
+        settings.m_MaxDistance = 1;
+        settings.m_VSync = 1;
+
+        return settings;
+    }
 };
 
 struct SRobotGameState {

@@ -91,6 +91,14 @@ struct SSpecialBot {
 };
 void GetConstructionName(CMatrixRobotAI *robot);
 int GetConstructionDamage(CMatrixRobotAI *robot);
+
+/**
+ * @brief Robots construction requests are made using an object of this class.
+ *
+ * To do so, you need to specify the Base of construction with SetBase() and then order construction with BuildSpecialBot()
+ *
+ * Usually there is a separate CConstructor object for each side.
+ */
 class CConstructor : public CMain {
     float m_RobotPosX, m_RobotPosY;
     int m_Side, m_ShadowType, m_ShadowSize, m_nUnitCnt, m_ViewWidthX, m_ViewHeightY;
@@ -138,10 +146,10 @@ public:
     void __stdcall RemoteOperateUnit(void *pObj);
     void OperateUnit(ERobotUnitType type, ERobotUnitKind kind);
     void SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pilon, bool ld_from_history = false);
-    void Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon);
+    void Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon); // WTF???
 
     void __stdcall RemoteBuild(void *pObj);
-    SNewBorn *ProduceRobot(void *pObject);
+    SNewBorn *ProduceRobot(void *pObject); // Unused
     void StackRobot(void *pObject, int team = 0);
     void BeforeRender(void);
 

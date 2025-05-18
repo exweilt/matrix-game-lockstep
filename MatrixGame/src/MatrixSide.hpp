@@ -162,6 +162,15 @@ struct SMatrixLogicAction {
     int m_RegionPath[REGION_PATH_MAX_CNT];  // Путь по регионам
 };
 
+/**
+ * @brief Group of robots united by the same order given to them by computer. For player side SMatrixPlayerGroup is used.
+ *
+ * Stores the team_id it belongs to.
+ *
+ * The number of robots inside group is encoded inside the 16 least significant bits of m_Bits.
+ *
+ * The most significant bit encodes whether the group is attacking right now.
+ */
 struct SMatrixLogicGroup {
 private:
     DWORD m_Bits;
@@ -195,6 +204,11 @@ enum EMatrixPlayerOrder {
     EMatrixPlayerOrder_FORCE_DWORD = 0x7FFFFFFF
 };
 
+/**
+ * @brief Group of robots united by the same order given to them by the player.
+ *
+ * @see SMatrixLogicGroup
+ */
 struct SMatrixPlayerGroup {
 private:
     DWORD m_Bits;
@@ -225,6 +239,17 @@ public:
     CMatrixRoadRoute *m_RoadPath;
 };
 
+/**
+ * @brief A group of robots united by the same area on the map, used only by computer sides AI.
+ *
+ * There are maximum of 4 (MAX_TEAM_CNT) teams: You can think of teams as of "flanks" AI is using to control robots,
+ *      so they are split between different directions on the map.
+ *
+ * There are robots with team id == -1, this means no team at all, such robots will be ordered to defend the place they
+ *      are standing at.
+ *
+ * It seems like it is impossible for two robots from different teams to be in the same logical group.
+ */
 struct SMatrixTeam {
 private:
     DWORD m_Bits;
@@ -330,6 +355,17 @@ struct SMatrixLogicRegion {
     DWORD m_Data;
 };
 
+/**
+ * @brief Playing side, played either by computer or a player.
+ *
+ * There are normally 5 sides:
+ * - Neutral(Gray) = 0
+ * - Player(Yellow) = 1
+ * - Computer(Red) = 2
+ * - Computer(Blue) = 3
+ * - Computer(Green) = 4
+ *
+ */
 class CMatrixSideUnit : public CMain {
 public:
     // In map options
@@ -356,7 +392,7 @@ private:
     int m_LastTaktHL;
     int m_LastTaktTL;
     int m_LastTeamChange;
-    int m_LastTaktUnderfire;
+    int m_LastTaktUnderfire; // Last time in ms recalculation of objects number near each NavMap vertex took place.
 
     int m_NextWarSideCalcTime;
 
@@ -387,8 +423,8 @@ private:
 public:
     int *m_PlaceList;
 
-    SMatrixLogicGroup m_LogicGroup[MAX_LOGIC_GROUP];
-    SMatrixPlayerGroup m_PlayerGroup[MAX_LOGIC_GROUP];
+    SMatrixLogicGroup m_LogicGroup[MAX_LOGIC_GROUP]; // Used only by computer sides
+    SMatrixPlayerGroup m_PlayerGroup[MAX_LOGIC_GROUP]; // Used only by player side
     int m_WaitResForBuildRobot;
 
     SMatrixTeam m_Team[MAX_TEAM_CNT];
@@ -405,9 +441,9 @@ public:
     void IncStatValue(EStat stat, int v = 1) { m_Statistic[stat] += v; }
 
     int GetRobotsInStack();
-    int GetAlphaCnt() { return m_Team[0].m_RobotCnt; }
-    int GetBravoCnt() { return m_Team[1].m_RobotCnt; }
-    int GetCharlieCnt() { return m_Team[2].m_RobotCnt; }
+    // int GetAlphaCnt() { return m_Team[0].m_RobotCnt; }
+    // int GetBravoCnt() { return m_Team[1].m_RobotCnt; }
+    // int GetCharlieCnt() { return m_Team[2].m_RobotCnt; }
     int GetRobotsCnt() { return m_RobotsCnt; }
 
     int GetResourcesAmount(ERes res) const { return m_Resources[res]; }
@@ -468,7 +504,7 @@ public:
 
     void RemoveObjectFromSelectedGroup(CMatrixMapStatic *o);
 
-    CMatrixMapStatic *m_ActiveObject;
+    CMatrixMapStatic *m_ActiveObject; // Selected object
     SRobot m_Robots[MAX_ROBOTS];
     SCannonForBuild m_CannonForBuild;
 
@@ -501,8 +537,8 @@ public:
     void Select(ESelType type, CMatrixMapStatic *object);
     void Reselect();
     void ShowOrderState(void);
-    bool MouseToLand(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
-    CMatrixMapStatic *MouseToLand();
+    static bool GetObjectUnderCursor(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
+    CMatrixMapStatic *GetObjectUnderCursor();
     void OnRButtonDown(const CPoint &mouse);
     void OnRButtonDouble(const CPoint &mouse);
     void OnLButtonDown(const CPoint &mouse);
@@ -543,10 +579,21 @@ public:
 
     // High logic
     void CalcStrength(void);
+    /**
+     * @brief Intended only for computer playing sides.
+     */
     void Regroup(void);
     void ClearTeam(int team);
     int ClacSpawnTeam(int region, int nsh);
+
+    /// @brief Makes robots escape from bomb carrying robots if possible.
     void EscapeFromBomb(void);
+
+    /**
+     * @brief Finds and sets robots without team, makes them defend one point.
+     *
+     * Only for non player sides.
+     */
     void GroupNoTeamRobot(void);
     void CalcMaxSpeed(void);
     void TaktHL(void);
@@ -565,6 +612,11 @@ public:
     void WarTL(int group);
     void RepairTL(int group);
     void AssignPlace(CMatrixRobotAI *robot, int region);
+    /**
+     * Used only for computer sides inside of TaktTL()
+     *
+     * Назначаем места в регионе или места близкие к этому региону
+     */
     void AssignPlace(int group, int region);
     void SortRobotList(CMatrixRobotAI **rl, int rlcnt);
     bool CmpOrder(int team, int group) {
@@ -587,6 +639,11 @@ public:
 
     void SoundCapture(int pg);
 
+    /**
+     * @brief Processes player's side robot acting logic.
+     *
+     * @param onlygroup Optional group number. If not specified all groups are processed.
+     */
     void TaktPL(int onlygroup = -1);
     bool FirePL(int group);
     void RepairPL(int group);

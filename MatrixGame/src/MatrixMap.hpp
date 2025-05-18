@@ -260,6 +260,14 @@ enum {
 
 class CMatrixHint;
 
+/**
+ * @brief Represents game world scene.
+ *
+ * Aggregates such important concepts as camera, resources, pathfinding, all objects including robots, dev console,
+ * debug output, effects, playing sides, water, cursor, difficulty, total game time, reinforcement status, and more.
+ *
+ * There is a global static CMatrixMapLogic* "g_MatrixMap" defined in "MatrixGame.h"
+ */
 class CMatrixMap : public CMain {
     std::vector<CMatrixMapStatic*> m_AllObjects;
 
@@ -281,7 +289,6 @@ private:
         RS_ROBOTS,
         RS_EFFECTS,
         RS_CAMPOS,
-
     };
 
 public:
@@ -327,10 +334,10 @@ public:
     CMatrixWater *m_Water;
 
     int m_IdsCnt;
-    std::wstring *m_Ids;
+    std::wstring *m_Ids; // Strings used in map stored inside buffer? WTF? - exweilt 07/05/2025
 
     CMatrixSideUnit *m_PlayerSide;
-    CMatrixSideUnit *m_Side;
+    CMatrixSideUnit *m_Side; // Array actually
     int m_SideCnt;
 
     PCMatrixEffect m_EffectsFirst;
@@ -504,6 +511,9 @@ public:
     void GroupClear(void);
     void GroupBuild(CStorage &stor);
 
+    /**
+     *  @brief Loads/processes all robot models(Vector Objects)/textures in memory.
+     */
     void RobotPreload(void);
 
     const D3DXMATRIX &GetIdentityMatrix(void) const { return m_Identity; }
@@ -564,6 +574,11 @@ public:
     //inline CTexture *GetPlayerSideColorTexture(void) { return m_PlayerSide->m_ColorTexture; };
     void ClearSide(void);
 
+    /**
+     * @brief Reloads all sides into memory and initializes members of sides.
+     *
+     * If some side was already loaded into memory it firstly deletes it.
+     */
     void LoadSide(CBlockPar &bp);
     // void LoadTactics(CBlockPar & bp);
 
@@ -576,6 +591,11 @@ public:
     void WaterClear(void);
     void WaterInit(void);
 
+    /**
+     * @brief Processes cursor hovering over selectable things, sorts and goes through all objects binding their resources to GPU.
+     *
+     * TODO: document this properly
+     */
     void BeforeDraw(void);
     void Draw(void);
 
@@ -596,10 +616,44 @@ public:
     // DWORD Load(CBuf & b, CBlockPar & bp, bool &surface_macro);
     void Restart(void);  // boo!
 
+    /**
+     * @brief Loads some dynamic aspect of the game to its starting state.
+     *
+     * Important: it does NOT unload the current dynamics, so a better name would actually be Load instead of Reload.
+     *
+     * Consider splitting all those steps into separate functions because there is no reason they have to be inside one function.
+     * And no reason to choose which step to load at RUNTIME for it is always known at compile time.
+     * Also different aspects take in different arguments and return different things.
+     *
+     * @param step The aspect you want to load.
+     * @param robots Used only if step is RS_ROBOTS. Is a pointer to an empty std::vector<SPreRobot> it is going to fill.
+     */
     int ReloadDynamics(CStorage &stor, EReloadStep step, void* robots = NULL);
 
+    /**
+     * @brief Initializes map's members using what was read inside the storage.
+     *
+     * @param stor The map is loaded inside of.
+     * @param mapname To set up mapname inside buffer.
+     * @return 0 if map set up successfully, something else otherwise
+     */
     int PrepareMap(CStorage &stor, const std::wstring &mapname);
+
+    /**
+     * @brief Loads some resources for every static object on the map.
+     *
+     * The rest may be loaded by StaticPrepare2()
+     *
+     * @param n Used for loading progress bar.
+     * @param skip_progress Set to true if you want to omit changing loading screen position(e.g. reloading).
+     */
     void StaticPrepare(int n, bool skip_progress = false);
+
+    /**
+     * @brief Prepares shadow textures and adds robots to the map based on the std::vector<SPreRobot> argument.
+     *
+     * @param robots std::vector<SPreRobot>* robots to add to the world.
+     */
     void StaticPrepare2(void* robots);
 
     void InitObjectsLights(void);  // must be called only after CreatePoolDefaultResources
@@ -665,8 +719,21 @@ public:
 
     void BeforeDrawLandscape(bool all = false);
     void BeforeDrawLandscapeSurfaces(bool all = false);
+
+    /**
+     * @brief Draws the bottom layer terrain surface.
+     */
     void DrawLandscape(bool all = false);
+
+    /**
+     * @brief Draws terrain surfaces i.e. all those which are not the bottom base layer of terrain.
+     * @param all Not used.
+     */
     void DrawLandscapeSurfaces(bool all = false);
+
+    /**
+     * @brief Draws all static objects on the map.
+     */
     void DrawObjects(void);
     void DrawWater(void);
     void DrawShadowsProjFast(void);

@@ -233,6 +233,9 @@ public:
     }
 };
 
+/**
+ * @brief Robot with AI: pathfinding, order processing and other logic...
+ */
 class CMatrixRobotAI : public CMatrixRobot
 {
     CTextureManaged *m_BigTexture;
@@ -359,6 +362,15 @@ public:
     float GetMaxFireDist() { return m_MaxFireDist; }
     float GetMinFireDist() { return m_MinFireDist; }
     float GetRepairDist() { return m_RepairDist; }
+    /**
+     * @brief Get index of group logic this robot is in
+     *
+     * Example usage: side.m_LogicGroup[GetGroupLogic()] for computer side's robot
+     *
+     * side.m_PlayerGroup[GetGroupLogic()] for player's robot
+     *
+     * @return index of the group logic this robot is in.
+     */
     int GetGroupLogic() { return m_GroupLogic; }
     void SetGroupLogic(int gl) { m_GroupLogic = gl; }
     int GetRegion(void) { return g_MatrixMap->GetRegion(m_MapX, m_MapY); }

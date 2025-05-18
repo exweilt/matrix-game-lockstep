@@ -342,6 +342,10 @@ inline float GetColorB(DWORD c) {
     return float((c >> 0) & 255) / 255.0f;
 }
 
+/**
+ * @brief Lerp between two colors in format of u32: RRGGBBAA
+ *      or is it actually AARRGGBB? -exweilt 09/05/2025
+ */
 inline DWORD LIC(DWORD c0, DWORD c1, float t) {
     DWORD c = 0;
 
