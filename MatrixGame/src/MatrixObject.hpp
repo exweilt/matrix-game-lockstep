@@ -7,6 +7,9 @@
 
 #include "MatrixMap.hpp"
 
+/**
+ * Docthis behaviour
+ */
 enum EBehFlag {
     BEHF_STATIC,   // не реагирует на окружающую действительность
     BEHF_BURN,     // горит (и сгорает)

@@ -364,7 +364,7 @@ void CTexture::MakeSolidTexture(int sx, int sy, DWORD color) {
 #ifdef _DEBUG
     ASSERT(!FLAG(g_Flags, GFLAG_RENDERINPROGRESS));
 #endif
-
+    //color = 0xFF000000;
     Unload();
     D3DLOCKED_RECT lr;
     LPDIRECT3DTEXTURE9 sm_tex;

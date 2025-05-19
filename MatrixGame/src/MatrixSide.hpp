@@ -540,11 +540,11 @@ public:
     static bool GetObjectUnderCursor(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
     CMatrixMapStatic *GetObjectUnderCursor();
     void OnRButtonDown(const CPoint &mouse);
-    void OnRButtonDouble(const CPoint &mouse);
+    void OnRButtonDouble(const CPoint &mouse); // Unused
     void OnLButtonDown(const CPoint &mouse);
     void OnLButtonDouble(const CPoint &mouse);
-    void OnRButtonUp(const CPoint &mouse);
-    void OnLButtonUp(const CPoint &mouse);
+    void OnRButtonUp(const CPoint &mouse); // Unused
+    void OnLButtonUp(const CPoint &mouse); // Unused
     void OnForward(bool down);
     void OnBackward(bool down);
     void OnLeft(bool down);

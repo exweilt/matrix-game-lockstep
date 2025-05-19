@@ -625,6 +625,9 @@ void CMatrixSideUnit::OnMouseMove() {
     }
 }
 
+/**
+ * @brief Processes button down press, but not adding to selection.
+ */
 void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
     DTRACE();
     if (IsArcadeMode())
@@ -978,6 +981,12 @@ void CMatrixSideUnit::OnRight(
         return;
 }
 
+/**
+ * @brief Does partial selection of some object
+ *
+ * @param type
+ * @param pObject
+ */
 void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
     DTRACE();
 

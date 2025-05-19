@@ -132,7 +132,7 @@ typedef void (*FIRE_END_HANDLER)(CMatrixMapStatic *hit, const D3DXVECTOR3 &pos, 
 #define FIRE_SPEED (0.5f / 25.0f)
 
 // selection
-#define SEL_COLOR_DEFAULT 0xFF00FF00
+#define SEL_COLOR_DEFAULT 0xFFFFFFFF
 #define SEL_COLOR_TMP     0xFF305010
 enum EBuoyType {
     BUOY_RED,
