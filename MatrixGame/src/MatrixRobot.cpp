@@ -1165,7 +1165,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                         }
                         else {
                             if (type == 0)
-                                m_Weapons[nC].FireBegin(m_Velocity * (1.0f / LOGIC_TAKT_PERIOD), this);
+                                m_Weapons[nC].FireBegin(m_Velocity * (1.0f / ms), this);
                             else
                                 m_Weapons[nC].FireEnd();
                         }

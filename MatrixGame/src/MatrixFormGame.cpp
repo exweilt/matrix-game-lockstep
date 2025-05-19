@@ -238,6 +238,10 @@ void CFormMatrixGame::Leave(void) {
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
+    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_tick).c_str());
+    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_tick).c_str());
+    g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_total_ms).c_str());
+
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
     {
         return;
@@ -732,6 +736,11 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
     {
         Input::onKeyUp(vk);
         g_MatrixMap->m_VKeyDown = 0;
+    }
+
+    if (vk == VK_NUMPAD5 && down)
+    {
+        next_frame_requested = true;
     }
 
     if (g_MatrixMap->m_Console.IsActive())

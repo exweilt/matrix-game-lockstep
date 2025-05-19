@@ -2441,35 +2441,35 @@ void CMatrixMap::Takt(int step) {
     m_DI.Takt(step);
     DCP();
 
-    for (i = 0; i < m_EffectSpawnersCnt; ++i) {
-        m_EffectSpawners[i].Takt(fstep);
-    }
-    DCP();
-    RemoveEffectSpawnerByTime();
-    DCP();
-
-    // SETFLAG(m_Flags,MMFLAG_EFF_TAKT);
-    for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
-#ifdef DEAD_PTR_SPY_ENABLE
-        CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
-        if (deade) {
-            debugbreak();
-        }
-#endif
-#ifdef DEAD_CLASS_SPY_ENABLE
-        CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
-        if (spot) {
-            debugbreak();
-        }
-
-#endif
-
-        m_EffectsNextTakt = e->m_Next;
-        DCP();
-        e->Takt(fstep);
-        DCP();
-        e = m_EffectsNextTakt;
-    }
+//     for (i = 0; i < m_EffectSpawnersCnt; ++i) {
+//         m_EffectSpawners[i].Takt(fstep);
+//     }
+//     DCP();
+//     RemoveEffectSpawnerByTime();
+//     DCP();
+//
+//     // SETFLAG(m_Flags,MMFLAG_EFF_TAKT);
+//     for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
+// #ifdef DEAD_PTR_SPY_ENABLE
+//         CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
+//         if (deade) {
+//             debugbreak();
+//         }
+// #endif
+// #ifdef DEAD_CLASS_SPY_ENABLE
+//         CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
+//         if (spot) {
+//             debugbreak();
+//         }
+//
+// #endif
+//
+//         m_EffectsNextTakt = e->m_Next;
+//         DCP();
+//         e->Takt(fstep);
+//         DCP();
+//         e = m_EffectsNextTakt;
+//     }
     DCP();
     // RESETFLAG(m_Flags,MMFLAG_EFF_TAKT);
 

@@ -188,6 +188,7 @@ public:
 
     void CalcCannonPlace(void);
 
+    void physics_process(int step);
     void Takt(int step);
 
     bool IsLogicVisible(CMatrixMapStatic *ofrom, CMatrixMapStatic *oto, float second_z = 0.0f);

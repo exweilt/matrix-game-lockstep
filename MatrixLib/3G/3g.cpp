@@ -11,6 +11,7 @@
 #include "CBlockPar.hpp"
 #include "CException.hpp"
 #include "CReminder.hpp"
+#include "../../MatrixGame/src/Network/StateManager.hpp"
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -479,7 +480,9 @@ int L3GRun()
             delta_time *= 4;
         }
 
-        int delta = std::min(100LL, to_milliseconds(delta_time).count());
+        int delta = to_milliseconds(delta_time).count();
+        g_total_ms += delta;
+        // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
         // TODO: bring smoothness back?
         // smooths -= smooth[smp];
@@ -492,13 +495,15 @@ int L3GRun()
 #ifdef _DEBUG
         SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
-
         lgr.add_ticks(delta);
-        SRemindCore::Takt(delta);
+        //SRemindCore::Takt(delta); ATTENTION
         g_FormCur->Takt(delta);
+        // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
         RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
+
+        // g_physics_tick += 1;
 
         // TODO: maybe add back FPS limit?
         g_FormCur->Draw();
@@ -506,6 +511,8 @@ int L3GRun()
         CHelper::AfterDraw();
 #endif
         fps++;
+
+        g_graphics_tick += 1;
 
         g_DrawFPS = fps.count();
 

@@ -2977,49 +2977,12 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
-    if ((GetTime() - m_GatherInfoLast) > 100) {
-        m_GatherInfoLast = GetTime();
-
-        GatherInfo(0);
-        GatherInfo(1);
-        //        GatherInfo(2);
+    if (next_frame_requested)
+    {
+        next_frame_requested = false;
+        physics_process(step);
+        g_physics_tick += 1;
     }
-    DCP();
-
-    int portions = step / LOGIC_TAKT_PERIOD;
-
-    for (int cnt = 0; cnt < portions; cnt++) {
-        CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-    }
-
-    DCP();
-
-    portions = step - portions * LOGIC_TAKT_PERIOD;
-    if (portions) {
-        CMatrixMapStatic::ProceedLogic(portions);
-    }
-    DCP();
-
-    while (GetTime() > m_TaktNext) {
-        m_TaktNext += LOGIC_TAKT_PERIOD;
-        // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-
-        for (int i = 0; i < m_SideCnt; i++) {
-            m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
-        }
-    }
-
-    DCP();
-
-    if (GetPlayerSide()->GetArcadedObject()) {
-        DCP();
-        GetPlayerSide()->GetArcadedObject()->StaticTakt(step);
-        if (GetPlayerSide()->GetArcadedObject()) {
-            GetPlayerSide()->GetArcadedObject()->RNeed(MR_Matrix);
-            GetPlayerSide()->InterpolateArcadedRobotArmorP(step);
-        }
-    }
-    DCP();
 
     CMatrixMap::Takt(step);  // graphic takts after logic takt
 
@@ -3427,6 +3390,87 @@ void CMatrixMapLogic::CalcCannonPlace(void) {
                 ERROR_E;  // Место не найдено
         }
         obj = obj->GetNextLogic();
+    }
+}
+void CMatrixMapLogic::physics_process(int step)
+{
+    if ((GetTime() - m_GatherInfoLast) > 100) {
+        m_GatherInfoLast = GetTime();
+
+        GatherInfo(0);
+        GatherInfo(1);
+        //        GatherInfo(2);
+    }
+    DCP();
+
+
+    CMatrixMapStatic::ProceedLogic(step);
+    // int portions = step / LOGIC_TAKT_PERIOD;
+    // for (int cnt = 0; cnt < portions; cnt++) {
+    //     CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
+    // }
+
+    // DCP();
+
+    // portions = step - portions * LOGIC_TAKT_PERIOD;
+    // if (portions) {
+    //     CMatrixMapStatic::ProceedLogic(portions);
+    // }
+    DCP();
+
+    // while (GetTime() > m_TaktNext) {
+    //     m_TaktNext += LOGIC_TAKT_PERIOD;
+    //     // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
+    //
+    //     for (int i = 0; i < m_SideCnt; i++) {
+    //         m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
+    //     }
+    // }
+    for (int i = 0; i < m_SideCnt; i++) {
+        m_Side[i].LogicTakt(step);
+    }
+
+    DCP();
+
+    if (GetPlayerSide()->GetArcadedObject()) {
+        DCP();
+        GetPlayerSide()->GetArcadedObject()->StaticTakt(step);
+        if (GetPlayerSide()->GetArcadedObject()) {
+            GetPlayerSide()->GetArcadedObject()->RNeed(MR_Matrix);
+            GetPlayerSide()->InterpolateArcadedRobotArmorP(step);
+        }
+    }
+    DCP();
+
+
+    for (int i = 0; i < m_EffectSpawnersCnt; ++i) {
+        m_EffectSpawners[i].Takt(step);
+    }
+    DCP();
+    RemoveEffectSpawnerByTime();
+    DCP();
+
+    // SETFLAG(m_Flags,MMFLAG_EFF_TAKT);
+    for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
+#ifdef DEAD_PTR_SPY_ENABLE
+        CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
+        if (deade) {
+            debugbreak();
+        }
+#endif
+#ifdef DEAD_CLASS_SPY_ENABLE
+        CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
+        if (spot) {
+            debugbreak();
+        }
+
+#endif
+
+        m_EffectsNextTakt = e->m_Next;
+        DCP();
+        e->Takt(step);
+        DCP();
+        e = m_EffectsNextTakt;
     }
 }
 
