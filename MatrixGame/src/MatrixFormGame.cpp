@@ -22,6 +22,10 @@
 #include "Interface/CCounter.h"
 #include "MatrixGamePathUtils.hpp"
 
+#include "Network/Command.hpp"
+#include "Network/Message.hpp"
+#include "Network/StateManager.hpp"
+
 #include <input.hpp>
 
 #include <time.h>
@@ -594,7 +598,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                     if (ps->GetCurGroup() && ps->GetCurGroup()->GetRobotsCnt() && ps->GetCurGroup()->GetFlyersCnt()) {
                         ps->GetCurGroup()->SortFlyers();
                     }
-                    ps->Select(GROUP, NULL);
+                    ps->Select(SELECTION_GROUP, NULL);
                 }
                 else if (ps->GetCurSelGroup()->GetFlyersCnt() == 1 && !ps->GetCurSelGroup()->GetRobotsCnt()) {
                     DCP();
@@ -610,7 +614,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                             ps->GetCurGroup()->GetFlyersCnt()) {
                             ps->GetCurGroup()->SortFlyers();
                         }
-                        ps->Select(GROUP, NULL);
+                        ps->Select(SELECTION_GROUP, NULL);
                     }
                     else {
                         ps->SetCurGroup(ps->CreateGroupFromCurrent());
@@ -632,7 +636,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                             ps->GetCurGroup()->GetFlyersCnt()) {
                             ps->GetCurGroup()->SortFlyers();
                         }
-                        ps->Select(GROUP, NULL);
+                        ps->Select(SELECTION_GROUP, NULL);
                     }
                     else {
                         ps->SetCurGroup(ps->CreateGroupFromCurrent());
@@ -741,6 +745,27 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
     if (vk == VK_NUMPAD5 && down)
     {
         next_frame_requested = true;
+    }
+
+    if (vk == VK_F1 && down)
+    {
+        nw::CommandMoveParams m1 = nw::CommandMoveParams(10, D3DXVECTOR3 {100, 5, 100});
+        nw::CommandMoveParams m2 = nw::CommandMoveParams(11, D3DXVECTOR3 {100, 5, 100});
+        nw::Message msg { nw::MessageCommandBatchParams{0, 1} };
+        msg.command_batch.commands.push_back(m1);
+        msg.command_batch.commands.push_back(m2);
+
+        u32 sz = msg.get_serialized_size();
+
+        void *from = malloc(sz + 5);
+        msg.serialize_to_buffer(static_cast<u8*>(from));
+
+        void *to = malloc(sz);
+        memcpy(to, from, sz);
+
+        nw::Message msg2 = nw::Message::deserialize_from_buffer(static_cast<u8*>(to));
+        nw::MessageCommandBatchParams com_batch2 = msg2.command_batch;
+        return;
     }
 
     if (g_MatrixMap->m_Console.IsActive())
@@ -1322,7 +1347,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                     if (ps->GetCurGroup() && ps->GetCurGroup()->GetRobotsCnt() && ps->GetCurGroup()->GetFlyersCnt()) {
                         ps->GetCurGroup()->SortFlyers();
                     }
-                    ps->Select(GROUP, NULL);
+                    ps->Select(SELECTION_GROUP, NULL);
                 }
                 else if (ps->GetCurSelGroup()->GetFlyersCnt() == 1 && !ps->GetCurSelGroup()->GetRobotsCnt()) {
                     ps->CreateGroupFromCurrent();

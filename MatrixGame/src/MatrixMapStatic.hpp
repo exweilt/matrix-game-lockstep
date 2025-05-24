@@ -10,6 +10,8 @@
 
 #include <utils.hpp>
 
+#include "Network/StateManager.hpp"
+
 class CMatrixMapGroup;
 typedef CMatrixMapGroup *PCMatrixMapGroup;
 
@@ -284,6 +286,13 @@ protected:
     }
 
 public:
+    /**
+    * @brief Unique ID used in Networking command sync.
+    *
+    * TODO: Probably this unique ID space should only be shared by buildings, factories, turrets and robots.
+    */
+    const u32 m_NID{g_next_nid++};
+
     CMatrixMapStatic *m_NextStackItem;
     CMatrixMapStatic *m_PrevStackItem;
 

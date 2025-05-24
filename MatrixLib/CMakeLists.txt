@@ -116,6 +116,8 @@ else()
     list(APPEND COMPILE_DEFINITIONS $<$<CONFIG:Debug>:_DEBUG>)
 endif()
 
-target_compile_options(MatrixLib PRIVATE ${COMPILE_OPTIONS})
+# The -include winsock2.h is needed here because for networking winsock2.h has to be included before "windows.h",
+#   while there are too many entries of #include "windows.h" to do it in place and it is also included by third parties.
+target_compile_options(MatrixLib PRIVATE -include winsock2.h ${COMPILE_OPTIONS})
 target_compile_definitions(MatrixLib PRIVATE ${COMPILE_DEFINITIONS} _ALLOW_RTCc_IN_STL)
 target_link_options(MatrixLib PUBLIC "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")

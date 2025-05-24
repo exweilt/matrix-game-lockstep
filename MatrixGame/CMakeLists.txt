@@ -25,10 +25,12 @@ target_include_directories(
         src
         "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>")
 
+# The -include winsock2.h is needed here because for networking winsock2.h has to be included before "windows.h",
+#   while there are too many entries of #include "windows.h" to do it in place and it is also included by third parties.
 target_compile_options(
     MatrixGameInternal
     PUBLIC
-        ${COMPILE_OPTIONS})
+        -include winsock2.h ${COMPILE_OPTIONS})
 
 target_compile_definitions(
     MatrixGameInternal
@@ -93,7 +95,7 @@ target_sources(MatrixGame PRIVATE
     ${MATRIX_RESOURCES}
 )
 
-target_link_libraries(MatrixGame MatrixGameInternal)
+target_link_libraries(MatrixGame MatrixGameInternal ws2_32)
 
 target_link_options(
     MatrixGame

@@ -810,7 +810,7 @@ void CMatrixSideUnit::OnLButtonDouble(
         Select(ROBOT, NULL);
     }
     else if (GetCurGroup() && GetCurGroup()->GetObjectsCnt() > 1) {
-        Select(GROUP, NULL);
+        Select(SELECTION_GROUP, NULL);
     }
 }
 
@@ -1017,7 +1017,7 @@ void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
         g_IFaceList->ResetOrderingMode();
     }
 
-    if (type == GROUP || type == FLYER || type == ROBOT) {
+    if (type == SELECTION_GROUP || type == FLYER || type == ROBOT) {
         if (m_Id == controllable_side_id) {
             int rnd = g_MatrixMap->Rnd(0, 6);
             if (!rnd) {
@@ -1064,7 +1064,7 @@ void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
             CSound::Play(S_BUILDING_SEL, SL_SELECTION);
         }
     }
-    else if (type == GROUP) {
+    else if (type == SELECTION_GROUP) {
         m_CurrSel = GROUP_SELECTED;
 
         SetCurSelNum(0);

@@ -77,28 +77,28 @@ typedef struct _cond {
     }
 } Condition;
 
-typedef struct _act {
-    uint32_t m_MoveTo;
-    uint32_t m_Patrol;
-    ChangeEnemy m_ChangeEnemy;
-    AttackEnemy m_AttackEnemy;
-    PursueEnemy m_PursueEnemy;
-    FleeFromEnemy m_FleeFromEnemy;
-    CMatrixState *m_GoTo;
-    ExitFromTactics m_Exit;
-    CaptureTarget m_Capture;
-    _act() {
-        m_MoveTo = MOVETO_UNDEF;
-        m_Patrol = MOVETO_UNDEF;
-        m_ChangeEnemy = CHANGE_UNDEF;
-        m_AttackEnemy = ATTACK_UNDEF;
-        m_PursueEnemy = PURSUE_UNDEF;
-        m_FleeFromEnemy = FLEE_UNDEF;
-        m_GoTo = nullptr;
-        m_Exit = EXIT_UNDEF;
-        m_Capture = CAPTURE_UNDEF;
-    }
-} Action;
+// typedef struct _act {
+//     uint32_t m_MoveTo;
+//     uint32_t m_Patrol;
+//     ChangeEnemy m_ChangeEnemy;
+//     AttackEnemy m_AttackEnemy;
+//     PursueEnemy m_PursueEnemy;
+//     FleeFromEnemy m_FleeFromEnemy;
+//     CMatrixState *m_GoTo;
+//     ExitFromTactics m_Exit;
+//     CaptureTarget m_Capture;
+//     _act() {
+//         m_MoveTo = MOVETO_UNDEF;
+//         m_Patrol = MOVETO_UNDEF;
+//         m_ChangeEnemy = CHANGE_UNDEF;
+//         m_AttackEnemy = ATTACK_UNDEF;
+//         m_PursueEnemy = PURSUE_UNDEF;
+//         m_FleeFromEnemy = FLEE_UNDEF;
+//         m_GoTo = nullptr;
+//         m_Exit = EXIT_UNDEF;
+//         m_Capture = CAPTURE_UNDEF;
+//     }
+// } Action;
 
 // class CMatrixRule : public CBaseTactics
 //{

@@ -77,7 +77,7 @@ enum ESelType {
     FLYER = 2,
     BUILDING = 3,
     NOTHING = 4,
-    GROUP = 5,
+    SELECTION_GROUP = 5,
     ARCADE = 6,
 
     ESelType_FORCE_DWORD = 0x7FFFFFFF

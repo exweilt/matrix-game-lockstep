@@ -1148,8 +1148,9 @@ void CMatrixMap::BeforeDraw(void) {
             m_DI.T(L"Under cursor", L"Mesh", 1000);
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
             m_DI.T(L"Under cursor",
-                   utils::format(L"Robot %x   S%d T%d G%d",
+                   utils::format(L"Robot %x  ID%d S%d T%d G%d",
                                  reinterpret_cast<uintptr_t>(m_TraceStopObj),
+                                 static_cast<CMatrixRobotAI *>(m_TraceStopObj)->m_NID,
                                  m_TraceStopObj->GetSide(),
                                  static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetTeam(),
                                  static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetGroupLogic())
