@@ -8,3 +8,14 @@ u32 g_total_ms = 0;
 bool next_frame_requested = false;
 
 u32 g_next_nid = 0;
+
+namespace network
+{
+    std::list<network::CommandsFrameRecord> commands_journal;
+
+    void static_init_networking()
+    {
+        commands_journal.push_back(network::CommandsFrameRecord(0));
+    }
+}
+

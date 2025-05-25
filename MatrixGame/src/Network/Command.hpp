@@ -1,18 +1,19 @@
 #pragma once
 #include <winsock2.h>
 
-#include "Command.hpp"
-#include "MatrixRobot.hpp"
 
 #include <d3dx9math.h>
 
 #include "Types.hpp"
 
 #include <cassert>
+#include <string>
 // #include <variant>
 
-
+// Forward declarations because of circular dependencies
+#define MAX_WEAPON_CNT   5
 enum ERobotUnitKind : unsigned int;
+// #include "MatrixRobot.hpp"
 
 namespace network
 {

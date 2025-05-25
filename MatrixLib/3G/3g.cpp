@@ -11,8 +11,10 @@
 #include "CBlockPar.hpp"
 #include "CException.hpp"
 #include "CReminder.hpp"
-#include "../../MatrixGame/src/Network/StateManager.hpp"
-
+#include "Types.hpp"
+// #include "../../MatrixGame/src/Network/StateManager.hpp"
+extern u32 g_graphics_tick;
+extern u32 g_total_ms;
 #include <utils.hpp>
 #include <fps_counter.hpp>
 #include <stupid_logger.hpp>

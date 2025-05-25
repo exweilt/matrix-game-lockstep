@@ -139,6 +139,9 @@ static void static_init(void) {
     // Base
     CMain::BaseInit();
 
+    // Network
+    network::static_init_networking();
+
     // 3G
 #ifdef _DEBUG
     D3DResource::StaticInit();
