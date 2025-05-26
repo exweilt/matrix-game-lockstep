@@ -22,12 +22,15 @@ namespace network
     {
         CommandsFrameRecord* record = get_frame_record(frame);
 
-        if (record->is_side_input_ready(controllable_side_id))
+        for (u32 side_id = 1; side_id < 5; side_id++)
         {
-            std::vector<Command>* commands = record->get_side_inputs(controllable_side_id);
-            for (u32 i = 0; i < commands->size(); ++i)
+            if (record->is_side_input_ready(side_id))
             {
-                (*commands)[i].execute_for_side(controllable_side_id);
+                std::vector<Command>* commands = record->get_side_inputs(side_id);
+                for (u32 i = 0; i < commands->size(); ++i)
+                {
+                    (*commands)[i].execute_for_side(side_id);
+                }
             }
         }
     }

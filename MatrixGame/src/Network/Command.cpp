@@ -25,7 +25,7 @@ namespace network
         }
     }
 
-    void Command::execute_for_side([[maybe_unused]]u32 side_id)
+    void Command::execute_for_side(u32 side_id)
     {
         switch (type)
         {
@@ -39,7 +39,7 @@ namespace network
                     int mx = Float2Int(move.target_pos.x / GLOBAL_SCALE_MOVE);
                     int my = Float2Int(move.target_pos.y / GLOBAL_SCALE_MOVE);
 
-                    CMatrixSideUnit* side = g_MatrixMap->GetSideById(2);
+                    CMatrixSideUnit* side = g_MatrixMap->GetSideById(side_id);
                     u32 logic_group = side->GetNextFreeLogicGroup();
 
                     side->m_PlayerGroup[logic_group].Order(mpo_Stop);
