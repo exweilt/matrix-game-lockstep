@@ -119,6 +119,7 @@ namespace network
         Command(CommandCaptureParams cpt)   : type(CommandType::CAPTURE),   capture(cpt) {};
         Command(CommandBuildParams bld)     : type(CommandType::BUILD),     build(bld) {};
 
+        void execute_for_side(u32 side_id = 1);
 
         u32 get_serialized_size() const
         {

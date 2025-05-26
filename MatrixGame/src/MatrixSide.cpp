@@ -844,8 +844,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     CMatrixMapStatic *pObject = GetObjectUnderCursor();
     DCP();
 
-    int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
-    int my = Float2Int(g_MatrixMap->m_TraceStopPos.y / GLOBAL_SCALE_MOVE);
+    // [[maybe_unused]] int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
+    // [[maybe_unused]] int my = Float2Int(g_MatrixMap->m_TraceStopPos.y / GLOBAL_SCALE_MOVE);
     D3DXVECTOR3 tpos = g_MatrixMap->m_TraceStopPos;
 
     DCP();
@@ -854,8 +854,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         D3DXVECTOR2 tgt;
         if (g_MatrixMap->m_Minimap.CalcMinimap2World(tgt)) {
             pObject = TRACE_STOP_LANDSCAPE;
-            mx = Float2Int(tgt.x / GLOBAL_SCALE_MOVE);
-            my = Float2Int(tgt.y / GLOBAL_SCALE_MOVE);
+            // mx = Float2Int(tgt.x / GLOBAL_SCALE_MOVE);
+            // my = Float2Int(tgt.y / GLOBAL_SCALE_MOVE);
             tpos = D3DXVECTOR3(tgt.x, tgt.y, tpos.z);
             g_MatrixMap->m_Minimap.AddEvent(tpos.x, tpos.y, 0xffff0000, 0xffff0000);
         }
@@ -878,8 +878,19 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
-            PGOrderMoveTo(SelGroupToLogicGroup(),
-                          CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+            // PGOrderMoveTo(SelGroupToLogicGroup(),
+            //               CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+            network::Command command
+            {
+                network::CommandMoveParams
+                {
+                    GetCurGroup()->m_FirstObject->m_Object->m_NID, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0}
+                }
+            };
+            std::vector<network::Command> commands;
+            commands.push_back(command);
+
+            network::get_frame_record(g_physics_tick)->set_side_inputs(m_Id, commands);
 
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
             while (objs) {
@@ -8963,14 +8974,12 @@ void CMatrixSideUnit::WarPL(int group) {
     }
 }
 
-int CMatrixSideUnit::SelGroupToLogicGroup() {
-    CMatrixMapStatic *obj;
-    int i, no;
-
-    for (i = 0; i < MAX_LOGIC_GROUP; i++)
+int CMatrixSideUnit::GetNextFreeLogicGroup()
+{
+    for (int i = 0; i < MAX_LOGIC_GROUP; i++)
         m_PlayerGroup[i].m_RobotCnt = 0;
 
-    obj = CMatrixMapStatic::GetFirstLogic();
+    CMatrixMapStatic* obj = CMatrixMapStatic::GetFirstLogic();
     while (obj) {
         if (obj->IsLiveRobot() && obj->GetSide() == m_Id) {
             if (obj->AsRobot()->GetGroupLogic() >= 0 && obj->AsRobot()->GetGroupLogic() < MAX_LOGIC_GROUP) {
@@ -8980,11 +8989,16 @@ int CMatrixSideUnit::SelGroupToLogicGroup() {
         obj = obj->GetNextLogic();
     }
 
-    for (no = 0; no < MAX_LOGIC_GROUP; no++) {
+    for (int no = 0; no < MAX_LOGIC_GROUP; no++) {
         if (m_PlayerGroup[no].m_RobotCnt <= 0)
-            break;
+            return no;
     }
-    ASSERT(no < MAX_LOGIC_GROUP);
+
+    return 0;
+}
+
+int CMatrixSideUnit::SelGroupToLogicGroup() {
+    int no = GetNextFreeLogicGroup();
 
     m_PlayerGroup[no].Order(mpo_Stop);
     m_PlayerGroup[no].m_Obj = NULL;

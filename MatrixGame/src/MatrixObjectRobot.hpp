@@ -9,7 +9,6 @@
 #include "MatrixConfig.hpp"
 #include "MatrixProgressBar.hpp"
 #include "Effects/MatrixEffect.hpp"
-#include "Network/StateManager.hpp"
 
 class CMatrixFlyer;
 

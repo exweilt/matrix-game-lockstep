@@ -25,6 +25,45 @@ namespace network
         }
     }
 
+    void Command::execute_for_side([[maybe_unused]]u32 side_id)
+    {
+        switch (type)
+        {
+        case CommandType::MOVE:
+        {
+            CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+            for (; ms; ms = ms->GetNextLogic())
+            {
+                if (ms->m_NID == move.robot_nid && ms->IsLiveRobot())
+                {
+                    int mx = Float2Int(move.target_pos.x / GLOBAL_SCALE_MOVE);
+                    int my = Float2Int(move.target_pos.y / GLOBAL_SCALE_MOVE);
+
+                    CMatrixSideUnit* side = g_MatrixMap->GetSideById(2);
+                    u32 logic_group = side->GetNextFreeLogicGroup();
+
+                    side->m_PlayerGroup[logic_group].Order(mpo_Stop);
+                    side->m_PlayerGroup[logic_group].m_Obj = NULL;
+                    side->m_PlayerGroup[logic_group].SetWar(false);
+                    side->m_PlayerGroup[logic_group].m_RoadPath->Clear();
+
+                    side->m_PlayerGroup[logic_group].m_RobotCnt++;
+
+                    ms->AsRobot()->SetGroupLogic(logic_group);
+
+                    side->PGOrderMoveTo(logic_group, CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+                    return;
+                }
+            }
+        }
+            return;
+        case CommandType::CAPTURE:  return;
+        case CommandType::ATTACK:   return;
+        case CommandType::BUILD:    return;
+        default:                    return;
+        }
+    }
+
     Command Command::deserialize_from_buffer(const u8 *buffer)
     {
         Command result;

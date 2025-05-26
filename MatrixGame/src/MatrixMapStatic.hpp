@@ -6,11 +6,13 @@
 #pragma once
 
 #include "CReminder.hpp"
+#include "Types.hpp"
 #include "VectorObject.hpp"
 
 #include <utils.hpp>
 
-#include "Network/StateManager.hpp"
+extern u32 g_next_nid;
+// #include "Network/StateManager.hpp"
 
 class CMatrixMapGroup;
 typedef CMatrixMapGroup *PCMatrixMapGroup;

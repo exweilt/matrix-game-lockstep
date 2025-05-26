@@ -11,7 +11,6 @@
 #include "MatrixGame.h"
 
 #include "CStorage.hpp"
-#include "Network/StateManager.hpp"
 
 #include <vector>
 

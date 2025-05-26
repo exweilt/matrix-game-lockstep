@@ -73,4 +73,6 @@ namespace network
     }
 
     void static_init_networking();
+
+    void consume_input_frame(const u32 frame);
 }

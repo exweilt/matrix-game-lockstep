@@ -2879,7 +2879,8 @@ void CMatrixMapLogic::Takt(int step) {
         m_Console.Takt(step);
     }
 
-    if (IsPaused()) {
+    // Pause handling
+    if (false && IsPaused()) {
         if (m_PauseHint == NULL && g_RangersInterface && !FLAG(m_Flags, MMFLAG_DIALOG_MODE)) {
             m_PauseHint = CMatrixHint::Build(std::wstring{TEMPLATE_PAUSE});
             m_PauseHint->Show(14, 62);
@@ -2980,6 +2981,7 @@ void CMatrixMapLogic::Takt(int step) {
     if (next_frame_requested)
     {
         next_frame_requested = false;
+        network::consume_input_frame(g_physics_tick);
         physics_process(step);
         g_physics_tick += 1;
     }

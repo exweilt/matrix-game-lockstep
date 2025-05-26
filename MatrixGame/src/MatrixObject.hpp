@@ -6,6 +6,8 @@
 #pragma once
 
 #include "MatrixMap.hpp"
+#include "MatrixProgressBar.hpp"
+#include "MatrixShadowManager.hpp"
 
 /**
  * Docthis behaviour
