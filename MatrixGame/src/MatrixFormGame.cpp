@@ -24,7 +24,7 @@
 
 #include "Network/Command.hpp"
 #include "Network/Message.hpp"
-#include "Network/StateManager.hpp"
+#include "Network/Network.hpp"
 
 #include <input.hpp>
 
@@ -242,8 +242,8 @@ void CFormMatrixGame::Leave(void) {
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
-    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_tick).c_str());
-    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_tick).c_str());
+    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_frame).c_str());
     g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_total_ms).c_str());
 
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
@@ -744,26 +744,26 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_NUMPAD5 && down)
     {
-        if (network::commands_journal.size() > g_physics_tick)
+        if (network::commands_journal.size() > g_physics_frame)
         {
-            nw::CommandsFrameRecord* frame =  nw::get_frame_record(g_physics_tick);
+            nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
             if (frame->is_side_input_ready(2))
             {
                 next_frame_requested = true;
-                network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_tick + 1));
+                network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame + 1));
             }
         }
     }
 
     if (vk == VK_F2 && down)
     {
-        nw::CommandsFrameRecord* frame =  nw::get_frame_record(g_physics_tick);
+        nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         frame->set_side_inputs(2, std::vector<nw::Command>());
     }
 
     if (vk == VK_F1 && down)
     {
-        nw::CommandsFrameRecord* frame =  nw::get_frame_record(g_physics_tick);
+        nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         std::vector<nw::Command> commands{};
         commands.push_back(nw::CommandMoveParams{2910, {3000.0f, 1600.0f, 0}});
         frame->set_side_inputs(3, commands);

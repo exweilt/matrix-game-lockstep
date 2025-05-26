@@ -3,27 +3,13 @@
 #include "Command.hpp"
 #include "Types.hpp"
 
-// #include <bitset>
 #include <list>
 #include <memory>
 #include <vector>
 
-enum class SideID : u8
-{
-    YELLOW = 1,
-    RED = 2,
-    BLUE = 3,
-    GREEN = 4,
-};
-
-constexpr u32 PHYSICS_TICK_RATE = 10;
-static_assert(PHYSICS_TICK_RATE >= 1 && PHYSICS_TICK_RATE < 200);
-
-constexpr u32 PHYSICS_TICK_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_TICK_RATE) + 1;
-
 extern u8 controllable_side_id; // SideID
-extern u32 g_graphics_tick;
-extern u32 g_physics_tick;
+extern u32 g_graphics_frame;
+extern u32 g_physics_frame;
 extern u32 g_total_ms;
 
 extern bool next_frame_requested;
@@ -34,6 +20,19 @@ extern u32 g_next_nid;
 
 namespace network
 {
+    constexpr u32 PHYSICS_FRAME_RATE = 10;
+    static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
+
+    constexpr u32 PHYSICS_FRAME_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_FRAME_RATE) + 1;
+
+    enum class SideID : u8
+    {
+        YELLOW = 1,
+        RED = 2,
+        BLUE = 3,
+        GREEN = 4,
+    };
+
     struct CommandsFrameRecord
     {
         u32 frame; // The commands record for this physics frame (tick).
@@ -72,7 +71,14 @@ namespace network
         return &*it;
     }
 
+    inline CommandsFrameRecord* get_current_frame_record()
+    {
+        return get_frame_record(g_physics_frame);
+    }
+
     void static_init_networking();
 
     void consume_input_frame(const u32 frame);
 }
+
+namespace nw = network;

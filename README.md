@@ -8,11 +8,11 @@ Lockstep with Server Relay
 
 - Disable enemy's AIs ✔️
 - Make red/green/blue robots controllable by the player ✔️
-- Harness the Tick() function ❌
-- Add the state manager singleton ❌
-- Remove the player's ability to control robots, construct etc... ❌ 
-- Add Actions, the variable for storing the list of actions for the current frame to StateManager and poll it in loop to apply in game as if they were executed by some side ❌
-- Make player being able to form new Actions adding them to the variable(so it looks like the player can control robots now again) ❌
+- Harness the Tick() function ✔️
+- Add the state managing entity ✔️
+- Remove the player's ability to control robots, construct etc... ✔️ 
+- Add Actions, the variable for storing the list of actions for the current frame to StateManager and poll it in loop to apply in game as if they were executed by some side ✔️
+- Make player being able to form new Actions adding them to the variable(so it looks like the player can control robots now again) ✔️
 - Add fate control with environment variables `CLIENT1`, `CLIENT2` ❌
 - Functionality to launch two instances at once and move them to screen corners ❌
 - Make the Clients freeze at frame 0 waiting for the connection and game to start ❌

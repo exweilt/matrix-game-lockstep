@@ -137,8 +137,6 @@ namespace network
     };
 }
 
-namespace nw = network;
-
 
 // // WARNING: must be the same order as enum "MessageType" entries!
 // using Message = std::variant<

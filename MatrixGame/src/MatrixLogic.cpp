@@ -2981,9 +2981,9 @@ void CMatrixMapLogic::Takt(int step) {
     if (next_frame_requested)
     {
         next_frame_requested = false;
-        network::consume_input_frame(g_physics_tick);
+        network::consume_input_frame(g_physics_frame);
         physics_process(step);
-        g_physics_tick += 1;
+        g_physics_frame += 1;
     }
 
     CMatrixMap::Takt(step);  // graphic takts after logic takt

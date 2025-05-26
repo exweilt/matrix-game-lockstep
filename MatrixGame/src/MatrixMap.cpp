@@ -1117,6 +1117,13 @@ void CMatrixMap::BeforeDraw(void) {
     //    }
     //}
 
+    m_DI.T(L"Pos under cursor", utils::format(L"x=%d y=%d z=%d",
+                                 static_cast<int>(m_TraceStopPos.x),
+                                 static_cast<int>(m_TraceStopPos.y),
+                                 static_cast<int>(m_TraceStopPos.z))
+                           .c_str(),
+                   1000);
+
     // TAKT_BEGIN();
     m_TraceStopObj =
             Trace(&m_TraceStopPos, m_Camera.GetFrustumCenter(), m_Camera.GetFrustumCenter() + (m_MouseDir * 10000.0f),

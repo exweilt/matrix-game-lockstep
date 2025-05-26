@@ -13,7 +13,7 @@
 #include "CReminder.hpp"
 #include "Types.hpp"
 // #include "../../MatrixGame/src/Network/StateManager.hpp"
-extern u32 g_graphics_tick;
+extern u32 g_graphics_frame;
 extern u32 g_total_ms;
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -514,7 +514,7 @@ int L3GRun()
 #endif
         fps++;
 
-        g_graphics_tick += 1;
+        g_graphics_frame += 1;
 
         g_DrawFPS = fps.count();
 
