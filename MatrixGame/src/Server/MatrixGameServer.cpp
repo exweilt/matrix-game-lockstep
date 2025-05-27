@@ -12,9 +12,11 @@
 
 #include "Types.hpp"
 #include "Network/Network.hpp"
+// #include <enet/enet.h>
 
 int main()
 {
     std::cout << "Game server started!" << static_cast<u8>(network::SideID::RED) << std::endl;
+    // enet_initialize();
     return 0;
 }

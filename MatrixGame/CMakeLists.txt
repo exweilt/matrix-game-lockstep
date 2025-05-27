@@ -23,7 +23,9 @@ target_include_directories(
     PUBLIC
         .
         src
-        "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>")
+        "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>"
+        "${ENET_SOURCE_DIR}/include")
+
 
 # The -include winsock2.h is needed here because for networking winsock2.h has to be included before "windows.h",
 #   while there are too many entries of #include "windows.h" to do it in place and it is also included by third parties.
@@ -54,6 +56,7 @@ target_link_libraries(
         ${DIRECTX9_LIBRARIES}
         MatrixLib
         "$<$<C_COMPILER_ID:MSVC>:legacy_stdio_definitions>"
+        enet
 )
 
 if(MATRIXGAME_CHEATS)
@@ -152,6 +155,7 @@ if (NOT MATRIXGAME_BUILD_DLL)
 endif ()
 
 
+
 # =================== Multiplayer Server ===================
 #                  Filled with lots of shit.
 add_executable(MatrixGameServer)
@@ -159,7 +163,8 @@ add_executable(MatrixGameServer)
 target_include_directories(
         MatrixGameServer
         PUBLIC
-        src)
+        src
+        "${ENET_SOURCE_DIR}/include")
 
 target_sources(MatrixGameServer PUBLIC
         src/Server/MatrixGameServer.cpp
@@ -174,4 +179,9 @@ target_link_options(
         PUBLIC
         ${LINK_OPTIONS}
 )
-target_link_libraries(MatrixGameServer PUBLIC MatrixGameInternal ws2_32)
+target_link_libraries(MatrixGameServer PUBLIC MatrixGameInternal ws2_32 enet)
+
+target_compile_options(
+        MatrixGameServer
+        PUBLIC
+        -include winsock2.h ${COMPILE_OPTIONS})

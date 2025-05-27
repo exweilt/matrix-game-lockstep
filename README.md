@@ -13,11 +13,11 @@ Lockstep with Server Relay
 - Remove the player's ability to control robots, construct etc... ✔️ 
 - Add Actions, the variable for storing the list of actions for the current frame to StateManager and poll it in loop to apply in game as if they were executed by some side ✔️
 - Make player being able to form new Actions adding them to the variable(so it looks like the player can control robots now again) ✔️
-- Add fate control with environment variables `CLIENT1`, `CLIENT2` ❌
-- Functionality to launch two instances at once and move them to screen corners ❌
-- Make the Clients freeze at frame 0 waiting for the connection and game to start ❌
-- Add the Relay Server as separate executable ❌
-- Add the ENet library ❌
+- Add fate control with environment variables `CLIENT1`, `CLIENT2` ✔️
+- Functionality to launch two instances at once and move them to screen corners ✔️
+- Make the Clients freeze at frame 0 waiting for the connection and game to start ✔️
+- Add the Relay Server as separate executable ✔️
+- Add the ENet library ✔️
 - Add Message functionality to allow for Client-Server, Server-Client and Client-Server-Client communication, add message loop handlers to process incoming msgs ❌
 - Add Server command to start the game ❌
 - Send sampled inputs to other clients ❌

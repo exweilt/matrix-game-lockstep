@@ -1,5 +1,5 @@
 #include "Network.hpp"
-
+// #include <enet/enet.h>
 u8 controllable_side_id = static_cast<u8>(nw::SideID::RED);
 u32 g_graphics_frame = 0;
 u32 g_physics_frame = 0;
@@ -16,6 +16,7 @@ namespace network
 
     void static_init_networking()
     {
+        // enet_initialize();
         controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
         commands_journal.push_back(network::CommandsFrameRecord(0));
     }

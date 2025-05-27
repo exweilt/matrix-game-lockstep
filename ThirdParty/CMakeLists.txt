@@ -1,4 +1,5 @@
 include(ExternalProject)
+include(FetchContent)
 
 cmake_policy(SET CMP0097 NEW) # skip updating submodules
 
@@ -71,3 +72,16 @@ else()
   target_link_libraries(LIBPNG INTERFACE png ZLIB)
 endif()
 add_dependencies(LIBPNG libpng-external)
+
+
+#===============================================================================
+
+
+FetchContent_Declare(
+        enet
+        GIT_REPOSITORY https://github.com/lsalzman/enet.git
+        GIT_TAG        v1.3.17  # Use a specific release tag
+        CMAKE_ARGS     -DENET_BUILD_SHARED=OFF  # Optional: Build as static (default)
+)
+FetchContent_MakeAvailable(enet)
+get_target_property(ENET_SOURCE_DIR enet SOURCE_DIR)
