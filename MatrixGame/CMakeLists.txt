@@ -150,3 +150,28 @@ if (NOT MATRIXGAME_BUILD_DLL)
         endif()
     endif ()
 endif ()
+
+
+# =================== Multiplayer Server ===================
+#                  Filled with lots of shit.
+add_executable(MatrixGameServer)
+
+target_include_directories(
+        MatrixGameServer
+        PUBLIC
+        src)
+
+target_sources(MatrixGameServer PUBLIC
+        src/Server/MatrixGameServer.cpp
+        src/Server/MatrixGameServer.hpp
+        ../MatrixLib/Base/Types.hpp
+        ${MATRIX_SOURCES}
+        ${MATRIX_HEADERS}
+)
+
+target_link_options(
+        MatrixGameServer
+        PUBLIC
+        ${LINK_OPTIONS}
+)
+target_link_libraries(MatrixGameServer PUBLIC MatrixGameInternal ws2_32)
