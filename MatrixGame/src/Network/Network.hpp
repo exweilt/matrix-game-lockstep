@@ -11,6 +11,7 @@ extern u8 controllable_side_id; // SideID
 extern u32 g_graphics_frame;
 extern u32 g_physics_frame;
 extern u32 g_total_ms;
+extern bool isClient2;
 
 extern bool next_frame_requested;
 

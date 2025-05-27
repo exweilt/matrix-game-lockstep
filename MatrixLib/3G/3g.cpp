@@ -15,6 +15,7 @@
 // #include "../../MatrixGame/src/Network/StateManager.hpp"
 extern u32 g_graphics_frame;
 extern u32 g_total_ms;
+extern bool isClient2;
 #include <utils.hpp>
 #include <fps_counter.hpp>
 #include <stupid_logger.hpp>
@@ -143,6 +144,12 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
     if (g_ScreenY <= 0)
         g_ScreenY = 1;
 
+    // ATTENTION
+#ifdef _DEBUG
+    g_ScreenX = 700;
+    g_ScreenY = 700;
+#endif
+
     if (cntpar < 1)
         SETFLAG(g_Flags, GFLAG_FULLSCREEN);
     else
@@ -196,11 +203,20 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
         AdjustWindowRectEx(&tr, WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU, false, 0);
 
         lgr.debug("Adjusted window: pos {}x{}, size {}x{}")(tr.left, tr.top, tr.right - tr.left, tr.bottom - tr.top);
+
+        // const bool isClient2 = std::getenv("CLIENT2") != nullptr;
+        long x = 0, y = 0;
+
+        if (isClient2)
+        {
+            x = 800;
+        }
+
         g_Wnd =
             CreateWindow(
                 classname.c_str(), utils::from_wstring(captionname).c_str(),
                 WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU,
-                0, 0, tr.right - tr.left, tr.bottom - tr.top, NULL, NULL, g_HInst, NULL);
+                x, y, tr.right - tr.left, tr.bottom - tr.top, NULL, NULL, g_HInst, NULL);
     }
     else
     {
@@ -602,11 +618,11 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         // case WM_ACTIVATE:
         case WM_ACTIVATEAPP:
         {
-            if (FLAG(g_Flags, GFLAG_KEEPALIVE))
-            {
-                // don't minimize or pause the game when keepalive flag is set
-                break;
-            }
+            // if (FLAG(g_Flags, GFLAG_KEEPALIVE))
+            // {
+            //     // don't minimize or pause the game when keepalive flag is set
+            //     break;
+            // }
             if (wParam != 0)
             {
                 SETFLAG(g_Flags, GFLAG_APPACTIVE);
@@ -626,6 +642,13 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             }
             else
             {
+                // Always keep alive (for multiplayer purposes)!
+                if (true || FLAG(g_Flags, GFLAG_KEEPALIVE))
+                {
+                    // don't minimize or pause the game when keepalive flag is set
+                    break;
+                }
+
                 RESETFLAG(g_Flags, GFLAG_APPACTIVE);
                 if (g_FormCur)
                 {

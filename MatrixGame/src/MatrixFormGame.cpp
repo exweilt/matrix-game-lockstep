@@ -245,6 +245,7 @@ void CFormMatrixGame::Draw(void) {
     g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_frame).c_str());
     g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_frame).c_str());
     g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_total_ms).c_str());
+    g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", controllable_side_id).c_str());
 
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
     {
@@ -763,10 +764,13 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F1 && down)
     {
-        nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-        std::vector<nw::Command> commands{};
-        commands.push_back(nw::CommandMoveParams{2910, {3000.0f, 1600.0f, 0}});
-        frame->set_side_inputs(3, commands);
+
+        // MoveWindow(g_Wnd, 100, 100, 700, 700, FALSE);
+
+        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        // std::vector<nw::Command> commands{};
+        // commands.push_back(nw::CommandMoveParams{2910, {3000.0f, 1600.0f, 0}});
+        // frame->set_side_inputs(3, commands);
 
 
 
