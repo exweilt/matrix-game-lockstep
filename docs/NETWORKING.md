@@ -1,5 +1,9 @@
 ## Developing
 
+### TODOS:
+
+- MatrixGameServer target should not depend on all the files from MatrixGameInternal
+
 ### How to start 2 game instances in CLion IDE?
 
 1. Go to `Run -> Edit Configurations`

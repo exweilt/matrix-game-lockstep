@@ -65,6 +65,8 @@ namespace network
 
     extern std::list<CommandsFrameRecord> commands_journal;
 
+    void process_network_frame();
+
     inline CommandsFrameRecord* get_frame_record(const u32 frame)
     {
         auto it = commands_journal.rbegin();

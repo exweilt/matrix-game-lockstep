@@ -12,10 +12,16 @@
 #include "CException.hpp"
 #include "CReminder.hpp"
 #include "Types.hpp"
+
 // #include "../../MatrixGame/src/Network/StateManager.hpp"
 extern u32 g_graphics_frame;
 extern u32 g_total_ms;
 extern bool isClient2;
+namespace network
+{
+    void process_network_frame();
+}
+
 #include <utils.hpp>
 #include <fps_counter.hpp>
 #include <stupid_logger.hpp>
@@ -488,6 +494,8 @@ int L3GRun()
             std::this_thread::yield();
             continue;
         }
+
+        network::process_network_frame();
 
         auto cur_takt = clock::now();
         auto delta_time = (cur_takt - prev_takt);
