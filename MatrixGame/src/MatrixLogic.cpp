@@ -15,6 +15,7 @@
 #include "MatrixGameDll.hpp"
 #include "MatrixMultiSelection.hpp"
 
+#include "Network/Network.hpp"
 #include <random.hpp>
 
 // CPoint MatrixDir45[8]={	CPoint(-1,0),	CPoint(1,0),CPoint(0,-1),CPoint(0,1),
@@ -2978,7 +2979,8 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
-    if (next_frame_requested)
+    // Next physics frame
+    if ((false && nw::get_frame_record(g_physics_frame)->is_side_input_ready(2) && nw::get_frame_record(g_physics_frame)->is_side_input_ready(3)) || next_frame_requested)
     {
         next_frame_requested = false;
         network::consume_input_frame(g_physics_frame);

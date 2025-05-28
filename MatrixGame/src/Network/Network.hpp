@@ -10,14 +10,17 @@
 extern u8 controllable_side_id; // SideID
 extern u32 g_graphics_frame;
 extern u32 g_physics_frame;
+extern u32 g_input_frame;
 extern u32 g_total_ms;
 extern bool isClient2;
+extern i32 g_time_since_last_input;
 
 extern bool next_frame_requested;
 
 // The next "free" networkable ID.
 // Used for robots, turrets, factories and bases.
 extern u32 g_next_nid;
+extern std::vector<network::Command> current_input;
 
 namespace network
 {
@@ -65,7 +68,9 @@ namespace network
 
     extern std::list<CommandsFrameRecord> commands_journal;
 
-    void process_network_frame();
+    void process_network_frame(u32 delta_ms);
+
+    void approve_final_input(u32 target_frame);
 
     inline CommandsFrameRecord* get_frame_record(const u32 frame)
     {

@@ -3,6 +3,7 @@
 #include "CException.hpp"
 #include "MatrixGame.h"
 #include "MatrixLogic.hpp"
+#include "Message.hpp"
 #include "stupid_logger.hpp"
 
 #include <enet/enet.h>
@@ -10,12 +11,16 @@
 u8 controllable_side_id = static_cast<u8>(nw::SideID::RED);
 u32 g_graphics_frame = 0;
 u32 g_physics_frame = 0;
+u32 g_input_frame = 0;
 u32 g_total_ms = 0;
 bool isClient2 = std::getenv("CLIENT2") != nullptr;
+i32 g_time_since_last_input = 2000;
 
 bool next_frame_requested = false;
 
 u32 g_next_nid = 0;
+
+std::vector<network::Command> current_input{};
 
 logger_type cli_lgr{"client.log"};
 
@@ -25,8 +30,49 @@ namespace network
 
     std::list<network::CommandsFrameRecord> commands_journal;
 
-    void process_network_frame()
+    void send_message(Message &msg)
     {
+        u32 size = msg.get_serialized_size();
+        void* buffer = malloc(size);
+        msg.serialize_to_buffer(static_cast<u8 *>(buffer));
+
+        ENetPacket* packet = enet_packet_create(buffer, size, ENET_PACKET_FLAG_RELIABLE);
+
+        enet_peer_send(g_client_host->peers, 0, packet);
+
+        enet_host_flush (g_client_host);
+    }
+
+    void approve_final_input(u32 target_frame)
+    {
+        get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
+        Message msg = MessageCommandBatchParams{target_frame, controllable_side_id};
+        msg.command_batch.commands = current_input;
+        send_message(msg);
+        current_input.clear();
+    }
+
+    void process_incoming_message(const Message &msg)
+    {
+        if (msg.type == MessageType::COMMAND_BATCH)
+        {
+            get_frame_record(g_physics_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
+        }
+    }
+
+    void process_network_frame(u32 delta_ms)
+    {
+        if (g_physics_frame == g_input_frame)
+        {
+            g_time_since_last_input -= delta_ms;
+            if (g_time_since_last_input <= 0)
+            {
+                //approve_final_input(g_input_frame);
+                g_time_since_last_input = 2000;
+                g_input_frame += 1;
+            }
+        }
+
         ENetEvent event;
         while (enet_host_service (g_client_host, &event, 0) > 0)
         {
@@ -43,16 +89,21 @@ namespace network
                 break;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                printf ("A packet of length %u containing %s was received from %s on channel %u.\n",
-                        event.packet -> dataLength,
-                        reinterpret_cast<const char *>(event.packet->data),
-                        static_cast<const char *>(event.peer->data),
-                        event.channelID);
+                // printf ("A packet of length %u containing %s was received from %s on channel %u.\n",
+                //         event.packet -> dataLength,
+                //         reinterpret_cast<const char *>(event.packet->data),
+                //         static_cast<const char *>(event.peer->data),
+                //         event.channelID);
 
-                /* Clean up the packet now that we're done using it. */
-                enet_packet_destroy (event.packet);
+                {
+                    Message msg{Message::deserialize_from_buffer(event.packet->data)};
+                    process_incoming_message(msg);
 
-                break;
+                    /* Clean up the packet now that we're done using it. */
+                    enet_packet_destroy(event.packet);
+                    break;
+
+                }
 
             case ENET_EVENT_TYPE_DISCONNECT:
                 printf ("%s disconnected.\n", static_cast<const char *>(event.peer->data));
@@ -60,6 +111,7 @@ namespace network
                 /* Reset the peer's client information. */
 
                 event.peer -> data = NULL;
+                break;
             }
         }
         for (int i = 0; i < g_client_host->peerCount; i++)
@@ -142,9 +194,8 @@ namespace network
         // Init ENet client host
         init_client_host();
 
+        Sleep(2000);
         connect_to_server();
-
-
     }
 
     void consume_input_frame(const u32 frame)

@@ -17,9 +17,11 @@
 extern u32 g_graphics_frame;
 extern u32 g_total_ms;
 extern bool isClient2;
+extern i32 g_time_since_last_input;
+extern u32 g_input_frame;
 namespace network
 {
-    void process_network_frame();
+    void process_network_frame(u32 delta_ms);
 }
 
 #include <utils.hpp>
@@ -495,11 +497,11 @@ int L3GRun()
             continue;
         }
 
-        network::process_network_frame();
 
         auto cur_takt = clock::now();
         auto delta_time = (cur_takt - prev_takt);
         prev_takt = cur_takt;
+
 
         if (FLAG(g_Flags, GFLAG_4SPEED))
         {
@@ -508,6 +510,9 @@ int L3GRun()
 
         int delta = to_milliseconds(delta_time).count();
         g_total_ms += delta;
+
+        network::process_network_frame(delta);
+
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
         // TODO: bring smoothness back?

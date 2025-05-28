@@ -890,7 +890,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
             std::vector<network::Command> commands;
             commands.push_back(command);
 
-            network::get_frame_record(g_physics_frame)->set_side_inputs(m_Id, commands);
+            current_input = commands;
+            // network::get_frame_record(g_physics_frame)->set_side_inputs(m_Id, commands);
 
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
             while (objs) {

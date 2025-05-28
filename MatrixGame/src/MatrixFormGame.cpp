@@ -748,7 +748,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
         if (network::commands_journal.size() > g_physics_frame)
         {
             nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-            if (frame->is_side_input_ready(2))
+            if (frame->is_side_input_ready(2) && frame->is_side_input_ready(3))
             {
                 next_frame_requested = true;
                 network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame + 1));
@@ -758,12 +758,14 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F2 && down)
     {
-        nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-        frame->set_side_inputs(2, std::vector<nw::Command>());
+        current_input = std::vector<nw::Command>();
+        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
     }
 
     if (vk == VK_F1 && down)
     {
+        nw::approve_final_input(g_physics_frame);
 
         // MoveWindow(g_Wnd, 100, 100, 700, 700, FALSE);
 
@@ -1566,7 +1568,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
         }
 #endif
 #if (defined _DEBUG) && !(defined _RELDEBUG)
-        if (vk == VK_F3) {
+        if (false && vk == VK_F3) {
             static bool prev = false;
             static D3DXVECTOR3 prevp;
             D3DXVECTOR3 newp, p1, p2;

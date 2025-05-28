@@ -10,8 +10,9 @@
 
 #include "MatrixGameServer.hpp"
 
-#include "Types.hpp"
+#include "Network/Message.hpp"
 #include "Network/Network.hpp"
+#include "Types.hpp"
 #include <enet/enet.h>
 
 ENetHost* g_server_host;
@@ -62,6 +63,32 @@ void process_server_network_frame()
             {
                 std::cout << g_server_host->peers[i].connectID << std::endl;
             }
+            break;
+        case ENET_EVENT_TYPE_RECEIVE:
+            std::cout << "\nGot new packet from " << event.peer->connectID << ":\n";
+            if (g_server_host->connectedPeers < 2)
+            {
+                std::cerr << "Only one player...\n";
+                std::terminate();
+            }
+
+            ENetPeer* target;
+
+            for (int i = 0; i < g_server_host->connectedPeers; i++)
+            {
+                if (g_server_host->peers[i].connectID != event.peer->connectID)
+                {
+                    target = g_server_host->peers + i;
+                    break;
+                }
+            }
+
+            network::Message m { nw::Message::deserialize_from_buffer(event.packet->data) };
+
+            std::cout << "Relaying to " << target->connectID << "\n\n";
+            enet_peer_send(target, 0, event.packet);
+
+            enet_packet_destroy(event.packet);
             break;
         }
     }
