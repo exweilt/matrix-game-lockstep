@@ -2980,12 +2980,13 @@ void CMatrixMapLogic::Takt(int step) {
     DCP();
 
     // Next physics frame
-    if ((false && nw::get_frame_record(g_physics_frame)->is_side_input_ready(2) && nw::get_frame_record(g_physics_frame)->is_side_input_ready(3)) || next_frame_requested)
+    if ((nw::get_frame_record(g_physics_frame)->is_side_input_ready(2) && nw::get_frame_record(g_physics_frame)->is_side_input_ready(3)) || next_frame_requested)
     {
         next_frame_requested = false;
         network::consume_input_frame(g_physics_frame);
         physics_process(step);
         g_physics_frame += 1;
+        network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame));
     }
 
     CMatrixMap::Takt(step);  // graphic takts after logic takt

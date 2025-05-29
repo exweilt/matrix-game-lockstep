@@ -52,7 +52,7 @@ namespace network
 
         bool is_side_input_ready(const u32 side_id) const
         {
-            return commands[side_id - 1] != nullptr;
+            return commands[side_id - 1].get() != nullptr;
         }
 
         std::vector<Command>* get_side_inputs(const u32 side_id) const
@@ -74,6 +74,8 @@ namespace network
 
     inline CommandsFrameRecord* get_frame_record(const u32 frame)
     {
+        if (frame >= commands_journal.size())
+            __debugbreak();
         auto it = commands_journal.rbegin();
         std::advance(it, commands_journal.size() - frame - 1);
         return &*it;

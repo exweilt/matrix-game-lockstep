@@ -67,8 +67,8 @@ namespace network
             g_time_since_last_input -= delta_ms;
             if (g_time_since_last_input <= 0)
             {
-                //approve_final_input(g_input_frame);
-                g_time_since_last_input = 2000;
+                approve_final_input(g_input_frame);
+                g_time_since_last_input = 30;
                 g_input_frame += 1;
             }
         }

@@ -528,7 +528,7 @@ int L3GRun()
 #endif
         lgr.add_ticks(delta);
         //SRemindCore::Takt(delta); ATTENTION
-        g_FormCur->Takt(delta);
+        g_FormCur->Takt(16);
         // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
         RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);

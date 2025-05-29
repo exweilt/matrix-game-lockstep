@@ -243,6 +243,7 @@ void CFormMatrixGame::Draw(void) {
     DTRACE();
 
     g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_input_frame).c_str());
     g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_frame).c_str());
     g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_total_ms).c_str());
     g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", controllable_side_id).c_str());
