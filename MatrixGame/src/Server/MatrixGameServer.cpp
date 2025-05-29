@@ -63,6 +63,15 @@ void process_server_network_frame()
             {
                 std::cout << g_server_host->peers[i].connectID << std::endl;
             }
+
+            if (g_server_host->connectedPeers == 2)
+            {
+                nw::Message msg { nw::MessageType::START };
+                ENetPacket* packet = enet_packet_create(nullptr, msg.get_serialized_size(), ENET_PACKET_FLAG_RELIABLE);
+                memcpy(packet->data, &msg, msg.get_serialized_size());
+                enet_host_broadcast(g_server_host, 0, packet);
+            }
+
             break;
         case ENET_EVENT_TYPE_RECEIVE:
             std::cout << "\nGot new packet from " << event.peer->connectID << ":\n";

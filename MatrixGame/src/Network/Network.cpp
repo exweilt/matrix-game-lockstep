@@ -14,7 +14,8 @@ u32 g_physics_frame = 0;
 u32 g_input_frame = 0;
 u32 g_total_ms = 0;
 bool isClient2 = std::getenv("CLIENT2") != nullptr;
-i32 g_time_since_last_input = 2000;
+i32 g_time_since_last_input = 20;
+bool game_started = false;
 
 bool next_frame_requested = false;
 
@@ -58,17 +59,21 @@ namespace network
         {
             get_frame_record(g_physics_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
         }
+        else if (msg.type == MessageType::START)
+        {
+            game_started = true;
+        }
     }
 
     void process_network_frame(u32 delta_ms)
     {
-        if (g_physics_frame == g_input_frame)
+        if (game_started && g_physics_frame == g_input_frame)
         {
             g_time_since_last_input -= delta_ms;
             if (g_time_since_last_input <= 0)
             {
                 approve_final_input(g_input_frame);
-                g_time_since_last_input = 30;
+                g_time_since_last_input = 20;
                 g_input_frame += 1;
             }
         }

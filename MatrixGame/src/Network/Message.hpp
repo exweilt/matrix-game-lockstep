@@ -18,6 +18,7 @@ namespace network
         NONE            = 0,
         COMMAND_BATCH    = 1,
         READY           = 2,
+        START           = 3,
         INFO,
         SAY,
         JOIN,
@@ -81,6 +82,7 @@ namespace network
         };
 
         Message()                               : type(MessageType::NONE) {};
+        Message(MessageType type)               : type(type) {}
         Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
         Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
 
@@ -104,6 +106,7 @@ namespace network
             {
                 case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
                 case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
+                case MessageType::START:        return sizeof(u8);
                 default:                        return 0;
             }
         }
@@ -118,6 +121,7 @@ namespace network
             {
                 case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
                 case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
+                case MessageType::START:        break;
                 default:                        assert(false);
             }
         }
@@ -130,6 +134,8 @@ namespace network
                     return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
                 case MessageType::JOIN:
                     return MessageJoinParams::deserialize_from_buffer(buffer + 1);
+            case MessageType::START:
+                    return Message(MessageType::START);
                 default:
                     assert(false);
             }

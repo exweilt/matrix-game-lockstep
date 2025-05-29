@@ -23,6 +23,7 @@ namespace network
 {
     void process_network_frame(u32 delta_ms);
 }
+extern bool game_started;
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -523,31 +524,34 @@ int L3GRun()
 
         // delta = smooths / SMOOTH_COUNT;
 
+        if (game_started)
+        {
 #ifdef _DEBUG
-        SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+            SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
-        lgr.add_ticks(delta);
-        //SRemindCore::Takt(delta); ATTENTION
-        g_FormCur->Takt(16);
-        // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
+            lgr.add_ticks(delta);
+            //SRemindCore::Takt(delta); ATTENTION
+            g_FormCur->Takt(20);
+            // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
-        RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+            RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
 
-        // g_physics_tick += 1;
+            // g_physics_tick += 1;
 
-        // TODO: maybe add back FPS limit?
-        g_FormCur->Draw();
+            // TODO: maybe add back FPS limit?
+            g_FormCur->Draw();
 #if (defined _DEBUG) && !(defined _RELDEBUG)
-        CHelper::AfterDraw();
+            CHelper::AfterDraw();
 #endif
-        fps++;
+            fps++;
 
-        g_graphics_frame += 1;
+            g_graphics_frame += 1;
 
-        g_DrawFPS = fps.count();
+            g_DrawFPS = fps.count();
 
-        g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+            g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+        }
     }
 
     return 1;
