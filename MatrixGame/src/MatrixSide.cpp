@@ -703,6 +703,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
             PGOrderMoveTo(SelGroupToLogicGroup(),
                           CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
 
+#ifdef NON_MULTIPLAYER
             CMatrixGroup *group = GetCurGroup();
             CMatrixGroupObject *objs = group->m_FirstObject;
             while (objs) {
@@ -718,6 +719,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
                 }
                 objs = objs->m_NextObject;
             }
+#endif
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_FIRE)) {
             // Fire
@@ -893,6 +895,7 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
             current_input = commands;
             // network::get_frame_record(g_physics_frame)->set_side_inputs(m_Id, commands);
 
+#ifdef NON_MULTIPLAYER
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
             while (objs) {
                 if (objs->GetObject() && objs->GetObject()->GetObjectType() == OBJECT_TYPE_FLYER) {
@@ -907,6 +910,7 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
                 }
                 objs = objs->m_NextObject;
             }
+#endif
         }
     }
 }
@@ -8175,6 +8179,7 @@ bool CMatrixSideUnit::FirePL(int group) {
                     else if(env->m_TargetAngle>0) env->m_TargetAngle-=1.0f*ToRad;
                     else env->m_TargetAngle+=1.0f*ToRad;*/
 
+#ifdef NON_MULTIPLAYER
                 if (env->m_TargetAttack->IsRobot() && env->m_TargetAttack->AsRobot()->m_AimProtect > 0) {
                     if (env->m_Target != env->m_TargetAttack ||
                         fabs(env->m_TargetAngle) <=
@@ -8203,6 +8208,7 @@ bool CMatrixSideUnit::FirePL(int group) {
                         des.y = (-sa * vx + ca * vy) + rl[i]->m_PosY;
                     }
                 }
+#endif
 
                 env->m_Target = env->m_TargetAttack;
                 rl[i]->Fire(des);
@@ -8860,6 +8866,7 @@ void CMatrixSideUnit::WarPL(int group) {
                     else if(env->m_TargetAngle>0) env->m_TargetAngle-=1.0f*ToRad;
                     else env->m_TargetAngle+=1.0f*ToRad;*/
 
+#ifdef NON_MULTIPLAYER
                 if (env->m_TargetAttack->IsRobot() && env->m_TargetAttack->AsRobot()->m_AimProtect > 0) {
                     if (env->m_Target != env->m_TargetAttack ||
                         fabs(env->m_TargetAngle) <=
@@ -8888,6 +8895,7 @@ void CMatrixSideUnit::WarPL(int group) {
                         des.y = (-sa * vx + ca * vy) + rl[i]->m_PosY;
                     }
                 }
+#endif
 
                 env->m_Target = env->m_TargetAttack;
                 env->m_LastFire = curTime;

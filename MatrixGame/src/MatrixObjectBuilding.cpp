@@ -528,8 +528,9 @@ void CMatrixBuilding::LogicTakt(int cms) {
                     r->AsRobot()->UnMarkCaptureInformed();
             }
 
-            g_MatrixMap->FindObjects(m_Pos, DISTANCE_CAPTURE_ME, 1, TRACE_ROBOT, m_Capturer, FindCaptureMe,
-                                     (uintptr_t)this);
+            // ATTENTION: Disabled for multiplayer
+            // g_MatrixMap->FindObjects(m_Pos, DISTANCE_CAPTURE_ME, 1, TRACE_ROBOT, m_Capturer, FindCaptureMe,
+            //                          (uintptr_t)this);
 
             // should not be captured...
             r = CMatrixMapStatic::GetFirstLogic();
@@ -1203,6 +1204,9 @@ ECaptureStatus CMatrixBuilding::Capture(CMatrixRobotAI *by) {
 }
 
 void CMatrixBuilding::Maintenance(void) {
+    //ATTENTION: Disable for multiplayer
+    return;
+
     if (m_Side == 0)
         return;
     if (g_MatrixMap->MaintenanceDisabled())

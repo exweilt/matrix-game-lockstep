@@ -2256,54 +2256,54 @@ int CMatrixMapLogic::OptimizeMovePathSimple(int nsh, int size, int cnt, CPoint *
     return cnt;
 }
 
-int CMatrixMapLogic::RandomizeMovePath(int nsh, int size, int cnt, CPoint *path) {
-    int zonelast = -1;
-
-    for (int i = 1; i < (cnt - 1); i++) {
-        int zonecur = MoveGet(path[i].x, path[i].y)->m_Zone;
-        if (zonelast == zonecur)
-            continue;
-        zonelast = zonecur;
-
-        CRect re = m_RN.m_Zone[zonecur].m_Rect;
-        re.right -= size;
-        re.bottom -= size;
-        if (re.IsEmpty())
-            continue;
-
-        int dist2 = (path[i].x - path[i - 1].x) * (path[i].x - path[i - 1].x) +
-                    (path[i].y - path[i - 1].y) * (path[i].y - path[i - 1].y);
-        dist2 = std::min(dist2, (path[i].x - path[i + 1].x) * (path[i].x - path[i + 1].x) +
-                                   (path[i].y - path[i + 1].y) * (path[i].y - path[i + 1].y));
-        dist2 = std::min(dist2, 7 * 7);
-
-        for (int u = 0; u < 5; u++) {
-            int newpx = Rnd(re.left, re.right);
-            int newpy = Rnd(re.top, re.bottom);
-
-            if (!PlaceFindNear(nsh, size, newpx, newpy, 0, NULL, NULL))
-                continue;
-            if (newpx == path[i].x && newpy == path[i].y)
-                break;
-            if (zonecur != MoveGet(newpx, newpy)->m_Zone)
-                continue;
-
-            if (((newpx - path[i].x) * (newpx - path[i].x) + (newpy - path[i].y) * (newpy - path[i].y)) > dist2)
-                continue;
-
-            if (!CanMoveFromTo(nsh, size, path[i - 1].x, path[i - 1].y, newpx, newpy, path))
-                continue;
-            if (!CanMoveFromTo(nsh, size, path[i + 1].x, path[i + 1].y, newpx, newpy, path))
-                continue;
-
-            path[i].x = newpx;
-            path[i].y = newpy;
-            break;
-        }
-    }
-
-    return cnt;
-}
+// int CMatrixMapLogic::RandomizeMovePath(int nsh, int size, int cnt, CPoint *path) {
+//     int zonelast = -1;
+//
+//     for (int i = 1; i < (cnt - 1); i++) {
+//         int zonecur = MoveGet(path[i].x, path[i].y)->m_Zone;
+//         if (zonelast == zonecur)
+//             continue;
+//         zonelast = zonecur;
+//
+//         CRect re = m_RN.m_Zone[zonecur].m_Rect;
+//         re.right -= size;
+//         re.bottom -= size;
+//         if (re.IsEmpty())
+//             continue;
+//
+//         int dist2 = (path[i].x - path[i - 1].x) * (path[i].x - path[i - 1].x) +
+//                     (path[i].y - path[i - 1].y) * (path[i].y - path[i - 1].y);
+//         dist2 = std::min(dist2, (path[i].x - path[i + 1].x) * (path[i].x - path[i + 1].x) +
+//                                    (path[i].y - path[i + 1].y) * (path[i].y - path[i + 1].y));
+//         dist2 = std::min(dist2, 7 * 7);
+//
+//         for (int u = 0; u < 5; u++) {
+//             int newpx = Rnd(re.left, re.right);
+//             int newpy = Rnd(re.top, re.bottom);
+//
+//             if (!PlaceFindNear(nsh, size, newpx, newpy, 0, NULL, NULL))
+//                 continue;
+//             if (newpx == path[i].x && newpy == path[i].y)
+//                 break;
+//             if (zonecur != MoveGet(newpx, newpy)->m_Zone)
+//                 continue;
+//
+//             if (((newpx - path[i].x) * (newpx - path[i].x) + (newpy - path[i].y) * (newpy - path[i].y)) > dist2)
+//                 continue;
+//
+//             if (!CanMoveFromTo(nsh, size, path[i - 1].x, path[i - 1].y, newpx, newpy, path))
+//                 continue;
+//             if (!CanMoveFromTo(nsh, size, path[i + 1].x, path[i + 1].y, newpx, newpy, path))
+//                 continue;
+//
+//             path[i].x = newpx;
+//             path[i].y = newpy;
+//             break;
+//         }
+//     }
+//
+//     return cnt;
+// }
 
 /////////////////////////////////////////////////////////////////////////
 // TODO: hotfix for error C1001: Internal compiler error.

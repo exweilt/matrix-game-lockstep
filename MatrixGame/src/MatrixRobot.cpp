@@ -5241,6 +5241,10 @@ void CMatrixRobotAI::GetLost(const D3DXVECTOR3 &v) {
     if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject())
         return;
 
+#ifndef NON_MULTIPLAYER
+    return; // look rnd
+#endif
+
     D3DXVECTOR3 f1, f2;
 
     D3DXVec3Normalize(&f1, &m_Forward);

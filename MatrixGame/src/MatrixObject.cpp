@@ -631,6 +631,7 @@ void CMatrixMapObject::RNeed(dword need) {
 void CMatrixMapObject::Takt(int cms) {
     DTRACE();
 
+#ifdef NON_MULTIPLAYER
     if (m_BehFlag == BEHF_PORTRET) {
         m_PhotoTime -= cms;
         if (m_PhotoTime < 0) {
@@ -642,6 +643,7 @@ void CMatrixMapObject::Takt(int cms) {
             RChange(MR_Graph);
         }
     }
+#endif
 
     if (m_Graph) {
         if (m_Graph->Takt(cms)) {
@@ -1397,7 +1399,8 @@ void CMatrixMapObject::LogicTakt(int ms) {
         return;
     }
 
-    if (IsAblaze()) {
+    // ATTENTION: temporary disable
+    if (false && IsAblaze()) {
         m_BurnTimeTotal += ms;
         while (g_MatrixMap->GetTime() > m_NextTime) {
             m_NextTime += OBJECT_ABLAZE_PERIOD;

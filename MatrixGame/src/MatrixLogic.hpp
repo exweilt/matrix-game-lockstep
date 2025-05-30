@@ -151,7 +151,7 @@ public:
     bool CanOptimize(int nsh, int size, int x1, int y1, int x2, int y2);
     int OptimizeMovePath(int nsh, int size, int cnt, CPoint *path);
     int OptimizeMovePathSimple(int nsh, int size, int cnt, CPoint *path);
-    int RandomizeMovePath(int nsh, int size, int cnt, CPoint *path);
+    // int RandomizeMovePath(int nsh, int size, int cnt, CPoint *path);
     int FindNearPlace(byte mm, const CPoint &mappos);
     int FindPlace(const CPoint &mappos);
 

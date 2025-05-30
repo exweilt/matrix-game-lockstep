@@ -58,7 +58,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     }
 
     try {
-        uint32_t seed = (unsigned)time(nullptr);
+        uint32_t seed = 0; // ATTENTION: For testing multiplayer
+        // uint32_t seed = (unsigned)time(nullptr);
         CGame::Init(hInstance, nullptr, map, seed);
 
         CFormMatrixGame *formgame = HNew(NULL) CFormMatrixGame();
