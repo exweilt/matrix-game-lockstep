@@ -932,6 +932,11 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                 }
             }
         }
+        // ATTENTION
+        cpp.x = 3500.0;
+        cpp.y = 1650.0;
+        g_MatrixMap->m_Camera.SetXYStrategy(cpp);
+
         g_MatrixMap->m_Camera.Takt(0);
         g_MatrixMap->m_Camera.BeforeDraw();
     }

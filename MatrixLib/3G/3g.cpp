@@ -23,7 +23,7 @@ namespace network
 {
     void process_network_frame(u32 delta_ms);
 }
-extern bool game_started;
+extern bool game_ongoing;
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -524,7 +524,7 @@ int L3GRun()
 
         // delta = smooths / SMOOTH_COUNT;
 
-        if (game_started)
+        if (game_ongoing)
         {
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);

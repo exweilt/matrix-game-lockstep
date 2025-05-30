@@ -513,8 +513,9 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     g_MatrixMap->GetControllableSide()->Select(BUILDING, g_MatrixMap->GetControllableSide()->m_ActiveObject);
     g_MatrixMap->m_Cursor.Select(CURSOR_ARROW);
 
-    if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
-        g_MatrixMap->EnterDialogMode(TEMPLATE_DIALOG_BEGIN);
+    // ATTENTION: Disabled for some time
+    // if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
+    //     g_MatrixMap->EnterDialogMode(TEMPLATE_DIALOG_BEGIN);
 
     // this code can be safely removed from release : RELEASE_OFF
 

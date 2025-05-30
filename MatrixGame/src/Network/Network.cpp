@@ -15,7 +15,7 @@ u32 g_input_frame = 0;
 u32 g_total_ms = 0;
 bool isClient2 = std::getenv("CLIENT2") != nullptr;
 i32 g_time_since_last_input = 20;
-bool game_started = false;
+bool game_ongoing = false;
 
 bool next_frame_requested = false;
 
@@ -61,13 +61,13 @@ namespace network
         }
         else if (msg.type == MessageType::START)
         {
-            game_started = true;
+            game_ongoing = true;
         }
     }
 
     void process_network_frame(u32 delta_ms)
     {
-        if (game_started && g_physics_frame == g_input_frame)
+        if (game_ongoing && g_physics_frame == g_input_frame)
         {
             g_time_since_last_input -= delta_ms;
             if (g_time_since_last_input <= 0)
@@ -156,31 +156,39 @@ namespace network
         enet_address_set_host (& address, "127.0.0.1");
         address.port = 1234;
 
-        /* Initiate the connection, allocating the two channels 0 and 1. */
-        peer = enet_host_connect (g_client_host, &address, 2, 0);
 
-        if (peer == NULL)
+        // Sleep(10000);
+        while (true)
         {
-            fprintf (stderr, "No available peers for initiating an ENet connection.\n");
-            exit (EXIT_FAILURE);
-        }
+            /* Initiate the connection, allocating the two channels 0 and 1. */
+            peer = enet_host_connect (g_client_host, &address, 2, 0);
+            if (peer == NULL)
+            {
+                fprintf (stderr, "No available peers for initiating an ENet connection.\n");
+                exit (EXIT_FAILURE);
+            }
 
-        if (enet_host_service (g_client_host, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
-        {
-            // g_MatrixMap->m_DI.T(L"Connected!", L"");
-            // puts ("Connection to some.server.net:1234 succeeded.");
-            std::cout << "Connected!\n";
-        }
-        else
-        {
-            std::cout << "Could not connect to the server.\n";
-            std::terminate();
-            /* Either the 5 seconds are up or a disconnect event was */
-            /* received. Reset the peer in the event the 5 seconds   */
-            /* had run out without any significant event.            */
-            // enet_peer_reset (peer);
-            //
-            // puts ("Connection to some.server.net:1234 failed.");
+            if (enet_host_service (g_client_host, &event, 3000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+            {
+                // g_MatrixMap->m_DI.T(L"Connected!", L"");
+                // puts ("Connection to some.server.net:1234 succeeded.");
+                std::cout << "Connected to the server!\n";
+                break;
+            }
+            else
+            {
+                std::cout << "Could not connect to the server.\n";
+                std::cout << "Attempting to reconnect...\n";
+                enet_peer_reset(peer);
+                continue;
+                // std::terminate();
+                /* Either the 5 seconds are up or a disconnect event was */
+                /* received. Reset the peer in the event the 5 seconds   */
+                /* had run out without any significant event.            */
+                // enet_peer_reset (peer);
+                //
+                // puts ("Connection to some.server.net:1234 failed.");
+            }
         }
     }
     void static_init_networking()
@@ -199,7 +207,6 @@ namespace network
         // Init ENet client host
         init_client_host();
 
-        Sleep(2000);
         connect_to_server();
     }
 
