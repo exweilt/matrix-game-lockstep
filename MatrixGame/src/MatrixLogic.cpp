@@ -2988,6 +2988,7 @@ void CMatrixMapLogic::Takt(int step) {
         network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame));
         g_IFaceList->LogicTakt(step); // ATTENTION
         CMatrixMap::Takt(step);  // graphic takts after logic takt
+        frames_passed_since_last_check += 1;
     }
 
 

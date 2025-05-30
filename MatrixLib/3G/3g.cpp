@@ -12,6 +12,7 @@
 #include "CException.hpp"
 #include "CReminder.hpp"
 #include "Types.hpp"
+#include <chrono>
 
 // #include "../../MatrixGame/src/Network/StateManager.hpp"
 extern u32 g_graphics_frame;
@@ -24,6 +25,9 @@ namespace network
     void process_network_frame(u32 delta_ms);
 }
 extern bool game_ongoing;
+extern u32 frames_passed_since_last_check;
+extern std::chrono::high_resolution_clock::time_point last_check;
+extern u32 physics_fps;
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -551,6 +555,13 @@ int L3GRun()
             g_DrawFPS = fps.count();
 
             g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+
+            if (last_check + std::chrono::seconds(1) < clock::now())
+            {
+                last_check = clock::now();
+                physics_fps = frames_passed_since_last_check;
+                frames_passed_since_last_check = 0;
+            }
         }
     }
 

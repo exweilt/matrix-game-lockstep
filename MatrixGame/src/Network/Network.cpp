@@ -16,10 +16,12 @@ u32 g_total_ms = 0;
 bool isClient2 = std::getenv("CLIENT2") != nullptr;
 i32 g_time_since_last_input = 20;
 bool game_ongoing = false;
-
 bool next_frame_requested = false;
-
 u32 g_next_nid = 0;
+
+u32 frames_passed_since_last_check = 0;
+std::chrono::high_resolution_clock::time_point last_check{};
+u32 physics_fps = 0;
 
 std::vector<network::Command> current_input{};
 

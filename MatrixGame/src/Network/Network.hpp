@@ -3,6 +3,7 @@
 #include "Command.hpp"
 #include "Types.hpp"
 
+#include <chrono>
 #include <list>
 #include <memory>
 #include <vector>
@@ -21,6 +22,10 @@ extern bool next_frame_requested;
 // Used for robots, turrets, factories and bases.
 extern u32 g_next_nid;
 extern std::vector<network::Command> current_input;
+
+extern u32 frames_passed_since_last_check;
+extern std::chrono::high_resolution_clock::time_point last_check;
+extern u32 physics_fps;
 
 namespace network
 {
