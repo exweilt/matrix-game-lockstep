@@ -2926,7 +2926,7 @@ void CMatrixMapLogic::Takt(int step) {
         }
     }
 
-    m_Time += step;
+    // m_Time += step;
     if (m_MaintenanceTime > 0) {
         m_MaintenanceTime -= step;
         if (m_MaintenanceTime < 0) {
@@ -2974,22 +2974,22 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
-    // TODO : 10 time per second
-    g_IFaceList->LogicTakt(step);
 
     DCP();
 
     // Next physics frame
-    if ((nw::get_frame_record(g_physics_frame)->is_side_input_ready(2) && nw::get_frame_record(g_physics_frame)->is_side_input_ready(3)) || next_frame_requested)
+    if (g_physics_frame <= 1000 && (nw::get_frame_record(g_physics_frame)->is_side_input_ready(2) && nw::get_frame_record(g_physics_frame)->is_side_input_ready(3)) || next_frame_requested)
     {
+        m_Time += step;
         next_frame_requested = false;
         network::consume_input_frame(g_physics_frame);
         physics_process(step);
         g_physics_frame += 1;
         network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame));
+        g_IFaceList->LogicTakt(step); // ATTENTION
+        CMatrixMap::Takt(step);  // graphic takts after logic takt
     }
 
-    CMatrixMap::Takt(step);  // graphic takts after logic takt
 
     DCP();
 
