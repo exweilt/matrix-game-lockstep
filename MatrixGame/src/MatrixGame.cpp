@@ -582,7 +582,8 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
     g_D3Dpp.BackBufferFormat = (set.m_BPP == 16) ? D3DFMT_R5G6B5 : D3DFMT_A8R8G8B8;
     g_D3Dpp.EnableAutoDepthStencil = TRUE;
     g_D3Dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-    g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+    g_D3Dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+    // g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
     g_D3Dpp.FullScreen_RefreshRateInHz = refresh_rate_required;
     g_D3Dpp.BackBufferWidth = set.m_ResolutionX;
     g_D3Dpp.BackBufferHeight = set.m_ResolutionY;

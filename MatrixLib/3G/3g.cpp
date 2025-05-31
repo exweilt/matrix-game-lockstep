@@ -279,7 +279,7 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
     d3dpp.SwapEffect = D3DSWAPEFFECT_FLIP;
     d3dpp.Windowed = !FLAG(g_Flags, GFLAG_FULLSCREEN);
     d3dpp.EnableAutoDepthStencil = 0;
-    d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+    d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
     auto cd_res =
         g_D3D->CreateDevice(
