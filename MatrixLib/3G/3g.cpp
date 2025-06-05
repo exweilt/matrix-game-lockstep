@@ -18,7 +18,7 @@
 extern u32 g_graphics_frame;
 extern u32 g_total_ms;
 extern bool isClient2;
-extern i32 g_time_since_last_input;
+extern f64 g_time_to_next_input;
 extern u32 g_input_frame;
 namespace network
 {
@@ -472,7 +472,7 @@ int L3GRun()
 {
     using clock = std::chrono::high_resolution_clock;
 
-    constexpr auto to_milliseconds = [](auto dur) { return std::chrono::duration_cast<std::chrono::milliseconds>(dur); };
+    // constexpr auto to_milliseconds = [](auto dur) { return std::chrono::duration_cast<std::chrono::milliseconds>(dur); };
 
     // int smooth[SMOOTH_COUNT];
     // int smooths = SMOOTH_COUNT * 10;
@@ -496,16 +496,22 @@ int L3GRun()
             break;
         }
 
-        if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
-        {
-            std::this_thread::yield();
-            continue;
-        }
+        // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
+        // {
+        //     std::this_thread::yield();
+        //     continue;
+        // }
 
 
         auto cur_takt = clock::now();
         auto delta_time = (cur_takt - prev_takt);
         prev_takt = cur_takt;
+
+        // Ensure at least 1 ms passed since last iteration
+        auto delta_duration = std::chrono::duration<f64>(delta_time);
+        if (delta_duration < std::chrono::milliseconds(1)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1) - delta_duration);
+        }
 
 
         if (FLAG(g_Flags, GFLAG_4SPEED))
@@ -513,10 +519,10 @@ int L3GRun()
             delta_time *= 4;
         }
 
-        int delta = to_milliseconds(delta_time).count();
-        g_total_ms += delta;
+        // int delta = to_milliseconds(delta_time).count();
+        // g_total_ms += delta;
 
-        network::process_network_frame(delta);
+        network::process_network_frame(0);
 
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
@@ -533,9 +539,9 @@ int L3GRun()
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
-            lgr.add_ticks(delta);
+            lgr.add_ticks(17);
             //SRemindCore::Takt(delta); ATTENTION
-            g_FormCur->Takt(20);
+            g_FormCur->Takt(17);
             // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
             RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);

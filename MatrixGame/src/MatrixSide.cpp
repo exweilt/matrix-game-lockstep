@@ -892,8 +892,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
             std::vector<network::Command> commands;
             commands.push_back(command);
 
-            current_input = commands;
-            // network::get_frame_record(g_physics_frame)->set_side_inputs(m_Id, commands);
+            // current_input = commands;
+            network::get_frame_record(g_input_frame)->set_side_inputs(controllable_side_id, commands);
 
 #ifdef NON_MULTIPLAYER
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;

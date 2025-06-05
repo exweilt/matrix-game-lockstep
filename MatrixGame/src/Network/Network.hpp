@@ -8,13 +8,16 @@
 #include <memory>
 #include <vector>
 
+constexpr u32 input_buffer_size = 15; // Size of input buffering
+
 extern u8 controllable_side_id; // SideID
 extern u32 g_graphics_frame;
 extern u32 g_physics_frame;
-extern u32 g_input_frame;
+extern u32 g_input_frame; // Sampling for
 extern u32 g_total_ms;
 extern bool isClient2;
-extern i32 g_time_since_last_input;
+extern f64 g_time_to_next_input;
+extern bool game_ongoing;
 
 extern bool next_frame_requested;
 
@@ -69,6 +72,11 @@ namespace network
         {
             commands[side_id - 1] = std::make_unique<std::vector<Command>>(side_inputs);
         }
+
+        void set_side_inputs(const u32 side_id)
+        {
+            commands[side_id - 1] = std::make_unique<std::vector<Command>>();
+        }
     };
 
     extern std::list<CommandsFrameRecord> commands_journal;
@@ -77,10 +85,21 @@ namespace network
 
     void approve_final_input(u32 target_frame);
 
+    /**
+     * @brief Access the record for frame n. If it doesn't exist yet, it is created and returned.
+     */
     inline CommandsFrameRecord* get_frame_record(const u32 frame)
     {
+        // Create missing elements if needed
         if (frame >= commands_journal.size())
-            __debugbreak();
+        {
+            for (u32 f = commands_journal.size(); f <= frame; f++)
+            {
+                commands_journal.push_back(CommandsFrameRecord(f));
+            }
+            commands_journal.resize(frame + 1);
+        }
+        // Retrieve
         auto it = commands_journal.rbegin();
         std::advance(it, commands_journal.size() - frame - 1);
         return &*it;

@@ -746,15 +746,16 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_NUMPAD5 && down)
     {
-        if (network::commands_journal.size() > g_physics_frame)
-        {
-            nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-            if (frame->is_side_input_ready(2) && frame->is_side_input_ready(3))
-            {
-                next_frame_requested = true;
-                network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame + 1));
-            }
-        }
+        game_ongoing = !game_ongoing;
+        // if (network::commands_journal.size() > g_physics_frame)
+        // {
+        //     nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        //     if (frame->is_side_input_ready(2) && frame->is_side_input_ready(3))
+        //     {
+        //         next_frame_requested = true;
+        //         network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame + 1));
+        //     }
+        // }
     }
 
     if (vk == VK_F2 && down)

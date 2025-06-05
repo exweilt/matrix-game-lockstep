@@ -14,7 +14,7 @@ u32 g_physics_frame = 0;
 u32 g_input_frame = 0;
 u32 g_total_ms = 0;
 bool isClient2 = std::getenv("CLIENT2") != nullptr;
-i32 g_time_since_last_input = 20;
+f64 g_time_to_next_input = 0.017;
 bool game_ongoing = false;
 bool next_frame_requested = false;
 u32 g_next_nid = 0;
@@ -48,11 +48,23 @@ namespace network
 
     void approve_final_input(u32 target_frame)
     {
-        get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
+        // get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
+        auto inputs = get_frame_record(target_frame)->get_side_inputs(controllable_side_id);
+        if (inputs == nullptr)
+        {
+            get_frame_record(target_frame)->set_side_inputs(controllable_side_id);
+            inputs = get_frame_record(target_frame)->get_side_inputs(controllable_side_id);
+        }
+
         Message msg = MessageCommandBatchParams{target_frame, controllable_side_id};
-        msg.command_batch.commands = current_input;
+        msg.command_batch.commands = *inputs;
         send_message(msg);
-        current_input.clear();
+        // current_input.clear();
+        // get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
+        // Message msg = MessageCommandBatchParams{target_frame, controllable_side_id};
+        // msg.command_batch.commands = current_input;
+        // send_message(msg);
+        // current_input.clear();
     }
 
     void process_incoming_message(const Message &msg)
@@ -67,15 +79,20 @@ namespace network
         }
     }
 
-    void process_network_frame(u32 delta_ms)
+    void process_network_frame([[maybe_unused]] u32 delta_ns)
     {
-        if (game_ongoing && g_physics_frame == g_input_frame)
+        static std::chrono::time_point<std::chrono::steady_clock> prev_time = std::chrono::steady_clock::now();
+        std::chrono::time_point<std::chrono::steady_clock> curr_time = std::chrono::steady_clock::now();
+        f64 delta = std::chrono::duration<f64>(curr_time - prev_time).count();
+        prev_time = curr_time;
+
+        if (game_ongoing && (g_physics_frame + input_buffer_size) > g_input_frame)
         {
-            g_time_since_last_input -= delta_ms;
-            if (g_time_since_last_input <= 0)
+            g_time_to_next_input -= delta;
+            if (g_time_to_next_input <= 0)
             {
                 approve_final_input(g_input_frame);
-                g_time_since_last_input = 20;
+                g_time_to_next_input = 0.017;
                 g_input_frame += 1;
             }
         }
