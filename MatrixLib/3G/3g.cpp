@@ -11,6 +11,7 @@
 #include "CBlockPar.hpp"
 #include "CException.hpp"
 #include "CReminder.hpp"
+#include "Stopwatch.hpp"
 #include "Types.hpp"
 #include <chrono>
 
@@ -487,6 +488,8 @@ int L3GRun()
 
     while (true)
     {
+        Stopwatch sw_total;
+        Stopwatch sw_event;
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             DispatchMessage(&msg); // Effectively calls L3GWndProc() handler
@@ -495,6 +498,8 @@ int L3GRun()
         {
             break;
         }
+        lgr.debug("====================================");
+        lgr.debug("Event handle time : {:.3f} ms")(sw_event.elapsed_ms());
 
         // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
         // {
@@ -522,7 +527,9 @@ int L3GRun()
         // int delta = to_milliseconds(delta_time).count();
         // g_total_ms += delta;
 
+        Stopwatch sw_net;
         network::process_network_frame(0);
+        lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
@@ -541,7 +548,9 @@ int L3GRun()
 #endif
             lgr.add_ticks(17);
             //SRemindCore::Takt(delta); ATTENTION
+            Stopwatch sw_phys;
             g_FormCur->Takt(17);
+            lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
             // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
             RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
@@ -550,7 +559,9 @@ int L3GRun()
             // g_physics_tick += 1;
 
             // TODO: maybe add back FPS limit?
+            Stopwatch sw_draw;
             g_FormCur->Draw();
+            lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
 #if (defined _DEBUG) && !(defined _RELDEBUG)
             CHelper::AfterDraw();
 #endif
@@ -569,6 +580,8 @@ int L3GRun()
                 frames_passed_since_last_check = 0;
             }
         }
+        lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
+        lgr.debug("====================================");
     }
 
     return 1;

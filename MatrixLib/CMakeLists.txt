@@ -44,6 +44,7 @@ set(BASE_SOURCES
     Base/Registry.cpp
     Base/Tracer.cpp
     Base/random.cpp
+    Base/Stopwatch.cpp
 )
 set(BASE_HEADERS
     Base/BaseDef.hpp
@@ -61,6 +62,7 @@ set(BASE_HEADERS
     Base/Registry.hpp
     Base/Tracer.hpp
     Base/Types.hpp
+    Base/Stopwatch.hpp
 )
 
 set(BITMAP_SOURCES
