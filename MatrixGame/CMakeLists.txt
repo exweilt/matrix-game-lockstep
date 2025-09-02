@@ -164,7 +164,9 @@ target_include_directories(
         MatrixGameServer
         PUBLIC
         src
-        "${ENET_SOURCE_DIR}/include")
+        "${ENET_SOURCE_DIR}/include"
+        ../ThirdParty/cereal/include
+)
 
 target_sources(MatrixGameServer PUBLIC
         src/Server/MatrixGameServer.cpp

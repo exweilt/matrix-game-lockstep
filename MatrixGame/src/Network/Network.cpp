@@ -1,5 +1,12 @@
 #include "Network.hpp"
 
+#include <cereal/archives/json.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/list.hpp>
+#include <cereal/types/memory.hpp>
+#include <sstream>
+
 #include "CException.hpp"
 #include "MatrixGame.h"
 #include "MatrixLogic.hpp"
@@ -58,7 +65,7 @@ void Network::process_incoming_message(const Message &msg)
 {
     if (msg.type == MessageType::COMMAND_BATCH)
     {
-        get_frame_record(physics_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
+        get_frame_record(msg.command_batch.target_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
     }
     else if (msg.type == MessageType::START)
     {
@@ -231,6 +238,13 @@ void Network::consume_input_frame(const u32 frame)
             }
         }
     }
+}
+
+void Network::save_commands_journal_to_file()
+{
+    std::ofstream fs("Client" + std::to_string(controllable_side_id) + "_commands.json");
+    cereal::JSONOutputArchive oarchive(fs);
+    oarchive(cereal::make_nvp("commands_journal", commands_journal));
 }
 // }
 

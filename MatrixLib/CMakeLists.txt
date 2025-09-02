@@ -98,6 +98,8 @@ target_include_directories(
         3G
         Base
         Bitmap
+        ../ThirdParty/cereal/include
+        "${ENET_SOURCE_DIR}/include"
 )
 
 target_link_libraries(

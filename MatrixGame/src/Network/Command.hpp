@@ -5,6 +5,7 @@
 #include <d3dx9math.h>
 
 #include "Types.hpp"
+#include "cereal/cereal.hpp"
 
 #include <cassert>
 #include <string>
@@ -14,6 +15,13 @@
 #define MAX_WEAPON_CNT   5
 enum ERobotUnitKind : unsigned int;
 // #include "MatrixRobot.hpp"
+
+#include <d3dx9math.h>
+
+template <class Archive>
+void serialize(Archive& ar, D3DXVECTOR3& v) {
+    ar(CEREAL_NVP(v.x), CEREAL_NVP(v.y), CEREAL_NVP(v.z));
+}
 
 // namespace network
 // {
@@ -25,6 +33,11 @@ enum class CommandType : u8
     ATTACK  = 2,
     CAPTURE = 3,
     BUILD   = 4
+
+    // template <class Archive>
+    // void serialize(Archive& ar) {
+    //     ar(CEREAL_NVP(robot_count));
+    // }
 };
 
 struct CommandMoveParams
@@ -41,6 +54,11 @@ struct CommandMoveParams
     }
     void serialize_to_buffer(u8* buffer) const;
     static CommandMoveParams deserialize_from_buffer(const u8 * buffer);
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
+    }
 };
 
 struct CommandCaptureParams
@@ -57,6 +75,11 @@ struct CommandCaptureParams
     }
     void serialize_to_buffer(u8* buffer) const;
     static CommandCaptureParams deserialize_from_buffer(const u8* buffer);
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+    }
 };
 
 struct CommandAttackParams
@@ -73,6 +96,11 @@ struct CommandAttackParams
     }
     void serialize_to_buffer(u8* buffer) const;
     static CommandAttackParams deserialize_from_buffer(const u8* buffer);
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+    }
 };
 
 struct CommandBuildParams
@@ -100,6 +128,11 @@ struct CommandBuildParams
     }
     void serialize_to_buffer(u8* buffer) const;
     static CommandBuildParams deserialize_from_buffer(const u8* buffer);
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(robot_count));
+    }
 };
 
 struct Command
@@ -135,6 +168,20 @@ struct Command
 
     void serialize_to_buffer(u8* buffer) const;
     static Command deserialize_from_buffer(const u8* buffer);
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(type));
+
+        switch (type)
+        {
+            case CommandType::MOVE:     ar(CEREAL_NVP(move)); break;
+            case CommandType::CAPTURE:  ar(CEREAL_NVP(capture)); break;
+            case CommandType::ATTACK:   ar(CEREAL_NVP(attack)); break;
+            case CommandType::BUILD:    ar(CEREAL_NVP(build)); break;
+            default:                    break;
+        }
+    }
 };
 
 inline void serialize_vector3_to_buffer(const D3DXVECTOR3 &vector, u8* buffer)

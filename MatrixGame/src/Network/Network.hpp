@@ -4,6 +4,10 @@
 #include "Message.hpp"
 #include "Types.hpp"
 #include <enet/enet.h>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/list.hpp>
+#include <cereal/types/vector.hpp>
 
 #include <chrono>
 #include <list>
@@ -54,6 +58,16 @@ struct CommandsFrameRecord
     void set_side_inputs(const u32 side_id)
     {
         commands[side_id - 1] = std::make_unique<std::vector<Command>>();
+    }
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(
+            CEREAL_NVP(frame)
+        );
+        for (int i = 0; i < 4; i++) {
+            ar( cereal::make_nvp("commands_" + std::to_string(i + 1), commands[i]) );
+        }
     }
 };
 
@@ -109,6 +123,7 @@ public:
         // Retrieve
         auto it = commands_journal.rbegin();
         std::advance(it, commands_journal.size() - frame - 1);
+        assert((*it).frame == frame);
         return &*it;
     }
 
@@ -119,9 +134,12 @@ public:
     void static_init_networking();
     void consume_input_frame(const u32 frame);
 
+    void save_commands_journal_to_file();
+
 private:
     // double linked list of all commands for all frames
     // Access through public methods
+    // TODO: consider changing to std::map?
     std::list<CommandsFrameRecord> commands_journal;
 
     void send_message(Message &msg);

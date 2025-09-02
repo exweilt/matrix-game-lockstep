@@ -760,6 +760,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F2 && down)
     {
+        g_Network.save_commands_journal_to_file();
         // g_Network.current_input = std::vector<Command>();
         // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
