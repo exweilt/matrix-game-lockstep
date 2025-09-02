@@ -15,20 +15,8 @@
 #include "Types.hpp"
 #include <chrono>
 
-// #include "../../MatrixGame/src/Network/StateManager.hpp"
-extern u32 g_graphics_frame;
-extern u32 g_total_ms;
-extern bool isClient2;
-extern f64 g_time_to_next_input;
-extern u32 g_input_frame;
-namespace network
-{
-    void process_network_frame(u32 delta_ms);
-}
-extern bool game_ongoing;
-extern u32 frames_passed_since_last_check;
-extern std::chrono::high_resolution_clock::time_point last_check;
-extern u32 physics_fps;
+#include "../../MatrixGame/src/Network/Network.hpp"
+
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -221,7 +209,7 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
         // const bool isClient2 = std::getenv("CLIENT2") != nullptr;
         long x = 0, y = 0;
 
-        if (isClient2)
+        if (g_Network.isClient2)
         {
             x = 800;
         }
@@ -528,7 +516,7 @@ int L3GRun()
         // g_total_ms += delta;
 
         Stopwatch sw_net;
-        network::process_network_frame(0);
+        g_Network.process_network_frame(0);
         lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
@@ -541,7 +529,7 @@ int L3GRun()
 
         // delta = smooths / SMOOTH_COUNT;
 
-        if (game_ongoing)
+        if (g_Network.game_ongoing)
         {
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
@@ -567,17 +555,17 @@ int L3GRun()
 #endif
             fps++;
 
-            g_graphics_frame += 1;
+            g_Network.graphics_frame += 1;
 
             g_DrawFPS = fps.count();
 
             g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
 
-            if (last_check + std::chrono::seconds(1) < clock::now())
+            if (g_Network.last_check + std::chrono::seconds(1) < clock::now())
             {
-                last_check = clock::now();
-                physics_fps = frames_passed_since_last_check;
-                frames_passed_since_last_check = 0;
+                g_Network.last_check = clock::now();
+                g_Network.physics_fps = g_Network.frames_passed_since_last_check;
+                g_Network.frames_passed_since_last_check = 0;
             }
         }
         lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());

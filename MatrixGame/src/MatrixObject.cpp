@@ -1109,7 +1109,7 @@ void CMatrixMapObject::PauseTakt(int)
 }
 
 static bool FindOnlyPlayerRobots(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintptr_t user) {
-    if (ms->GetSide() == controllable_side_id) {
+    if (ms->GetSide() == g_Network.controllable_side_id) {
         *(bool *)user = true;
         return false;
     }
@@ -1117,7 +1117,7 @@ static bool FindOnlyPlayerRobots(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintp
 }
 
 static bool FindOnlyPlayerRobotsTgt(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintptr_t user) {
-    if (ms->GetSide() == controllable_side_id) {
+    if (ms->GetSide() == g_Network.controllable_side_id) {
         *(CMatrixRobotAI **)user = ms->AsRobot();
         return false;
     }

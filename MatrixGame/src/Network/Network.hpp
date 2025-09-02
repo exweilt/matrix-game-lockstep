@@ -1,88 +1,95 @@
 #pragma once
 
 #include "Command.hpp"
+#include "Message.hpp"
 #include "Types.hpp"
+#include <enet/enet.h>
 
 #include <chrono>
 #include <list>
 #include <memory>
 #include <vector>
 
-constexpr u32 input_buffer_size = 15; // Size of input buffering
+constexpr u32 INPUT_BUFFER_SIZE = 15; // Size of input buffering
+constexpr u32 PHYSICS_FRAME_RATE = 10;
+static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
+constexpr u32 PHYSICS_FRAME_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_FRAME_RATE) + 1;
 
-extern u8 controllable_side_id; // SideID
-extern u32 g_graphics_frame;
-extern u32 g_physics_frame;
-extern u32 g_input_frame; // Sampling for
-extern u32 g_total_ms;
-extern bool isClient2;
-extern f64 g_time_to_next_input;
-extern bool game_ongoing;
-
-extern bool next_frame_requested;
-
-// The next "free" networkable ID.
-// Used for robots, turrets, factories and bases.
-extern u32 g_next_nid;
-extern std::vector<network::Command> current_input;
-
-extern u32 frames_passed_since_last_check;
-extern std::chrono::high_resolution_clock::time_point last_check;
-extern u32 physics_fps;
-
-namespace network
+enum class SideID : u8
 {
-    constexpr u32 PHYSICS_FRAME_RATE = 10;
-    static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
+    YELLOW = 1,
+    RED = 2,
+    BLUE = 3,
+    GREEN = 4,
+};
 
-    constexpr u32 PHYSICS_FRAME_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_FRAME_RATE) + 1;
+struct CommandsFrameRecord
+{
+    u32 frame; // The commands record for this physics frame (tick).
 
-    enum class SideID : u8
+    /**
+     * @brief Vectors of commands for each side (0 is yellow) for this frame.
+     *
+     * If s[i] == nullptr then the commands are not present for that side and frame.
+     */
+    std::unique_ptr< std::vector<Command> > commands [4];
+
+    CommandsFrameRecord(const u32 f = 0) : frame(f) {}
+
+    bool is_side_input_ready(const u32 side_id) const
     {
-        YELLOW = 1,
-        RED = 2,
-        BLUE = 3,
-        GREEN = 4,
-    };
+        return commands[side_id - 1].get() != nullptr;
+    }
 
-    struct CommandsFrameRecord
+    std::vector<Command>* get_side_inputs(const u32 side_id) const
     {
-        u32 frame; // The commands record for this physics frame (tick).
+        return commands[side_id - 1].get();
+    }
 
-        /**
-         * @brief Vectors of commands for each side (0 is yellow) for this frame.
-         *
-         * If s[i] == nullptr then the commands are not present for that side and frame.
-         */
-        std::unique_ptr< std::vector<Command> > commands [4];
+    void set_side_inputs(const u32 side_id, const std::vector<Command>& side_inputs)
+    {
+        commands[side_id - 1] = std::make_unique<std::vector<Command>>(side_inputs);
+    }
 
-        CommandsFrameRecord(const u32 f = 0) : frame(f) {}
+    void set_side_inputs(const u32 side_id)
+    {
+        commands[side_id - 1] = std::make_unique<std::vector<Command>>();
+    }
+};
 
-        bool is_side_input_ready(const u32 side_id) const
-        {
-            return commands[side_id - 1].get() != nullptr;
-        }
+// extern std::list<CommandsFrameRecord> commands_journal;
 
-        std::vector<Command>* get_side_inputs(const u32 side_id) const
-        {
-            return commands[side_id - 1].get();
-        }
 
-        void set_side_inputs(const u32 side_id, const std::vector<Command>& side_inputs)
-        {
-            commands[side_id - 1] = std::make_unique<std::vector<Command>>(side_inputs);
-        }
 
-        void set_side_inputs(const u32 side_id)
-        {
-            commands[side_id - 1] = std::make_unique<std::vector<Command>>();
-        }
-    };
+class Network
+{
+public:
+    Network()  = default;
+    ~Network() = default;
 
-    extern std::list<CommandsFrameRecord> commands_journal;
+    ENetHost* client_host;
+
+    u8 controllable_side_id     = static_cast<u8>(SideID::RED); // SideID
+    u32 graphics_frame        = 0; // current rendering frame
+    u32 physics_frame         = 0; // current physics frame
+    u32 input_frame           = 0; // new inputs are sampled for this physics frame
+    u32 total_ms              = 0;
+    bool isClient2              = std::getenv("CLIENT2") != nullptr;
+    f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
+    bool game_ongoing           = false;
+    bool next_frame_requested   = false; // should simulate next physics frame
+
+    // The next "free" networkable ID.
+    // Used for robots, turrets, factories and bases.
+    u32 next_nid              = 0;
+
+    // std::vector<Command> current_input{}; // list of all actions for
+
+    u32 frames_passed_since_last_check = 0; // to calculate physics fps
+    std::chrono::high_resolution_clock::time_point last_check{}; // to calculate physics fps
+    u32 physics_fps = 0;
 
     void process_network_frame(u32 delta_ms);
-
     void approve_final_input(u32 target_frame);
 
     /**
@@ -107,12 +114,23 @@ namespace network
 
     inline CommandsFrameRecord* get_current_frame_record()
     {
-        return get_frame_record(g_physics_frame);
+        return get_frame_record(physics_frame);
     }
-
     void static_init_networking();
-
     void consume_input_frame(const u32 frame);
-}
 
-namespace nw = network;
+private:
+    // double linked list of all commands for all frames
+    // Access through public methods
+    std::list<CommandsFrameRecord> commands_journal;
+
+    void send_message(Message &msg);
+    void process_incoming_message(const Message &msg);
+    void init_client_host();
+    void deinit_client_host();
+    void connect_to_server();
+};
+
+// namespace nw = network;
+
+extern Network g_Network;

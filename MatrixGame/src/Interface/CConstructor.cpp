@@ -189,7 +189,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
         m_Build->m_HullForward = m_Build->m_Forward;
 
-        if (m_Base->m_Side == controllable_side_id) {
+        if (m_Base->m_Side == g_Network.controllable_side_id) {
             CMatrixSideUnit *si = g_MatrixMap->GetControllableSide();
             int cfg_num = si->m_ConstructPanel->m_CurrentConfig;
         }
@@ -210,7 +210,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
         //}
 
-        if (m_Base->m_Side == controllable_side_id)
+        if (m_Base->m_Side == g_Network.controllable_side_id)
             m_Build->CreateTextures();
         m_Build->SetBase(m_Base);
         GetConstructionName((CMatrixRobotAI *)m_Build);
@@ -220,7 +220,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
 void __stdcall CConstructor::RemoteBuild(void *pObj) {
     DTRACE();
-    if (m_Base->m_Side != controllable_side_id) {
+    if (m_Base->m_Side != g_Network.controllable_side_id) {
         return;
     }
     CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();

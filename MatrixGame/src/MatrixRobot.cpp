@@ -1283,11 +1283,11 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                             factory->Close();
                         }
                         else if (factory->m_State == BASE_CLOSED) {
-                            if (m_Side == controllable_side_id) {
+                            if (m_Side == g_Network.controllable_side_id) {
                                 CSound::Play(S_ENEMY_BASE_CAPTURED);
                             }
                             else {
-                                if (factory->m_Side == controllable_side_id)
+                                if (factory->m_Side == g_Network.controllable_side_id)
                                     CSound::Play(S_PLAYER_BASE_CAPTURED);
                             }
 
@@ -1561,13 +1561,13 @@ void CMatrixRobotAI::ZonePathCalc() {
     //	m_ZonePathCnt=g_MatrixMap->ZoneFindPath(m_Unit[0].u1.s1.m_Kind-1,m_ZoneCur,m_ZoneDes,m_ZonePath);
 
     CMatrixSideUnit *side = g_MatrixMap->GetSideById(GetSide());
-    if (GetSide() == controllable_side_id && GetGroupLogic() >= 0 &&
+    if (GetSide() == g_Network.controllable_side_id && GetGroupLogic() >= 0 &&
         side->m_PlayerGroup[GetGroupLogic()].m_RoadPath->m_ListCnt > 0) {
         m_ZonePathCnt = g_MatrixMap->FindPathInZone(m_Unit[0].u1.s1.m_Kind - 1, m_ZoneCur, m_ZoneDes,
                                                     side->m_PlayerGroup[GetGroupLogic()].m_RoadPath, 0, m_ZonePath,
                                                     g_TestRobot == this);
     }
-    else if (GetSide() != controllable_side_id && GetTeam() >= 0 && side->m_Team[GetTeam()].m_RoadPath->m_ListCnt > 0) {
+    else if (GetSide() != g_Network.controllable_side_id && GetTeam() >= 0 && side->m_Team[GetTeam()].m_RoadPath->m_ListCnt > 0) {
         m_ZonePathCnt =
                 g_MatrixMap->FindPathInZone(m_Unit[0].u1.s1.m_Kind - 1, m_ZoneCur, m_ZoneDes,
                                             side->m_Team[GetTeam()].m_RoadPath, 0, m_ZonePath, g_TestRobot == this);
@@ -1583,7 +1583,7 @@ void CMatrixRobotAI::ZonePathCalc() {
     else
         m_ZonePathNext = -1;
 
-    if (GetSide() != controllable_side_id && m_ZoneCur != m_ZoneDes &&
+    if (GetSide() != g_Network.controllable_side_id && m_ZoneCur != m_ZoneDes &&
         m_ZonePathCnt <= 0) {  // Если дойти не можем, то меняем команду
         SetTeam(g_MatrixMap->GetSideById(GetSide())->ClacSpawnTeam(GetRegion(), m_Unit[0].u1.s1.m_Kind - 1));
         SetGroupLogic(-1);
@@ -1841,8 +1841,8 @@ bool CMatrixRobotAI::Damage(
     friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
 
     damagek =
-            (friendly_fire || m_Side != controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == controllable_side_id)
+            (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
+    if (friendly_fire && m_Side == g_Network.controllable_side_id)
         damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
 
     idx = Weap2Index(weap);
@@ -1961,7 +1961,7 @@ bool CMatrixRobotAI::Damage(
 
         for (int nC = 0; nC < m_WeaponsCnt; ++nC) {
             if (m_Weapons[nC].IsEffectPresent() && m_Weapons[nC].GetWeaponType() == WEAPON_BIGBOOM) {
-                if (GetSide() == controllable_side_id) {
+                if (GetSide() == g_Network.controllable_side_id) {
                     //                    BigBoom(nC);
                 }
                 else {
@@ -2198,7 +2198,7 @@ void CMatrixRobotAI::RobotSpawn(CMatrixBuilding *pBase) {
         RESETFLAG(g_MatrixMap->m_Flags, MMFLAG_SOUND_ORDER_ATTACK_DISABLE);
     }
     else {
-        if (side->m_Id != controllable_side_id) {
+        if (side->m_Id != g_Network.controllable_side_id) {
             m_Team = side->ClacSpawnTeam(g_MatrixMap->GetRegion(CPoint(Float2Int(pBase->m_Pos.x / GLOBAL_SCALE_MOVE),
                                                                        Float2Int(pBase->m_Pos.x / GLOBAL_SCALE_MOVE))),
                                          m_Unit[0].u1.s1.m_Kind - 1);
@@ -5144,7 +5144,7 @@ void CMatrixRobotAI::ReleaseMe(void) {
 
     DCP();
 
-    if (GetSide() == controllable_side_id) {
+    if (GetSide() == g_Network.controllable_side_id) {
         CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
         ps->RemoveFromSelection(this);

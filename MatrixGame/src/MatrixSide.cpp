@@ -453,7 +453,7 @@ void CMatrixSideUnit::LogicTakt(int ms) {
     DCP();
     if (g_MatrixMap->GetControllableSide() != this || FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE))
     {
-        if (false && m_Id == controllable_side_id) {
+        if (false && m_Id == g_Network.controllable_side_id) {
             if (!g_MatrixMap->MaintenanceDisabled()) {
                 if (g_MatrixMap->BeforeMaintenanceTime() == 0 && (FRND(1) < 0.05f)) {
                     CMatrixMapStatic *b = NULL;
@@ -737,7 +737,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE)) {
             // Capture
-            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != controllable_side_id) {
+            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != g_Network.controllable_side_id) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE | ORDERING_MODE);
 
                 PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
@@ -765,7 +765,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_REPAIR)) {
             // Repair our robots please
-            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLive() && pObject->GetSide() == controllable_side_id) {
+            if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLive() && pObject->GetSide() == g_Network.controllable_side_id) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_REPAIR | ORDERING_MODE);
 
                 PGOrderRepair(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
@@ -784,10 +784,10 @@ void CMatrixSideUnit::OnLButtonDouble(
     CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
     if (pObject == TRACE_STOP_NONE ||
-        !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == controllable_side_id))
+        !(IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == g_Network.controllable_side_id))
         return;
 
-    if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == controllable_side_id) {
+    if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveRobot() && pObject->GetSide() == g_Network.controllable_side_id) {
         D3DXVECTOR3 o_pos = pObject->GetGeoCenter();
         CMatrixMapStatic *st = CMatrixMapStatic::GetFirstLogic();
 
@@ -797,7 +797,7 @@ void CMatrixSideUnit::OnLButtonDouble(
         }
 
         while (st) {
-            if (st->GetSide() == controllable_side_id && st->IsLiveRobot()) {
+            if (st->GetSide() == g_Network.controllable_side_id && st->IsLiveRobot()) {
                 auto tmp = o_pos - st->GetGeoCenter();
                 if (D3DXVec3LengthSq(&tmp) <=
                     FRIENDLY_SEARCH_RADIUS * FRIENDLY_SEARCH_RADIUS) {
@@ -882,18 +882,18 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
             // MoveTo
             // PGOrderMoveTo(SelGroupToLogicGroup(),
             //               CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
-            network::Command command
+            Command command
             {
-                network::CommandMoveParams
+                CommandMoveParams
                 {
                     GetCurGroup()->m_FirstObject->m_Object->m_NID, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0}
                 }
             };
-            std::vector<network::Command> commands;
+            std::vector<Command> commands;
             commands.push_back(command);
 
             // current_input = commands;
-            network::get_frame_record(g_input_frame)->set_side_inputs(controllable_side_id, commands);
+            g_Network.get_frame_record(g_Network.input_frame)->set_side_inputs(g_Network.controllable_side_id, commands);
 
 #ifdef NON_MULTIPLAYER
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
@@ -1034,7 +1034,7 @@ void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
     }
 
     if (type == SELECTION_GROUP || type == FLYER || type == ROBOT) {
-        if (m_Id == controllable_side_id) {
+        if (m_Id == g_Network.controllable_side_id) {
             int rnd = g_MatrixMap->Rnd(0, 6);
             if (!rnd) {
                 CSound::Play(S_SELECTION_1, SL_SELECTION);
@@ -2274,7 +2274,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
         if (ms->GetSide() != m_Id)
             continue;
         CMatrixRobotAI *robot = ms->AsRobot();
-        if (m_Id == controllable_side_id && robot->GetGroupLogic() >= 0 &&
+        if (m_Id == g_Network.controllable_side_id && robot->GetGroupLogic() >= 0 &&
             m_PlayerGroup[robot->GetGroupLogic()].Order() < mpo_AutoCapture)
             continue;
 
@@ -2327,7 +2327,7 @@ void CMatrixSideUnit::EscapeFromBomb() {
         if (ms == skip_normal || ms == skip_withbomb)
             continue;
         CMatrixRobotAI *robot = ms->AsRobot();
-        if (m_Id == controllable_side_id && robot->GetGroupLogic() >= 0 &&
+        if (m_Id == g_Network.controllable_side_id && robot->GetGroupLogic() >= 0 &&
             m_PlayerGroup[robot->GetGroupLogic()].Order() < mpo_AutoCapture)
             continue;
 
@@ -2442,7 +2442,7 @@ void CMatrixSideUnit::GroupNoTeamRobot() {
     int g, i, u, cnt, sme;
     float cx, cy;
 
-    if (m_Id == controllable_side_id)
+    if (m_Id == g_Network.controllable_side_id)
         return;
 
     for (i = 0; i < MAX_LOGIC_GROUP; i++)
@@ -2552,9 +2552,9 @@ void CMatrixSideUnit::CalcMaxSpeed() {
     }
 
     for (i = 0; i < MAX_LOGIC_GROUP; i++) {
-        if (m_Id == controllable_side_id && m_PlayerGroup[i].m_RobotCnt <= 0)
+        if (m_Id == g_Network.controllable_side_id && m_PlayerGroup[i].m_RobotCnt <= 0)
             continue;
-        else if (m_Id != controllable_side_id && m_LogicGroup[i].RobotsCnt() <= 0)
+        else if (m_Id != g_Network.controllable_side_id && m_LogicGroup[i].RobotsCnt() <= 0)
             continue;
 
         float cx = 0.0f;

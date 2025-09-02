@@ -141,7 +141,7 @@ static void static_init(void) {
     CMain::BaseInit();
 
     // Network
-    network::static_init_networking();
+    g_Network.static_init_networking();
 
     // 3G
 #ifdef _DEBUG

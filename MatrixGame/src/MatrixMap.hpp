@@ -584,7 +584,7 @@ public:
     CMatrixSideUnit *GetSideById(int id);
     CMatrixSideUnit *GetPlayerSide(void) { return m_PlayerSide; };
     [[nodiscard]] CMatrixSideUnit *GetControllableSide() const {
-        return m_Side + controllable_side_id - 1;
+        return m_Side + g_Network.controllable_side_id - 1;
     };
 
     void WaterClear(void);

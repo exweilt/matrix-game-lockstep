@@ -11,137 +11,145 @@
 #include <cassert>
 
 
-namespace network
+// namespace network
+// {
+
+enum class MessageType : u8
 {
-    enum class MessageType : u8
+    NONE            = 0,
+    COMMAND_BATCH    = 1,
+    READY           = 2,
+    START           = 3,
+    INFO,
+    SAY,
+    JOIN,
+    PING,
+    PONG
+};
+
+struct MessageCommandBatchParams
+{
+    u32 target_frame;
+    u8 target_side; // SideID
+    std::vector<Command> commands;
+
+    MessageCommandBatchParams(const u32 frame, const u8 side) : target_frame(frame), target_side(side), commands() {}
+    ~MessageCommandBatchParams() {}
+
+    u32 get_serialized_size() const
     {
-        NONE            = 0,
-        COMMAND_BATCH    = 1,
-        READY           = 2,
-        START           = 3,
-        INFO,
-        SAY,
-        JOIN,
-        PING,
-        PONG
+        u32 size = sizeof(target_frame) + sizeof(target_side) + sizeof(size_t);
+
+        for (u32 i = 0; i < commands.size(); i++)
+        {
+            size += commands[i].get_serialized_size();
+        }
+
+        return size;
+    }
+    void serialize_to_buffer(u8* buffer);
+    static MessageCommandBatchParams deserialize_from_buffer(u8* buffer);
+};
+
+struct MessageJoinParams
+{
+    u8 player_side;
+    std::string username;
+
+    MessageJoinParams(u8 side = 0, std::string name = "Greph") : player_side(side), username(name) {}
+    ~MessageJoinParams() {}
+
+    u32 get_serialized_size() const { return sizeof(player_side) + get_string_serialized_size(username); }
+    void serialize_to_buffer(u8* buffer) const;
+    static MessageJoinParams deserialize_from_buffer(const u8* buffer);
+};
+
+/**
+ * @brief The content of a packet to be transmitted using ENet.
+ *
+ * P.S. The reason why polymorphism using virtual methods and overrides was not chosen is because this introduces
+ *      an extra overhead removing the POD status and bloating up with the VTables. In C++20 we could use "concepts"
+ *      maybe as a more concise zero-cost abstraction workaround. For pre C++20 void_t/SFINAE can be considered,
+ *      but I doubt if it is better :p Probably this is how it would be implemented in pure C. I considered using
+ *      std::variant but didn't like it.
+ */
+struct Message
+{
+    MessageType type;
+    union
+    {
+        MessageCommandBatchParams command_batch;
+        MessageJoinParams join;
     };
 
-    struct MessageCommandBatchParams
+    Message()                               : type(MessageType::NONE) {};
+    Message(MessageType type)               : type(type) {}
+    Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
+    Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
+
+    ~Message()
     {
-        u32 target_frame;
-        u8 target_side; // SideID
-        std::vector<Command> commands;
-
-        MessageCommandBatchParams(const u32 frame, const u8 side) : target_frame(frame), target_side(side), commands() {}
-        ~MessageCommandBatchParams() {}
-
-        u32 get_serialized_size() const
+        switch (type)
         {
-            u32 size = sizeof(target_frame) + sizeof(target_side) + sizeof(size_t);
-
-            for (u32 i = 0; i < commands.size(); i++)
-            {
-                size += commands[i].get_serialized_size();
-            }
-
-            return size;
+            case MessageType::COMMAND_BATCH:
+                command_batch.~MessageCommandBatchParams();
+                break;
+            case MessageType::JOIN:
+                join.~MessageJoinParams();
+                break;
+            default:;
         }
-        void serialize_to_buffer(u8* buffer);
-        static MessageCommandBatchParams deserialize_from_buffer(u8* buffer);
-    };
+    }
 
-    struct MessageJoinParams
+    u32 get_serialized_size() const
     {
-        u8 player_side;
-        std::string username;
+        switch (type)
+        {
+            case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
+            case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
+            case MessageType::START:        return sizeof(u8);
+            default:                        return 0;
+        }
+    }
 
-        MessageJoinParams(u8 side = 0, std::string name = "Greph") : player_side(side), username(name) {}
-        ~MessageJoinParams() {}
-
-        u32 get_serialized_size() const { return sizeof(player_side) + get_string_serialized_size(username); }
-        void serialize_to_buffer(u8* buffer) const;
-        static MessageJoinParams deserialize_from_buffer(const u8* buffer);
-    };
-
-    /**
-     * @brief The content of a packet to be transmitted using ENet.
-     *
-     * P.S. The reason why polymorphism using virtual methods and overrides was not chosen is because this introduces
-     *      an extra overhead removing the POD status and bloating up with the VTables. In C++20 we could use "concepts"
-     *      maybe as a more concise zero-cost abstraction workaround. For pre C++20 void_t/SFINAE can be considered,
-     *      but I doubt if it is better :p Probably this is how it would be implemented in pure C. I considered using
-     *      std::variant but didn't like it.
-     */
-    struct Message
+    void serialize_to_buffer(u8* buffer)
     {
-        MessageType type;
-        union
-        {
-            MessageCommandBatchParams command_batch;
-            MessageJoinParams join;
-        };
+        // Write down the type tag
+        buffer[0] = static_cast<u8>(type);
 
-        Message()                               : type(MessageType::NONE) {};
-        Message(MessageType type)               : type(type) {}
-        Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
-        Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
-
-        ~Message()
+        // Write down the message itself
+        switch (type)
         {
-            switch (type)
-            {
-                case MessageType::COMMAND_BATCH:
-                    command_batch.~MessageCommandBatchParams();
-                    break;
-                case MessageType::JOIN:
-                    join.~MessageJoinParams();
-                    break;
-                default:;
-            }
+            case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
+            case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
+            case MessageType::START:        break;
+            default:                        assert(false);
         }
+    }
 
-        u32 get_serialized_size() const
+    static Message deserialize_from_buffer(u8* buffer /*, size_t size */)
+    {
+        switch (static_cast<MessageType>(buffer[0]))
         {
-            switch (type)
-            {
-                case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
-                case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
-                case MessageType::START:        return sizeof(u8);
-                default:                        return 0;
-            }
+            case MessageType::COMMAND_BATCH:
+                return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
+            case MessageType::JOIN:
+                return MessageJoinParams::deserialize_from_buffer(buffer + 1);
+        case MessageType::START:
+                return Message(MessageType::START);
+            default:
+                assert(false);
         }
+    }
+};
+// }
 
-        void serialize_to_buffer(u8* buffer)
-        {
-            // Write down the type tag
-            buffer[0] = static_cast<u8>(type);
 
-            // Write down the message itself
-            switch (type)
-            {
-                case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
-                case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
-                case MessageType::START:        break;
-                default:                        assert(false);
-            }
-        }
 
-        static Message deserialize_from_buffer(u8* buffer /*, size_t size */)
-        {
-            switch (static_cast<MessageType>(buffer[0]))
-            {
-                case MessageType::COMMAND_BATCH:
-                    return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
-                case MessageType::JOIN:
-                    return MessageJoinParams::deserialize_from_buffer(buffer + 1);
-            case MessageType::START:
-                    return Message(MessageType::START);
-                default:
-                    assert(false);
-            }
-        }
-    };
-}
+
+
+
+
 
 
 // // WARNING: must be the same order as enum "MessageType" entries!

@@ -10,8 +10,9 @@
 #include "VectorObject.hpp"
 
 #include <utils.hpp>
+#include <Network/Network.hpp>
 
-extern u32 g_next_nid;
+// extern u32 g_next_nid;
 // #include "Network/StateManager.hpp"
 
 class CMatrixMapGroup;
@@ -293,7 +294,7 @@ public:
     *
     * TODO: Probably this unique ID space should only be shared by buildings, factories, turrets and robots.
     */
-    const u32 m_NID{g_next_nid++};
+    const u32 m_NID{g_Network.next_nid++};
 
     CMatrixMapStatic *m_NextStackItem;
     CMatrixMapStatic *m_PrevStackItem;

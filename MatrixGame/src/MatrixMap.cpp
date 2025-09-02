@@ -3457,7 +3457,7 @@ bool CMatrixMap::IsTraceNonPlayerObj() {
         (g_MatrixMap->m_TraceStopObj->IsRobot() || g_MatrixMap->m_TraceStopObj->IsBuilding() ||
          g_MatrixMap->m_TraceStopObj->IsCannon() || g_MatrixMap->m_TraceStopObj->GetObjectType() == OBJECT_TYPE_FLYER ||
          g_MatrixMap->m_TraceStopObj->IsSpecial()) &&
-        (g_MatrixMap->m_TraceStopObj->GetSide() != controllable_side_id))
+        (g_MatrixMap->m_TraceStopObj->GetSide() != g_Network.controllable_side_id))
         return true;
 
     return false;

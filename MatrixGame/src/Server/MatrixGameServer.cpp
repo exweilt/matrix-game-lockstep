@@ -66,7 +66,7 @@ void process_server_network_frame()
 
             if (g_server_host->connectedPeers == 2)
             {
-                nw::Message msg { nw::MessageType::START };
+                Message msg { MessageType::START };
                 ENetPacket* packet = enet_packet_create(nullptr, msg.get_serialized_size(), ENET_PACKET_FLAG_RELIABLE);
                 memcpy(packet->data, &msg, msg.get_serialized_size());
                 enet_host_broadcast(g_server_host, 0, packet);
@@ -92,7 +92,7 @@ void process_server_network_frame()
                 }
             }
 
-            network::Message m { nw::Message::deserialize_from_buffer(event.packet->data) };
+            Message m { Message::deserialize_from_buffer(event.packet->data) };
 
             std::cout << "Relaying to " << target->connectID << "\n\n";
             enet_peer_send(target, 0, event.packet);
@@ -106,7 +106,7 @@ void process_server_network_frame()
 
 int main()
 {
-    std::cout << "Game server started!" << static_cast<u8>(network::SideID::RED) << std::endl;
+    std::cout << "Game server started!" << static_cast<u8>(SideID::RED) << std::endl;
 
     // Init ENet
     if (enet_initialize () != 0)

@@ -905,7 +905,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                 if (ms->GetObjectType() == OBJECT_TYPE_BUILDING)
                 {
                     CMatrixBuilding *bu = (CMatrixBuilding *)ms;
-                    if (bu->m_Kind == BUILDING_BASE && bu->GetSide() == controllable_side_id)
+                    if (bu->m_Kind == BUILDING_BASE && bu->GetSide() == g_Network.controllable_side_id)
                     {
                         float si = TableSin(m_CameraAngle);
                         float co = TableCos(m_CameraAngle);
@@ -1618,7 +1618,7 @@ void CMatrixMap::StaticPrepare2(void* robots) {
             r->MapPosCalc();
 
             // use a group: item.group
-            if (side != controllable_side_id) {
+            if (side != g_Network.controllable_side_id) {
                 if (item.group >= 1 && item.group <= 3)
                     r->SetTeam(item.group - 1);
                 else

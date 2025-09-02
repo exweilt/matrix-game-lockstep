@@ -424,7 +424,7 @@ public:
         }
 
         return !IsAutomaticMode() &&
-               ((m_Side != controllable_side_id) || (g_MatrixMap->GetControllableSide()->GetArcadedObject() != this));
+               ((m_Side != g_Network.controllable_side_id) || (g_MatrixMap->GetControllableSide()->GetArcadedObject() != this));
     }
 
     void OBBToAABBCollision(int nHeight, int nWidth);

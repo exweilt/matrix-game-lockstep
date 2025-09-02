@@ -242,12 +242,12 @@ void CFormMatrixGame::Leave(void) {
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
-    g_MatrixMap->m_DI.T(L"Physics FPS", utils::format(L"%d", physics_fps).c_str());
-    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_physics_frame).c_str());
-    g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_input_frame).c_str());
-    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_graphics_frame).c_str());
-    g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_total_ms).c_str());
-    g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", controllable_side_id).c_str());
+    g_MatrixMap->m_DI.T(L"Physics FPS", utils::format(L"%d", g_Network.physics_fps).c_str());
+    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_Network.physics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_Network.input_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_Network.graphics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_Network.total_ms).c_str());
+    g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", g_Network.controllable_side_id).c_str());
 
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
     {
@@ -746,7 +746,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_NUMPAD5 && down)
     {
-        game_ongoing = !game_ongoing;
+        g_Network.game_ongoing = !g_Network.game_ongoing;
         // if (network::commands_journal.size() > g_physics_frame)
         // {
         //     nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
@@ -760,14 +760,14 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F2 && down)
     {
-        current_input = std::vector<nw::Command>();
+        // g_Network.current_input = std::vector<Command>();
         // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
     }
 
     if (vk == VK_F1 && down)
     {
-        nw::approve_final_input(g_physics_frame);
+        g_Network.approve_final_input(g_Network.physics_frame);
 
         // MoveWindow(g_Wnd, 100, 100, 700, 700, FALSE);
 
@@ -1066,7 +1066,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                             CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
                             for (; ms; ms = ms->GetNextLogic()) {
                                 if (ms == ps->m_ActiveObject && ms->IsLiveBuilding() &&
-                                    ms->AsBuilding()->m_Side == controllable_side_id) {
+                                    ms->AsBuilding()->m_Side == g_Network.controllable_side_id) {
                                     ms->AsBuilding()->CreatePlacesShow();
                                     break;
                                 }
@@ -1228,7 +1228,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == controllable_side_id) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == g_Network.controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1258,7 +1258,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == controllable_side_id) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == g_Network.controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1357,7 +1357,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 prev_key_time = g_MatrixMap->GetTime();
 
                 while (o) {
-                    if (o->GetSide() == controllable_side_id) {
+                    if (o->GetSide() == g_Network.controllable_side_id) {
                         if (o->IsLiveRobot() && o->AsRobot()->GetCtrlGroup() == vk) {
                             if (!prev_unselected) {
                                 prev_unselected = true;
@@ -1431,7 +1431,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             sb.m_Weapon[4].m_Unit.m_nKind = RUK_WEAPON_MORTAR;
             sb.m_Head.m_nKind = RUK_HEAD_BLOCKER;
 
-            int side_id = controllable_side_id;
+            int side_id = g_Network.controllable_side_id;
             CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
 
             if (side->GetRobotsCnt() + side->GetRobotsInStack() >= side->GetMaxSideRobots()) {
