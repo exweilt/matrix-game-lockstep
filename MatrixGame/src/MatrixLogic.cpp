@@ -2977,14 +2977,20 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
+    if (g_Network.physics_frame == 1000) {
+        g_Network.game_ongoing = false;
+    }
+
     // Next physics frame
     if (
-        g_Network.physics_frame <= 1000 &&
+        // g_Network.physics_frame <= 1000 &&
+        g_Network.game_ongoing &&
         (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3))
-            || g_Network.next_frame_requested)
+            // || g_Network.next_frame_requested)
+        )
     {
         m_Time += step;
-        g_Network.next_frame_requested = false;
+        // g_Network.next_frame_requested = false;
         g_Network.consume_input_frame(g_Network.physics_frame);
         physics_process(step);
         g_Network.physics_frame += 1;

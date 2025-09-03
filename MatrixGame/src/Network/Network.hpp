@@ -3,6 +3,8 @@
 #include "Command.hpp"
 #include "Message.hpp"
 #include "Types.hpp"
+#include "stupid_logger.hpp"
+
 #include <enet/enet.h>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/string.hpp>
@@ -91,7 +93,7 @@ public:
     bool isClient2              = std::getenv("CLIENT2") != nullptr;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
     bool game_ongoing           = false;
-    bool next_frame_requested   = false; // should simulate next physics frame
+    // bool next_frame_requested   = false; // should simulate next physics frame
 
     // The next "free" networkable ID.
     // Used for robots, turrets, factories and bases.
@@ -135,6 +137,7 @@ public:
     void consume_input_frame(const u32 frame);
 
     void save_commands_journal_to_file();
+    logger_type lgr{isClient2 ? "client2.log" : "client3.log"};
 
 private:
     // double linked list of all commands for all frames

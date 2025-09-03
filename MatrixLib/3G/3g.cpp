@@ -486,8 +486,8 @@ int L3GRun()
         {
             break;
         }
-        lgr.debug("====================================");
-        lgr.debug("Event handle time : {:.3f} ms")(sw_event.elapsed_ms());
+        g_Network.lgr.debug("====================================");
+        g_Network.lgr.debug("Event handle time : {:.3f} ms")(sw_event.elapsed_ms());
 
         // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
         // {
@@ -517,7 +517,7 @@ int L3GRun()
 
         Stopwatch sw_net;
         g_Network.process_network_frame(0);
-        lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
+        g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
@@ -529,16 +529,17 @@ int L3GRun()
 
         // delta = smooths / SMOOTH_COUNT;
 
-        if (g_Network.game_ongoing)
+        // if (g_Network.game_ongoing)
         {
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
             lgr.add_ticks(17);
+            g_Network.lgr.add_ticks(17);
             //SRemindCore::Takt(delta); ATTENTION
             Stopwatch sw_phys;
             g_FormCur->Takt(17);
-            lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
+            g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
             // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
             RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
@@ -549,7 +550,7 @@ int L3GRun()
             // TODO: maybe add back FPS limit?
             Stopwatch sw_draw;
             g_FormCur->Draw();
-            lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
+            g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
 #if (defined _DEBUG) && !(defined _RELDEBUG)
             CHelper::AfterDraw();
 #endif
@@ -568,8 +569,8 @@ int L3GRun()
                 g_Network.frames_passed_since_last_check = 0;
             }
         }
-        lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
-        lgr.debug("====================================");
+        g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
+        g_Network.lgr.debug("====================================");
     }
 
     return 1;

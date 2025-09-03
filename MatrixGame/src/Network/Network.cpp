@@ -15,7 +15,7 @@
 
 #include <enet/enet.h>
 
-logger_type cli_lgr{"client.log"};
+// logger_type cli_lgr{"client.log"};
 
 Network g_Network{};
 
@@ -97,7 +97,7 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
         switch (event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
-            cli_lgr.info("A new client connected from %x:%u.\n")
+            lgr.info("A new client connected from %x:%u.\n")
                 (event.peer->address.host, event.peer->address.port);
 
 
