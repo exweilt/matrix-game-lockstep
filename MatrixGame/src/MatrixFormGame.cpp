@@ -31,6 +31,7 @@
 #include <time.h>
 #include <sys/timeb.h>
 #include "stdio.h"
+#include "Network/serializers.hpp"
 
 #include <utils.hpp>
 #include <stupid_logger.hpp>
@@ -761,6 +762,14 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
     if (vk == VK_F2 && down)
     {
         g_Network.save_commands_journal_to_file();
+        // g_Network.current_input = std::vector<Command>();
+        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
+    }
+
+    if (vk == VK_F4 && down)
+    {
+        serialize_map_into_json();
         // g_Network.current_input = std::vector<Command>();
         // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
