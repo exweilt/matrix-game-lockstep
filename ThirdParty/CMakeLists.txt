@@ -85,3 +85,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(enet)
 get_target_property(ENET_SOURCE_DIR enet SOURCE_DIR)
+
+
+#===============================================================
+
+
+
+set(XXHASH_DIR C:/opt/xxHash)
+add_library(xxhash STATIC IMPORTED)
+set_target_properties(xxhash PROPERTIES
+        IMPORTED_LOCATION "${XXHASH_DIR}/lib/xxhash.lib"
+        INTERFACE_INCLUDE_DIRECTORIES  "${XXHASH_DIR}/include"
+)

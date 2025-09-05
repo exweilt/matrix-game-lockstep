@@ -1840,10 +1840,13 @@ bool CMatrixRobotAI::Damage(
 
     friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
 
-    damagek =
-            (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == g_Network.controllable_side_id)
-        damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
+    // ATTENTION:
+    // damagek = (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
+    damagek = 1.0;
+
+    // ATTENTION:
+    // if (friendly_fire && m_Side == g_Network.controllable_side_id)
+    //     damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
 
     idx = Weap2Index(weap);
     if (weap == WEAPON_REPAIR) {

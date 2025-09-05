@@ -14,6 +14,8 @@
 // namespace network
 // {
 
+// TODO: consider making different message types the same if they carry the same memory layout. e.g. some both have only one int.
+//          remove hell a lot of boilerplate
 enum class MessageType : u8
 {
     NONE            = 0,
@@ -24,7 +26,9 @@ enum class MessageType : u8
     SAY,
     JOIN,
     PING,
-    PONG
+    PONG,
+    DESYNC, //happened
+    CHECKSUM
 };
 
 struct MessageCommandBatchParams
@@ -64,6 +68,19 @@ struct MessageJoinParams
     static MessageJoinParams deserialize_from_buffer(const u8* buffer);
 };
 
+struct MessageChecksumParams
+{
+    u32 target_frame;
+    u64 checksum;
+
+    MessageChecksumParams(u32 target_frame, u64 checksum) : target_frame(target_frame), checksum(checksum) {}
+    ~MessageChecksumParams() {}
+
+    u32 get_serialized_size() const { return sizeof(u32) + sizeof(u64); }
+    void serialize_to_buffer(u8* buffer) const;
+    static MessageChecksumParams deserialize_from_buffer(const u8* buffer);
+};
+
 /**
  * @brief The content of a packet to be transmitted using ENet.
  *
@@ -80,12 +97,14 @@ struct Message
     {
         MessageCommandBatchParams command_batch;
         MessageJoinParams join;
+        MessageChecksumParams checksum;
     };
 
     Message()                               : type(MessageType::NONE) {};
     Message(MessageType type)               : type(type) {}
     Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
     Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
+    Message(MessageChecksumParams ch)       : type(MessageType::CHECKSUM),      checksum(ch)     {};
 
     ~Message()
     {
@@ -96,6 +115,9 @@ struct Message
                 break;
             case MessageType::JOIN:
                 join.~MessageJoinParams();
+                break;
+            case MessageType::CHECKSUM:
+                checksum.~MessageChecksumParams();
                 break;
             default:;
         }
@@ -108,6 +130,8 @@ struct Message
             case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
             case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
             case MessageType::START:        return sizeof(u8);
+            case MessageType::CHECKSUM:     return sizeof(u8) + checksum.get_serialized_size();
+            case MessageType::DESYNC:       return sizeof(u8);
             default:                        return 0;
         }
     }
@@ -122,7 +146,9 @@ struct Message
         {
             case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
             case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
+            case MessageType::CHECKSUM:     checksum.serialize_to_buffer(buffer + 1);       break;
             case MessageType::START:        break;
+            case MessageType::DESYNC:       break;
             default:                        assert(false);
         }
     }
@@ -135,8 +161,12 @@ struct Message
                 return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
             case MessageType::JOIN:
                 return MessageJoinParams::deserialize_from_buffer(buffer + 1);
-        case MessageType::START:
-                return Message(MessageType::START);
+            case MessageType::START:
+                    return Message(MessageType::START);
+            case MessageType::DESYNC:
+                return Message(MessageType::DESYNC);
+            case MessageType::CHECKSUM:
+                return MessageChecksumParams::deserialize_from_buffer(buffer + 1);
             default:
                 assert(false);
         }

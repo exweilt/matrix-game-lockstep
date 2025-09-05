@@ -25,11 +25,23 @@ Deterministic Lockstep with Server Relay
 - When there is no sampled inputs for the duration of 1 frame assign Empty List of Actions to the var of Inputs for current frame and send it ✔️
 - Make sure at least some basic Determinism is present ✔️
 - Add buffer for inputs delay to address jitter(i.e. replace the variable string the List of Actions for the current frame with some kind of data struct storing the Lists of Actions for number of frames) ✔️
-- Compute checksums of state to detect desyncs ❌
+- Compute checksums of state to detect desyncs ✔️
 - Implement most in game controls: building, attacking etc. ❌
 - Ensure rock-solid determinism through controlling FPU + fixed points ❌
 - Make sure game runs smoothly, measure fps in original, bring up fps to 90 and maybe add physics interpolation. ❌
 - Add more fancy functionality to control the flow of the game. Allow configuring IP addresses to connect, maps to play etc. ❌
+
+## Additional
+
+You would need to install xxHash library somewhere in your system so CMake can find it. 
+Either download it through your system package manager or build it yourself with:\
+```bash
+cd ./xxHash_repo/
+cmake -S build/cmake -B cmake_build -A Win32 -DCMAKE_BUILD_TYPE=Release
+cmake --build cmake_build --config Release --parallel
+cmake --install cmake_build --config Release
+```
+
 
 The rest is from the original repository:
 

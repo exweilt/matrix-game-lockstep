@@ -249,6 +249,7 @@ void CFormMatrixGame::Draw(void) {
     g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_Network.graphics_frame).c_str());
     g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_Network.total_ms).c_str());
     g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", g_Network.controllable_side_id).c_str());
+    g_MatrixMap->m_DI.T(L"game_ongoing", utils::format(L"%d", g_Network.game_ongoing).c_str());
 
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
     {
@@ -769,7 +770,8 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F4 && down)
     {
-        serialize_map_into_json();
+        u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client3_map.json");
+        g_Network.lgr.debug("Checksum for frame {}: {}")(g_Network.physics_frame, checksum);
         // g_Network.current_input = std::vector<Command>();
         // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
         // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());

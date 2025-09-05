@@ -36,7 +36,7 @@ void MessageCommandBatchParams::serialize_to_buffer(u8 *buffer)
 
 MessageCommandBatchParams MessageCommandBatchParams::deserialize_from_buffer(u8 *buffer)
 {
-    MessageCommandBatchParams result{0, buffer[4]};
+    MessageCommandBatchParams result{0, buffer[4]}; // wow
     memcpy(&result.target_frame, buffer, sizeof(result.target_frame));
     result.target_frame = ntohl(result.target_frame);
     buffer += 5;
@@ -74,6 +74,35 @@ MessageJoinParams MessageJoinParams::deserialize_from_buffer(const u8 *buffer)
     return MessageJoinParams
     {
         host_player_side, username
+    };
+}
+
+void MessageChecksumParams::serialize_to_buffer(u8 *buffer) const
+{
+    const u32 be_frame = htonl(this->target_frame);
+    std::memcpy(buffer, &be_frame, sizeof(u32));
+    buffer += sizeof(be_frame);
+
+    const u64 be_checksum = htonl(this->checksum);
+    std::memcpy(buffer, &be_checksum, sizeof(u64));
+    // buffer += sizeof(be_checksum);
+}
+
+MessageChecksumParams MessageChecksumParams::deserialize_from_buffer(const u8 *buffer)
+{
+    u32 frame;
+    memcpy(&frame, buffer, sizeof(frame));
+    frame = ntohl(frame);
+    buffer += sizeof(frame);
+
+    u64 checksum;
+    memcpy(&checksum, buffer, sizeof(checksum));
+    checksum = ntohl(checksum);
+    // buffer += sizeof(checksum);
+
+    return MessageChecksumParams
+    {
+        frame, checksum
     };
 }
 

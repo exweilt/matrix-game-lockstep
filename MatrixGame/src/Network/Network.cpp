@@ -30,14 +30,13 @@ Network g_Network{};
 void Network::send_message(Message &msg)
 {
     u32 size = msg.get_serialized_size();
-    void* buffer = malloc(size);
-    msg.serialize_to_buffer(static_cast<u8 *>(buffer));
-
-    ENetPacket* packet = enet_packet_create(buffer, size, ENET_PACKET_FLAG_RELIABLE);
+    ENetPacket* packet = enet_packet_create(nullptr, size, ENET_PACKET_FLAG_RELIABLE);
+    msg.serialize_to_buffer(packet->data);
 
     enet_peer_send(client_host->peers, 0, packet);
 
     enet_host_flush (client_host);
+    // enet_packet_destroy(packet);
 }
 
 void Network::approve_final_input(u32 target_frame)
@@ -65,11 +64,19 @@ void Network::process_incoming_message(const Message &msg)
 {
     if (msg.type == MessageType::COMMAND_BATCH)
     {
+        std::cout << "Got command batch for " << msg.command_batch.target_frame << std::endl;
         get_frame_record(msg.command_batch.target_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
     }
     else if (msg.type == MessageType::START)
     {
+        std::cout << "Game started officially." << std::endl;
         game_ongoing = true;
+    }
+    else if (msg.type == MessageType::DESYNC)
+    {
+        game_ongoing = false;
+        lgr.error("DESYNC detected at frame: {}")(msg.checksum.target_frame);
+        std::cerr << "Desync" << std::endl;
     }
 }
 

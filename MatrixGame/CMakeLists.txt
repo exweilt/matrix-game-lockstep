@@ -24,7 +24,9 @@ target_include_directories(
         .
         src
         "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>"
-        "${ENET_SOURCE_DIR}/include")
+        "${ENET_SOURCE_DIR}/include"
+        "${XXHASH_DIR}/include"
+)
 
 
 # The -include winsock2.h is needed here because for networking winsock2.h has to be included before "windows.h",
@@ -57,6 +59,7 @@ target_link_libraries(
         MatrixLib
         "$<$<C_COMPILER_ID:MSVC>:legacy_stdio_definitions>"
         enet
+        xxhash
 )
 
 if(MATRIXGAME_CHEATS)

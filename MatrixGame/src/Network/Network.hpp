@@ -135,6 +135,7 @@ public:
     }
     void static_init_networking();
     void consume_input_frame(const u32 frame);
+    void send_message(Message &msg);
 
     void save_commands_journal_to_file();
     logger_type lgr{isClient2 ? "client2.log" : "client3.log"};
@@ -145,7 +146,6 @@ private:
     // TODO: consider changing to std::map?
     std::list<CommandsFrameRecord> commands_journal;
 
-    void send_message(Message &msg);
     void process_incoming_message(const Message &msg);
     void init_client_host();
     void deinit_client_host();

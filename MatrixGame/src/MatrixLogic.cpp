@@ -18,6 +18,8 @@
 #include "Network/Network.hpp"
 #include <random.hpp>
 
+#include "Network/serializers.hpp"
+
 // CPoint MatrixDir45[8]={	CPoint(-1,0),	CPoint(1,0),CPoint(0,-1),CPoint(0,1),
 //						CPoint(-1,-1),CPoint(1,1),CPoint(-1,1),CPoint(1,-1)};
 
@@ -2977,10 +2979,6 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
-    if (g_Network.physics_frame == 1000) {
-        g_Network.game_ongoing = false;
-    }
-
     // Next physics frame
     if (
         // g_Network.physics_frame <= 1000 &&
@@ -2989,6 +2987,9 @@ void CMatrixMapLogic::Takt(int step) {
             // || g_Network.next_frame_requested)
         )
     {
+        if (g_Network.physics_frame == 1000) {
+            g_Network.game_ongoing = false;
+        }
         m_Time += step;
         // g_Network.next_frame_requested = false;
         g_Network.consume_input_frame(g_Network.physics_frame);
@@ -2999,6 +3000,14 @@ void CMatrixMapLogic::Takt(int step) {
         g_IFaceList->LogicTakt(step); // ATTENTION
         CMatrixMap::Takt(step);  // graphic takts after logic takt
         g_Network.frames_passed_since_last_check += 1;
+
+        // Current implementation does not work for frame 0:
+        Message msg = MessageChecksumParams{g_Network.physics_frame - 1, serialize_map(true)};
+        g_Network.send_message(msg);
+    }
+    else
+    {
+        std::cout << "";
     }
 
 
