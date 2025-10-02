@@ -148,10 +148,13 @@ public:
     void SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pilon, bool ld_from_history = false);
     void Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon); // WTF???
 
-    void __stdcall RemoteBuild(void *pObj);
+    void __stdcall RemoteBuild(void *pObj); // Button: Build Robot Callback
     SNewBorn *ProduceRobot(void *pObject); // Unused
-    void StackRobot(void *pObject, int team = 0);
+    void StackRobot(void *pObject, int team = 0); // Add robot to build queue
     void BeforeRender(void);
+
+    // PreRobot vs SpecialRobot
+    // void OrderRobot(u32 base_nid, ); // Networking: Order a robot for a base with ID
 
     /**
      * @brief Renders the resulting robot inside GUI constructor.

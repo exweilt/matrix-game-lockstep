@@ -234,8 +234,8 @@ class CMatrixMapStatic : public CMain {
     static CMatrixMapStatic *m_FirstVisNew;
     static CMatrixMapStatic *m_LastVisNew;
 
-    static CMatrixMapStatic *m_FirstVisOld;
-    static CMatrixMapStatic *m_LastVisOld;
+    static CMatrixMapStatic *m_FirstVisOld; // Effectively Not used
+    static CMatrixMapStatic *m_LastVisOld;  // Effectively Not used
 
     CMatrixMapStatic *m_NextVis; // Not used
     CMatrixMapStatic *m_PrevVis; // Not used

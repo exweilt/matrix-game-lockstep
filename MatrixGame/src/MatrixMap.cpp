@@ -1571,6 +1571,7 @@ void CMatrixMap::DrawLandscape(bool all) {
             (*md)->Draw();
 
             ///*
+#define DRAW_LANDSCAPE_SETKA 1
 #if DRAW_LANDSCAPE_SETKA == 1
             CHelper::Create(1, 0)->Line(D3DXVECTOR3((*md)->GetPos0().x, (*md)->GetPos0().y, 10.0f),
                                         D3DXVECTOR3((*md)->GetPos0().x, (*md)->GetPos1().y, 10.0f), 0xFFFF0000,
