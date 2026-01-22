@@ -31,7 +31,7 @@ using namespace Base; // TODO: remove
 #define POW2(x) ((x) * (x))
 
 #define LERPFLOAT(k, c1, c2)  (((k) * (float(c2) - float(c1))) + float(c1))
-#define LERPVECTOR(k, v1, v2) (((k) * ((v2) - (v1))) + (v1))
+#define LERPVECTOR(k, v1, v2) ((((v2) - (v1))*(k)) + (v1))
 
 #define KSCALE(k, k1, k2) ((k) < (k1) ? 0.0f : (k) > (k2) ? 1.0f : ((k) - (k1)) / ((k2) - (k1)))
 

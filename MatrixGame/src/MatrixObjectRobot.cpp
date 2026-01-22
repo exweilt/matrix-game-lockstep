@@ -273,7 +273,7 @@ float CMatrixRobot::GetChassisHeight(void) const {
     return tm->_43;
 }
 
-float CMatrixRobot::Z_From_Pos(void) {
+fixed24 CMatrixRobot::Z_From_Pos(void) {
     float roboz = g_MatrixMap->GetZ(m_PosX, m_PosY);
     if (roboz < WATER_LEVEL) {
         SETFLAG(m_ObjectState, ROBOT_FLAG_ONWATER);
@@ -904,7 +904,7 @@ void CMatrixRobot::Takt(int cms) {
     // RChange(MR_Matrix);
 }
 
-bool CMatrixRobot::PickFull(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const {
+bool CMatrixRobot::PickFull(const FixedVector3 &orig, const FixedVector3 &dir, fixed24 *outt) const {
     DTRACE();
     if (m_CurrState == ROBOT_DIP)
         return false;
@@ -917,7 +917,7 @@ bool CMatrixRobot::PickFull(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, flo
     return false;
 }
 
-bool CMatrixRobot::Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const {
+bool CMatrixRobot::Pick(const FixedVector3 &orig, const FixedVector3 &dir, fixed24 *outt) const {
     DTRACE();
     if (m_CurrState == ROBOT_DIP)
         return false;
@@ -983,6 +983,9 @@ void CMatrixRobot::BeforeDraw(void) {
 }
 
 void CMatrixRobot::Draw(void) {
+    if (m_NID == 2908 && g_Network.isClient2)
+        return;
+
     uintptr_t coltex = (uintptr_t)g_MatrixMap->GetSideColorTexture(m_Side)->Tex();
     // g_D3DD->SetRenderState( D3DRS_NORMALIZENORMALS,  TRUE );
 

@@ -96,9 +96,9 @@ typedef bool (*ENUM_OBJECTS2D)(const D3DXVECTOR2 &center, CMatrixMapStatic *o, u
 class CMatrixBuilding;
 
 struct SMatrixMapPoint {
-    float z;
-    float z_land;
-    D3DXVECTOR3 n;
+    fixed24 z;
+    fixed24 z_land;
+    FixedVector3 n;
     DWORD color;
     int lum_r, lum_g, lum_b;
 };
@@ -141,8 +141,8 @@ public:
     CMatrixBuilding *m_Base;
 
     // koefs for z calc (with bridge bridge)
-    float a1, b1, c1;
-    float a2, b2, c2;
+    fixed24 a1, b1, c1;
+    fixed24 a2, b2, c2;
 };
 
 struct SMatrixMapMove {
@@ -498,10 +498,13 @@ public:
 
     float GetZLand(double wx, double wy);
     float GetZ(float wx, float wy);
+    fixed24 GetZ(fixed24 wx, fixed24 wy);
     float GetZInterpolatedLand(float wx, float wy);
     float GetZInterpolatedObj(float wx, float wy);
     float GetZInterpolatedObjRobots(float wx, float wy);
     void GetNormal(D3DXVECTOR3 *out, float wx, float wy, bool check_water = false);
+    void GetNormal(FixedVector3 *out, fixed24 wx, fixed24 wy, bool check_water = false);
+
     DWORD GetColor(float wx, float wy);
 
     void CalcMoveSpherePlace(void);

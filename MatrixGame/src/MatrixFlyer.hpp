@@ -222,11 +222,11 @@ class CMatrixFlyer : public CMatrixMapStatic {
 
     struct SCarryData {
         CMatrixRobot *m_Robot;
-        D3DXVECTOR3 m_RobotForward;
-        D3DXVECTOR3 m_RobotUp;
-        D3DXVECTOR3 m_RobotUpBack;
-        float m_RobotAngle;
-        float m_RobotMassFactor;
+        FixedVector3 m_RobotForward;
+        FixedVector3 m_RobotUp;
+        FixedVector3 m_RobotUpBack;
+        fixed24 m_RobotAngle;
+        fixed24 m_RobotMassFactor;
         CMatrixEffectElevatorField *m_RobotElevatorField;
     } m_CarryData;
 
@@ -306,7 +306,7 @@ public:
     void SetHitpoint(float hp) { m_HitPoint = hp; }
 #endif
 
-    const D3DXVECTOR3 &GetPos(void) const { return m_Pos; }
+    const FixedVector3 &GetPos(void) const { return m_Pos; }
     const D3DXVECTOR3 GetPos(float pered) const { return GetPos() + D3DXVECTOR3(-m_AngleZSin, m_AngleZCos, 0) * pered; }
 
     const D3DXVECTOR2 GetTarget() const { return m_Target; }

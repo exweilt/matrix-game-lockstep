@@ -775,16 +775,16 @@ void CMatrixMapStatic::Sort(const D3DXMATRIX &sort) {
 
     // check visibility with frustum...
 
-    if (IsFlyer()) {
-        if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
-            return;
-    }
-    else {
-        if (!g_MatrixMap->m_Camera.IsInFrustum(m_AdditionalPoint)) {
-            if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
-                return;
-        }
-    }
+    // if (IsFlyer()) {
+    //     if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
+    //         return;
+    // }
+    // else {
+    //     if (!g_MatrixMap->m_Camera.IsInFrustum(m_AdditionalPoint)) {
+    //         if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
+    //             return;
+    //     }
+    // }
 
 #if SHOW_ASSIGNED_GROUPS
     if (SHOW_ASSIGNED_GROUPS == GetObjectType())

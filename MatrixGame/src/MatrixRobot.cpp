@@ -6,6 +6,9 @@
 #include <new>
 #include <algorithm>
 
+#include "deterministic_math.hpp"
+#include <fpm/math.hpp>
+
 #include "MatrixRobot.hpp"
 #include "MatrixObjectBuilding.hpp"
 #include "Logic/MatrixRule.h"
@@ -319,7 +322,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     do_animation:;
         DCP();
 
-        if (fabs(m_Speed) <= 0.01f) {
+        if (fpm::abs(m_Speed) <= static_cast<fixed24>(0.01)) {
             SwitchAnimation(ANIMATION_STAY);
         }
         else {
@@ -413,24 +416,25 @@ void CMatrixRobotAI::LogicTakt(int ms) {
             while (g_MatrixMap->GetTime() > m_NextTimeAblaze) {
                 m_NextTimeAblaze += OBJECT_ROBOT_ABLAZE_PERIOD_EFFECT;
 
-                D3DXVECTOR3 dir, pos;
-                float t;
+                FixedVector3 dir, pos;
+                fixed24 t;
 
                 int cnt = 4;
                 do {
-                    pos.x = m_Core->m_Matrix._41 + FSRND(m_Core->m_Radius);
-                    pos.y = m_Core->m_Matrix._42 + FSRND(m_Core->m_Radius);
-                    pos.z = m_Core->m_Matrix._43 + FRND(m_Core->m_Radius * 2);
-                    auto tmp = D3DXVECTOR3(m_Core->m_Matrix._41 - pos.x,
+                    pos.x = m_Core->m_Matrix._41 + fsrnd(m_Core->m_Radius);
+                    pos.y = m_Core->m_Matrix._42 + fsrnd(m_Core->m_Radius);
+                    pos.z = m_Core->m_Matrix._43 + frnd(m_Core->m_Radius * 2);
+                    auto tmp = FixedVector3(m_Core->m_Matrix._41 - pos.x,
                                            m_Core->m_Matrix._42 - pos.y,
                                            m_Core->m_Matrix._43 - pos.z);
-                    D3DXVec3Normalize(&dir, &tmp);
+                    dir = tmp.Normalized();
+                    // D3DXVec3Normalize(&dir, &tmp);
                 }
                 while (!PickFull(pos, dir, &t) && (--cnt > 0));
 
                 if (cnt > 0) {
                     ((CMatrixEffectShleif *)m_Ablaze.effect)
-                            ->AddFire(pos + dir * (t + 2), 100, 1500, 30, 2.5f, false, 1.0f / 35.0f);
+                            ->AddFire((pos + dir * (t + 2)).ToD3DX(), 100, 1500, 30, 2.5f, false, 1.0f / 35.0f);
                 }
 
                 for (int i = 0; i < OBJECT_ROBOT_ABLAZE_PERIOD_EFFECT; i += OBJECT_ROBOT_ABLAZE_PERIOD)
@@ -455,36 +459,39 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         while (g_MatrixMap->GetTime() > m_NextTimeShorted) {
             m_NextTimeShorted += OBJECT_SHORTED_PERIOD;
 
-            D3DXVECTOR3 d1, d2, dir, pos;
-            float t;
+            FixedVector3 d1, d2, dir, pos;
+            fixed24 t;
 
             int cnt = 4;
             do {
-                pos.x = m_Core->m_Matrix._41 + FSRND(m_Core->m_Radius);
-                pos.y = m_Core->m_Matrix._42 + FSRND(m_Core->m_Radius);
-                pos.z = m_Core->m_Matrix._43 + FRND(m_Core->m_Radius * 2);
-                auto tmp = D3DXVECTOR3(m_Core->m_Matrix._41 - pos.x,
+                pos.x = m_Core->m_Matrix._41 + fsrnd(m_Core->m_Radius);
+                pos.y = m_Core->m_Matrix._42 + fsrnd(m_Core->m_Radius);
+                pos.z = m_Core->m_Matrix._43 + frnd(m_Core->m_Radius * 2);
+                auto tmp = FixedVector3(m_Core->m_Matrix._41 - pos.x,
                                        m_Core->m_Matrix._42 - pos.y,
                                        m_Core->m_Matrix._43 - pos.z);
-                D3DXVec3Normalize(&dir, &tmp);
+                dir = tmp.Normalized();
+                // D3DXVec3Normalize(&dir, &tmp);
             }
             while (!Pick(pos, dir, &t) && (--cnt > 0));
             if (cnt > 0) {
                 d1 = pos + dir * t;
             }
             do {
-                pos.x = m_Core->m_Matrix._41 + FSRND(m_Core->m_Radius);
-                pos.y = m_Core->m_Matrix._42 + FSRND(m_Core->m_Radius);
-                pos.z = m_Core->m_Matrix._43 + FRND(m_Core->m_Radius * 2);
-                auto tmp = D3DXVECTOR3(m_Core->m_Matrix._41 - pos.x,
+                pos.x = m_Core->m_Matrix._41 + fsrnd(m_Core->m_Radius);
+                pos.y = m_Core->m_Matrix._42 + fsrnd(m_Core->m_Radius);
+                pos.z = m_Core->m_Matrix._43 + frnd(m_Core->m_Radius * 2);
+                auto tmp = FixedVector3(m_Core->m_Matrix._41 - pos.x,
                                        m_Core->m_Matrix._42 - pos.y,
                                        m_Core->m_Matrix._43 - pos.z);
-                D3DXVec3Normalize(&dir, &tmp);
+                dir = tmp.Normalized();
+                // D3DXVec3Normalize(&dir, &tmp);
             }
             while (!Pick(pos, dir, &t) && (--cnt > 0));
+
             if (cnt > 0) {
                 d2 = pos + dir * t;
-                CMatrixEffect::CreateShorted(d1, d2, FRND(400) + 100);
+                CMatrixEffect::CreateShorted(d1.ToD3DX(), d2.ToD3DX(), static_cast<float>(frnd(400)) + 100);
             }
             if (Damage(WEAPON_SHORTED, pos, dir, m_LastDelayDamageSide, NULL))
                 return;
@@ -530,7 +537,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
             }
 
             SObjectCore *c = target->GetCore(DEBUG_CALL_INFO);
-            CPoint pos(int(c->m_GeoCenter.x / GLOBAL_SCALE_MOVE), int(c->m_GeoCenter.y / GLOBAL_SCALE_MOVE));
+            CPoint pos(int(c->m_GeoCenter.x / static_cast<fixed24>(GLOBAL_SCALE_MOVE)), int(c->m_GeoCenter.y / static_cast<fixed24>(GLOBAL_SCALE_MOVE)));
             c->Release();
 
             SETFLAG(g_MatrixMap->m_Flags, MMFLAG_SOUND_ORDER_ATTACK_DISABLE);
@@ -546,27 +553,29 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     if (m_CurrState == ROBOT_FALLING) {
         DCP();
 
-        float dtime = float(ms) * 0.013f;
+        fixed24 dtime = ms * static_cast<fixed24>(0.013f);
         m_FallingSpeed += dtime;
         m_Core->m_Matrix._43 -= m_FallingSpeed * dtime;
         RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
 
-        float z = Z_From_Pos();
+        fixed24 z = Z_From_Pos();
         if (m_Core->m_Matrix._43 < z) {
             m_Core->m_Matrix._43 = z;
             m_CurrState = ROBOT_SUCCESSFULLY_BUILD;
-            m_KeelWaterCount = 0;
+            m_KeelWaterCount = static_cast<fixed24>(0);
 
-            m_FallingSpeed = 0;
+            m_FallingSpeed = static_cast<fixed24>(0);
 
-            CMatrixEffect::CreateDust(NULL, *(D3DXVECTOR2 *)&GetGeoCenter(), D3DXVECTOR2(0, 0), 3000);
-            CMatrixEffect::CreateDust(NULL, *(D3DXVECTOR2 *)&GetGeoCenter(), D3DXVECTOR2(0, 0), 3000);
-            CMatrixEffect::CreateDust(NULL, *(D3DXVECTOR2 *)&GetGeoCenter(), D3DXVECTOR2(0, 0), 3000);
-            CMatrixEffect::CreateDust(NULL, *(D3DXVECTOR2 *)&GetGeoCenter(), D3DXVECTOR2(0, 0), 3000);
+            // TODO:
+            CMatrixEffect::CreateDust(NULL, GetGeoCenter().FlatXY().ToD3DX(), D3DXVECTOR2(0, 0), 3000);
+            CMatrixEffect::CreateDust(NULL, GetGeoCenter().FlatXY().ToD3DX(), D3DXVECTOR2(0, 0), 3000);
+            // CMatrixEffect::CreateDust(NULL, *(D3DXVECTOR2 *)&GetGeoCenter(), D3DXVECTOR2(0, 0), 3000);
+            CMatrixEffect::CreateDust(NULL, GetGeoCenter().FlatXY().ToD3DX(), D3DXVECTOR2(0, 0), 3000);
+            CMatrixEffect::CreateDust(NULL, GetGeoCenter().FlatXY().ToD3DX(), D3DXVECTOR2(0, 0), 3000);
             JoinToGroup();
 
             if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_TRACK || m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_WHEEL)
-                m_ChassisData.u1.s3.m_LastSolePos = GetGeoCenter();
+                m_ChassisData.u1.s3.m_LastSolePos = GetGeoCenter().ToD3DX();
 
             // int x0 = TruncFloat(m_PosX * INVERT(GLOBAL_SCALE_MOVE));
             // int y0 = TruncFloat(m_PosY * INVERT(GLOBAL_SCALE_MOVE));
@@ -574,7 +583,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
             // AsRobot()->MoveTo(x0, y0);
             AsRobot()->MapPosCalc();
 
-            CSound::AddSound(S_ROBOT_UPAL, GetGeoCenter());
+            CSound::AddSound(S_ROBOT_UPAL, GetGeoCenter().ToD3DX());
         }
 
         return;
@@ -587,13 +596,13 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
         RCData data;
 
-        float mul = (float)(1.0 - pow(CARRYING_SPEED, double(ms)));
+        fixed24 mul = (static_cast<fixed24>(1.0) -  fpm::pow(static_cast<fixed24>(CARRYING_SPEED), ms));
         if (m_CargoFlyer->GetCarryData()->m_RobotElevatorField &&
             m_CargoFlyer->GetCarryData()->m_RobotElevatorField->m_Activated) {
             // m_Matrix._43 -= (0.01f * ms);
-            m_CargoFlyer->GetCarryData()->m_RobotMassFactor += (0.0005f * ms);
-            if (m_CargoFlyer->GetCarryData()->m_RobotMassFactor > 1.0f) {
-                m_CargoFlyer->GetCarryData()->m_RobotMassFactor = 1.0f;
+            m_CargoFlyer->GetCarryData()->m_RobotMassFactor += (static_cast<fixed24>(0.0005f) * ms);
+            if (m_CargoFlyer->GetCarryData()->m_RobotMassFactor > static_cast<fixed24>(1.0f)) {
+                m_CargoFlyer->GetCarryData()->m_RobotMassFactor = static_cast<fixed24>(1.0f);
             }
 
             // if (FRND(1) < mul * 0.5f)
@@ -603,40 +612,46 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         else {
         }
 
-        m_FallingSpeed -= float(ms) * 0.013f;
+        m_FallingSpeed -= ms * static_cast<fixed24>(0.013f);
         if (m_FallingSpeed < 0)
             m_FallingSpeed = 0;
 
         DCP();
 
-        D3DXVECTOR3 move, delta(m_CargoFlyer->GetPos() - D3DXVECTOR3(0, 0, CARRYING_DISTANCE) - m_Core->m_GeoCenter);
+        FixedVector3 move, delta(m_CargoFlyer->GetPos() - FixedVector3(static_cast<fixed24>(0), static_cast<fixed24>(0), static_cast<fixed24>(CARRYING_DISTANCE)) - m_Core->m_GeoCenter);
         // float x = D3DXVec3Length(&delta);
         move = delta * mul * m_CargoFlyer->GetCarryData()->m_RobotMassFactor;
-        move.z -= m_FallingSpeed * float(ms) * 0.013f;
-        *(D3DXVECTOR3 *)&m_Core->m_Matrix._41 += move;
+        move.z -= m_FallingSpeed * ms * static_cast<fixed24>(0.013f);
+        *(FixedVector3 *)&m_Core->m_Matrix._41 += move;
 
-        float cz = g_MatrixMap->GetZ(m_Core->m_Matrix._41, m_Core->m_Matrix._42);
+        // Clamping z?
+        // REFACTOR this section. WHOLE!
+        fixed24 cz = g_MatrixMap->GetZ(m_Core->m_Matrix._41, m_Core->m_Matrix._42);
         if (m_Core->m_Matrix._43 < cz)
             m_Core->m_Matrix._43 = cz;
 
         m_CargoFlyer->GetCarryData()->m_RobotUp.x +=
-                move.x * 0.03f + m_CargoFlyer->GetCarryData()->m_RobotUpBack.x * mul;
+                move.x * static_cast<fixed24>(0.03f) + m_CargoFlyer->GetCarryData()->m_RobotUpBack.x * mul;
         m_CargoFlyer->GetCarryData()->m_RobotUp.y +=
-                move.y * 0.03f + m_CargoFlyer->GetCarryData()->m_RobotUpBack.y * mul;
+                move.y * static_cast<fixed24>(0.03f) + m_CargoFlyer->GetCarryData()->m_RobotUpBack.y * mul;
 
-        Vec2Truncate(*(D3DXVECTOR2 *)&m_CargoFlyer->GetCarryData()->m_RobotUp, 1);
+        // Vec2Truncate(*(D3DXVECTOR2 *)&m_CargoFlyer->GetCarryData()->m_RobotUp, 1);
+        FixedVector2 truncated_tmp = FixedVector2(m_CargoFlyer->GetCarryData()->m_RobotUp.x, m_CargoFlyer->GetCarryData()->m_RobotUp.y).Truncated(1_fxd);
+        m_CargoFlyer->GetCarryData()->m_RobotUp.x = truncated_tmp.x;
+        m_CargoFlyer->GetCarryData()->m_RobotUp.y = truncated_tmp.y;
 
-        m_CargoFlyer->GetCarryData()->m_RobotUpBack.x -= m_CargoFlyer->GetCarryData()->m_RobotUp.x * 0.08f;
-        m_CargoFlyer->GetCarryData()->m_RobotUpBack.y -= m_CargoFlyer->GetCarryData()->m_RobotUp.y * 0.08f;
-        ;
-        m_CargoFlyer->GetCarryData()->m_RobotUpBack.z = 0;
+        m_CargoFlyer->GetCarryData()->m_RobotUpBack.x -= m_CargoFlyer->GetCarryData()->m_RobotUp.x * static_cast<fixed24>(0.08f);
+        m_CargoFlyer->GetCarryData()->m_RobotUpBack.y -= m_CargoFlyer->GetCarryData()->m_RobotUp.y * static_cast<fixed24>(0.08f);
+        m_CargoFlyer->GetCarryData()->m_RobotUpBack.z = 0_fxd;
 
-        float mul2 = (float)pow(0.999, double(ms));
-        (*(D3DXVECTOR2 *)&m_CargoFlyer->GetCarryData()->m_RobotUp) *= mul2;
+        fixed24 mul2 = fpm::pow(0.999_fxd, ms);
+        (*(FixedVector2 *)&m_CargoFlyer->GetCarryData()->m_RobotUp) *= mul2;
 
-        Vec2Truncate(*(D3DXVECTOR2 *)&m_CargoFlyer->GetCarryData()->m_RobotUpBack, 0.4f);
+        FixedVector2 truncated_back = FixedVector2(m_CargoFlyer->GetCarryData()->m_RobotUpBack.x, m_CargoFlyer->GetCarryData()->m_RobotUpBack.y).Truncated(0.4_fxd);
+        m_CargoFlyer->GetCarryData()->m_RobotUpBack.x = truncated_back.x;
+        m_CargoFlyer->GetCarryData()->m_RobotUpBack.y = truncated_back.y;
 
-        float da = mul * mul * (float)AngleDist(m_CargoFlyer->GetAngle(), m_CargoFlyer->GetCarryData()->m_RobotAngle);
+        fixed24 da = mul * mul * (float)AngleDist(m_CargoFlyer->GetAngle(), m_CargoFlyer->GetCarryData()->m_RobotAngle);
         m_CargoFlyer->GetCarryData()->m_RobotAngle -= da;
 
         *((D3DXVECTOR2 *)&m_Forward) = RotatePoint(*(D3DXVECTOR2 *)&m_CargoFlyer->GetCarryData()->m_RobotForward,
@@ -675,8 +690,9 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
         // m_PosX = m_Matrix._41;
         // m_PosY = m_Matrix._42;
-        m_PosX = m_Core->m_GeoCenter.x;
-        m_PosY = m_Core->m_GeoCenter.y;
+        // ATTENTION
+        m_PosX = static_cast<fixed24>(m_Core->m_GeoCenter.x);
+        m_PosY = static_cast<fixed24>(m_Core->m_GeoCenter.y);
 
         RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
 
@@ -702,10 +718,11 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
     // Normals. This makes robots slanted on slopes
     {
-        float mul = (float)(1.0 - pow(0.996, double(ms)));
-        D3DXVECTOR3 up;
+        // float mul = (float)(1.0 - pow(0.996, double(ms)));
+        fixed24 mul = (static_cast<fixed24>(1.0) -  fpm::pow(static_cast<fixed24>(0.996), ms));
+        FixedVector3 up;
         g_MatrixMap->GetNormal(&up, m_PosX, m_PosY, true);
-        *(D3DXVECTOR3 *)&m_Core->m_Matrix._31 = LERPVECTOR(mul, *(D3DXVECTOR3 *)&m_Core->m_Matrix._31, up);
+        *(FixedVector3 *)&m_Core->m_Matrix._31 = LERPVECTOR(mul, *(FixedVector3 *)&m_Core->m_Matrix._31, up);
     }
     DCP();
 
@@ -1698,7 +1715,7 @@ float CMatrixRobotAI::CalcPathLength() {
     return dist;
 }
 
-void CMatrixRobotAI::MoveByMovePath(int ms) {
+void CMatrixRobotAI::MoveByMovePath([[maybe_unused]] int ms) {
     ASSERT(m_MovePathCnt > 0);
     ASSERT(m_MovePathCur >= 0 || m_MovePathCur < m_MovePathCnt - 1);
 
@@ -1820,8 +1837,8 @@ void CMatrixRobotAI::MoveByMovePath(int ms) {
 
 bool CMatrixRobotAI::Damage(
     EWeapon weap,
-    const D3DXVECTOR3 &pos,
-    [[maybe_unused]] const D3DXVECTOR3 &dir,
+    const FixedVector3 &pos,
+    [[maybe_unused]] const FixedVector3 &dir,
     int attacker_side,
     CMatrixMapStatic *attaker)
 {
@@ -1878,7 +1895,8 @@ bool CMatrixRobotAI::Damage(
 
         if ((!GetEnv()->m_TargetAttack || GetEnv()->m_TargetAttack->IsCannon()) &&
             (g_MatrixMap->GetTime() - GetEnv()->m_LastHitTarget) > 4000 &&
-            (g_MatrixMap->GetTime() - GetEnv()->m_TargetChange) > 1000) {
+            (g_MatrixMap->GetTime() - GetEnv()->m_TargetChange) > 1000)
+        {
             GetEnv()->m_TargetLast = GetEnv()->m_TargetAttack;
             GetEnv()->m_TargetAttack = attaker;
             GetEnv()->m_TargetChange = g_MatrixMap->GetTime();
@@ -4449,7 +4467,7 @@ void CMatrixRobotAI::GatherInfo(int type) {
                                                (D3DXVec3LengthSq(&enemy_napr) <= m_MaxFireDist*m_MaxFireDist &&
                                                angle_rad <= ROBOT_FOV)*/
                     && robot->m_CurrState != ROBOT_DIP) {
-                    if (g_MatrixMap->IsLogicVisible(this, robot, 0.0f)) {
+                    if (true || g_MatrixMap->IsLogicVisible(this, robot, 0.0f)) {
                         DCP();
                         if (!m_Environment.SearchEnemy(robot) && !m_Environment.IsIgnore(robot)) {
                             DCP();
@@ -4462,9 +4480,9 @@ void CMatrixRobotAI::GatherInfo(int type) {
 
                             side->BufPrepare();
 
-                            float d = sqrt(float(p_from.Dist2(p_to)));
-                            float z = fabs(g_MatrixMap->GetZ(robot->m_PosX, robot->m_PosY) -
-                                           g_MatrixMap->GetZ(m_PosX, m_PosY));
+                            // float d = sqrt(float(p_from.Dist2(p_to)));
+                            // float z = fabs(g_MatrixMap->GetZ(robot->m_PosX, robot->m_PosY) -
+                            //                g_MatrixMap->GetZ(m_PosX, m_PosY));
 
                             /*if((z/(d*GLOBAL_SCALE_MOVE))>=tan(BARREL_TO_SHOT_ANGLE)) {
                                 m_Environment.AddIgnore(robot);
@@ -4525,7 +4543,7 @@ void CMatrixRobotAI::GatherInfo(int type) {
                                              1.1)) /*(D3DXVec3LengthSq(&enemy_napr) <= m_MinFireDist*m_MinFireDist)*/
                     /* || (D3DXVec3LengthSq(&enemy_napr) <= m_MaxFireDist*m_MaxFireDist && angle_rad <= ROBOT_FOV) */
                     && cannon->m_CurrState != CANNON_DIP) {
-                    if (g_MatrixMap->IsLogicVisible(this, cannon, 0.0f)) {
+                    if (true || g_MatrixMap->IsLogicVisible(this, cannon, 0.0f)) {
                         if (!m_Environment.SearchEnemy(cannon) && !m_Environment.IsIgnore(cannon)) {
                             DCP();
 

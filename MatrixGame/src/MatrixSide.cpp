@@ -6368,6 +6368,7 @@ float CMatrixSideUnit::BuildRobotMinStrange(CMatrixBuilding *base) {
  * @brief Orders some robots, used only by computer playing sides.
  */
 void CMatrixSideUnit::BuildRobot(void) {
+    return;
     int i, k, r, u, cnt, lwcnt, ik, uk;
     CMatrixBuilding *base = NULL;
     float minstrange = 0;

@@ -99,6 +99,7 @@ target_include_directories(
         Base
         Bitmap
         ../ThirdParty/cereal/include
+        ../ThirdParty/fpm/include
         "${ENET_SOURCE_DIR}/include"
 )
 

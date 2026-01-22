@@ -170,8 +170,8 @@ protected:
     // hitpoint
     CMatrixProgressBar m_PB;
     int m_ShowHitpointTime;
-    float m_HitPoint;
-    float m_HitPointMax;          // Максимальное кол-во здоровья
+    int m_HitPoint;
+    int m_HitPointMax;          // Максимальное кол-во здоровья
     float m_MaxHitPointInversed;  // for normalized calcs
 
     static SPneumaticData *m_Pneumaic;
@@ -184,9 +184,9 @@ public:
     std::wstring m_Name;
     int m_defHitPoint;
 
-    float m_Speed;
-    float m_RotSpeed;
-    float m_PosX, m_PosY;
+    fixed24 m_Speed;
+    fixed24 m_RotSpeed;
+    fixed24 m_PosX, m_PosY;
 
     int m_Side;  // 1-8
 
@@ -219,10 +219,10 @@ public:
 
     ERobotState m_CurrState;
 
-    float m_FallingSpeed;
+    fixed24 m_FallingSpeed;
     union {
         CMatrixFlyer *m_CargoFlyer;
-        float m_KeelWaterCount;
+        fixed24 m_KeelWaterCount;
     };
 
     int m_MiniMapFlashTime;
@@ -278,7 +278,7 @@ public:
 
     float GetChassisHeight(void) const;
 
-    float Z_From_Pos(void);
+    fixed24 Z_From_Pos(void);
 
     void ApplyNaklon(const D3DXVECTOR3 &dir);
 
@@ -293,15 +293,15 @@ public:
 
     void DoAnimation(int cms);
 
-    virtual bool Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir, int attacker_side,
+    virtual bool Damage(EWeapon weap, const FixedVector3 &pos, const FixedVector3 &dir, int attacker_side,
                         CMatrixMapStatic *attaker) = 0;
     virtual void RNeed(dword need);
 
     virtual void Takt(int cms);
     virtual void LogicTakt(int cms) = 0;
 
-    virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const;
-    bool PickFull(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const;
+    virtual bool Pick(const FixedVector3 &orig, const FixedVector3 &dir, fixed24 *outt) const;
+    bool PickFull(const FixedVector3 &orig, const FixedVector3 &dir, fixed24 *outt) const;
 
     virtual void BeforeDraw(void);
     virtual void Draw(void);

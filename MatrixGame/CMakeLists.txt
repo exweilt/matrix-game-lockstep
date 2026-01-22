@@ -169,6 +169,7 @@ target_include_directories(
         src
         "${ENET_SOURCE_DIR}/include"
         ../ThirdParty/cereal/include
+        ../ThirdParty/fpm/include
 )
 
 target_sources(MatrixGameServer PUBLIC

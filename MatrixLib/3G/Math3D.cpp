@@ -571,10 +571,10 @@ void CTrajectory::Move(float dist) {
         }
     }
 
-#ifdef _DEBUG
-    if (_isnan(m_CurSegT))
-        debugbreak();
-#endif
+// #ifdef _DEBUG
+//     if (_isnan(m_CurSegT))
+//         debugbreak();
+// #endif
 }
 
 void CTrajectory::Continue1(const D3DXVECTOR3 *points, int pcnt) {

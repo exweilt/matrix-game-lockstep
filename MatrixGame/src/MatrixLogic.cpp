@@ -2914,7 +2914,7 @@ void CMatrixMapLogic::Takt(int step) {
             (*(md++))->PauseTakt(step);
         }
 
-        CMatrixMapStatic::CalcDistances();
+        //CMatrixMapStatic::CalcDistances();
 
         float fstep = (float)step;
         m_Minimap.PauseTakt(fstep);

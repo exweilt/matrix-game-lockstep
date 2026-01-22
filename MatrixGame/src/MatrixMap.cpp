@@ -6,6 +6,8 @@
 #include <new>
 #include <algorithm>
 
+#include <deterministic_math.hpp>
+
 #include <windows.h>
 #include "MatrixMap.hpp"
 #include "MatrixMapStatic.hpp"
@@ -560,16 +562,16 @@ float CMatrixMap::GetZLand(double wx, double wy) {
 
     SMatrixMapPoint *mp = PointGet(x, y);
 
-    D3DXVECTOR3 p0, p2;
-    p0.x = 0;
-    p0.y = 0;
+    FixedVector3 p0, p2;
+    p0.x = static_cast<fixed24>(0);
+    p0.y = static_cast<fixed24>(0);
     p0.z = mp->z;
-    p2.x = GLOBAL_SCALE;
-    p2.y = GLOBAL_SCALE;
+    p2.x = static_cast<fixed24>(GLOBAL_SCALE);
+    p2.y = static_cast<fixed24>(GLOBAL_SCALE);
     p2.z = (mp + m_Size.x + 2)->z;
 
     if (wy < wx) {
-        D3DXVECTOR3 p1;
+        FixedVector3 p1;
         D3DXPLANE pl;
 
         p1.x = GLOBAL_SCALE;
@@ -615,10 +617,37 @@ float CMatrixMap::GetZ(float wx, float wy) {
             return -1000.0f;
     }
     if (un->IsFlat())
-        return un->a1;
+        return static_cast<float>(un->a1);
 
     wx -= x * GLOBAL_SCALE;
     wy -= y * GLOBAL_SCALE;
+
+    if (wy < wx) {
+        return static_cast<float>(un->a1) * wx + static_cast<float>(un->b1) * wy + static_cast<float>(un->c1);
+    }
+    else {
+        return static_cast<float>(un->a2) * wx + static_cast<float>(un->b2) * wy + static_cast<float>(un->c2);
+    }
+}
+
+fixed24 CMatrixMap::GetZ(fixed24 wx, fixed24 wy) {
+    DTRACE();
+
+    int x = static_cast<int>(wx / static_cast<fixed24>(GLOBAL_SCALE));
+    int y = static_cast<int>(wy / static_cast<fixed24>(GLOBAL_SCALE));
+
+    SMatrixMapUnit *un = UnitGetTest(x, y);
+    if (un == NULL)
+        return static_cast<fixed24>(-1000.0f);
+    if (!un->IsBridge()) {
+        if (un->IsWater())
+            return static_cast<fixed24>(-1000.0f);
+    }
+    if (un->IsFlat())
+        return un->a1;
+
+    wx -= x * static_cast<fixed24>(GLOBAL_SCALE);
+    wy -= y * static_cast<fixed24>(GLOBAL_SCALE);
 
     if (wy < wx) {
         return un->a1 * wx + un->b1 * wy + un->c1;
@@ -665,14 +694,69 @@ void CMatrixMap::GetNormal(D3DXVECTOR3 *out, float wx, float wy, bool check_wate
     SMatrixMapPoint *mp2 = (mp0 + m_Size.x + 1);
     SMatrixMapPoint *mp3 = (mp0 + m_Size.x + 2);
 
-    if (check_water && ((mp0->z < 0) || (mp1->z < 0) || (mp2->z < 0) || (mp3->z < 0)))
+    if (check_water && ((static_cast<float>(mp0->z) < 0) || (static_cast<float>(mp1->z) < 0) || (static_cast<float>(mp2->z) < 0) || (static_cast<float>(mp3->z) < 0)))
         goto water;
 
-    D3DXVECTOR3 v1 = LERPVECTOR(kx, mp0->n, mp1->n);
-    D3DXVECTOR3 v2 = LERPVECTOR(kx, mp2->n, mp3->n);
+    D3DXVECTOR3 v1 = LERPVECTOR(kx, mp0->n.ToD3DX(), mp1->n.ToD3DX());
+    D3DXVECTOR3 v2 = LERPVECTOR(kx, mp2->n.ToD3DX(), mp3->n.ToD3DX());
 
     auto tmp = LERPVECTOR(ky, v1, v2);
     D3DXVec3Normalize(out, &tmp);
+}
+
+void CMatrixMap::GetNormal(FixedVector3 *out, fixed24 wx, fixed24 wy, bool check_water) {
+    DTRACE();
+
+    fixed24 scaledx = wx / static_cast<fixed24>(GLOBAL_SCALE);
+    fixed24 scaledy = wy / static_cast<fixed24>(GLOBAL_SCALE);
+
+    // ATTENTION: does it really trunc?s
+    int x = static_cast<int>(scaledx);
+    int y = static_cast<int>(scaledy);
+
+    SMatrixMapUnit *un = UnitGetTest(x, y);
+
+    if ((un == NULL) || un->IsFlat()) {
+        water:
+            out->x = static_cast<fixed24>(0);
+        out->y = static_cast<fixed24>(0);
+        out->z = static_cast<fixed24>(1);
+        return;
+    }
+
+    if (un->IsBridge())
+    {
+        FixedVector3 norm(GetZ(wx - static_cast<fixed24>(GLOBAL_SCALE * 0.5f), wy) - GetZ(wx + static_cast<fixed24>(GLOBAL_SCALE * 0.5f), wy),
+                         GetZ(wx, wy - static_cast<fixed24>(GLOBAL_SCALE * 0.5f)) - GetZ(wx, wy + static_cast<fixed24>(GLOBAL_SCALE * 0.5f)),
+                         static_cast<fixed24>(GLOBAL_SCALE));
+        *out = norm.Normalized();
+        return;
+    }
+    else if (un->IsWater()) {
+        goto water;
+    }
+
+    fixed24 kx = scaledx - static_cast<fixed24>(x);
+    fixed24 ky = scaledy - static_cast<fixed24>(y);
+
+    SMatrixMapPoint *mp0 = PointGet(x, y);
+    SMatrixMapPoint *mp1 = mp0 + 1;
+    SMatrixMapPoint *mp2 = (mp0 + m_Size.x + 1);
+    SMatrixMapPoint *mp3 = (mp0 + m_Size.x + 2);
+
+    if (check_water && (
+        (mp0->z < static_cast<fixed24>(0))
+        || (mp1->z < static_cast<fixed24>(0))
+        || (mp2->z < static_cast<fixed24>(0))
+        || (mp3->z < static_cast<fixed24>(0)))
+    )
+        goto water;
+
+    FixedVector3 v1 = LERPVECTOR(kx, mp0->n, mp1->n);
+    FixedVector3 v2 = LERPVECTOR(kx, mp2->n, mp3->n);
+
+    auto tmp = LERPVECTOR(ky, v1, v2);
+    *out = tmp.Normalized();
 }
 
 bool CMatrixMap::UnitPick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, const CRect &ar, int *ox, int *oy,
@@ -695,16 +779,16 @@ bool CMatrixMap::UnitPick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, const
 
             p0.x = GLOBAL_SCALE * (x);
             p0.y = GLOBAL_SCALE * (y);
-            p0.z = PointGet(x, y)->z;
+            p0.z = static_cast<float>(PointGet(x, y)->z);
             p1.x = GLOBAL_SCALE * (x + 1);
             p1.y = GLOBAL_SCALE * (y);
-            p1.z = PointGet(x + 1, y)->z;
+            p1.z = static_cast<float>(PointGet(x + 1, y)->z);
             p2.x = GLOBAL_SCALE * (x + 1);
             p2.y = GLOBAL_SCALE * (y + 1);
-            p2.z = PointGet(x + 1, y + 1)->z;
+            p2.z = static_cast<float>(PointGet(x + 1, y + 1)->z);
             p3.x = GLOBAL_SCALE * (x);
             p3.y = GLOBAL_SCALE * (y + 1);
-            p3.z = PointGet(x, y + 1)->z;
+            p3.z = static_cast<float>(PointGet(x, y + 1)->z);
 
             if (IntersectTriangle(orig, dir, p0, p1, p2, t, m_Unit, v) ||
                 IntersectTriangle(orig, dir, p0, p2, p3, t, m_Unit, v)) {
@@ -735,22 +819,22 @@ bool CMatrixMap::PointPick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, cons
 
     p.x = GLOBAL_SCALE * (x);
     p.y = GLOBAL_SCALE * (y);
-    p.z = PointGet(x, y)->z;
+    p.z = static_cast<float>(PointGet(x, y)->z);
     float d0 = DistLinePoint(orig, orig + dir, p);
 
     p.x = GLOBAL_SCALE * (x + 1);
     p.y = GLOBAL_SCALE * (y);
-    p.z = PointGet(x + 1, y)->z;
+    p.z = static_cast<float>(PointGet(x + 1, y)->z);
     float d1 = DistLinePoint(orig, orig + dir, p);
 
     p.x = GLOBAL_SCALE * (x + 1);
     p.y = GLOBAL_SCALE * (y + 1);
-    p.z = PointGet(x + 1, y + 1)->z;
+    p.z = static_cast<float>(PointGet(x + 1, y + 1)->z);
     float d2 = DistLinePoint(orig, orig + dir, p);
 
     p.x = GLOBAL_SCALE * (x);
     p.y = GLOBAL_SCALE * (y + 1);
-    p.z = PointGet(x, y + 1)->z;
+    p.z = static_cast<float>(PointGet(x, y + 1)->z);
     float d3 = DistLinePoint(orig, orig + dir, p);
 
     if (d1 <= d0 && d1 <= d2 && d1 <= d3)
@@ -2420,6 +2504,7 @@ void CMatrixMap::Draw(void) {
 
 void CMatrixMap::Takt(int step) {
     DTRACE();
+    return;
 
     float fstep = float(step);
 

@@ -532,7 +532,7 @@ public:
 #ifdef _DEBUG
     virtual void Draw(void);
 #endif
-    virtual bool Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir, int attacker_side,
+    virtual bool Damage(EWeapon weap, const FixedVector3 &pos, const FixedVector3 &dir, int attacker_side,
                         CMatrixMapStatic *attaker);
 
     friend class CMatrixRobot;

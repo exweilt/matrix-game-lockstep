@@ -12,6 +12,8 @@
 #include <utils.hpp>
 #include <Network/Network.hpp>
 
+#include "deterministic_math.hpp"
+
 // extern u32 g_next_nid;
 // #include "Network/StateManager.hpp"
 
@@ -141,10 +143,10 @@ struct SObjectCore {
     SDebugCallInfo m_dci;
 #endif
 
-    D3DXMATRIX m_Matrix;
-    D3DXMATRIX m_IMatrix;  // inversed matrix
-    float m_Radius;
-    D3DXVECTOR3 m_GeoCenter;
+    FixedMatrix m_Matrix;
+    FixedMatrix m_IMatrix;  // inversed matrix
+    fixed24 m_Radius;
+    FixedVector3 m_GeoCenter;
     EObjectType m_Type;  // 0-empty 2-CMatrixMapObject 3-CMatrixRobotAI 4-CMatrixBuilding 5-CMatrixCannon
     DWORD m_TerainColor; // WTF?? some sort of reflection faking?
     int m_Ref;
@@ -432,7 +434,7 @@ public:
     static CMatrixMapStatic *GetVisObj(int i);
 
     inline EObjectType GetObjectType(void) const { return m_Core->m_Type; }
-    inline const D3DXVECTOR3 &GetGeoCenter(void) const { return m_Core->m_GeoCenter; }
+    inline const FixedVector3 &GetGeoCenter(void) const { return m_Core->m_GeoCenter; }
     inline const D3DXMATRIX &GetMatrix(void) const { return m_Core->m_Matrix; }
     inline float GetRadius(void) const { return m_Core->m_Radius; }
 
@@ -479,9 +481,9 @@ public:
     virtual void Takt(int cms) = 0;
     virtual void LogicTakt(int cms) = 0;
 
-    virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const = 0;
+    virtual bool Pick(const FixedVector3 &orig, const FixedVector3 &dir, fixed24 *outt) const = 0;
 
-    virtual bool Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir, int attacker_side,
+    virtual bool Damage(EWeapon weap, const FixedVector3 &pos, const FixedVector3 &dir, int attacker_side,
                         CMatrixMapStatic *attaker) = 0;
 
     virtual void BeforeDraw(void) = 0;
@@ -493,7 +495,7 @@ public:
     void OnLoad(void);
     void Init(int ids);
 
-    virtual bool CalcBounds(D3DXVECTOR3 &omin, D3DXVECTOR3 &omax) = 0;
+    virtual bool CalcBounds(FixedVector3 &omin, FixedVector3 &omax) = 0;
 
     virtual int GetSide(void) const = 0;
     virtual bool NeedRepair(void) const = 0;
