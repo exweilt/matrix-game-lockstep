@@ -436,6 +436,8 @@ void CMatrixMap::CheckCandidate(SCalcVisRuntime &visRuntime, CMatrixMapGroup *ma
     int i0 = NPOS - 1;
     int i1 = 0;
 
+    goto visible; // ATTENTION: temporary measure
+
     if (mapGroup->IsPointIn(visRuntime.pos[0]))
         goto visible;
     if (mapGroup->IsPointIn(visRuntime.pos[1]))

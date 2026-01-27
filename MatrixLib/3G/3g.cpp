@@ -24,6 +24,8 @@
 
 #include <fstream>
 #include <chrono>
+#include <float.h>
+#include <xmmintrin.h>
 #include <thread>
 
 #include <stdio.h>
@@ -275,7 +277,8 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
             D3DADAPTER_DEFAULT,
             D3DDEVTYPE_HAL,
             g_Wnd,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+            // D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,
             &d3dpp,
             &g_D3DD
         );
@@ -457,6 +460,17 @@ void L3GDeinit() {
 
 bool processInput(UINT message, WPARAM wParam, LPARAM lParam);
 
+// __attribute__((target("sse")))
+void reset_fpu()
+{
+    _fpreset();
+
+    unsigned int currentControl;
+    _controlfp_s(&currentControl, _PC_53 | _RC_NEAR | _EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT, _MCW_EM | _MCW_RC | _MCW_PC);
+
+    _mm_setcsr(0x1F80 | 0x8000 | 0x0040);
+}
+
 int L3GRun()
 {
     using clock = std::chrono::high_resolution_clock;
@@ -486,8 +500,8 @@ int L3GRun()
         {
             break;
         }
-        //g_Network.lgr.debug("====================================");
-        //g_Network.lgr.debug("Event handle time : {:.3f} ms")(sw_event.elapsed_ms());
+        // g_Network.lgr.debug("====================================");
+        // g_Network.lgr.debug("Event handle time : {:.3f} ms")(sw_event.elapsed_ms());
 
         // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
         // {
@@ -517,7 +531,7 @@ int L3GRun()
 
         Stopwatch sw_net;
         g_Network.process_network_frame(0);
-        //g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
+        // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         // int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
@@ -538,27 +552,38 @@ int L3GRun()
             g_Network.lgr.add_ticks(17);
             //SRemindCore::Takt(delta); ATTENTION
             Stopwatch sw_phys;
-            g_FormCur->Takt(17);
-            //g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
-            // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
+            if (g_Network.game_ongoing
+                && (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
+            {
+                reset_fpu();
+
+                g_FormCur->Takt(17);
+                // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
+
+                // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
-            RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+                RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
 
-            // g_physics_tick += 1;
+                // g_physics_tick += 1;
 
-            // TODO: maybe add back FPS limit?
-            Stopwatch sw_draw;
-            g_FormCur->Draw();
-            //g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
+                // TODO: maybe add back FPS limit?
+                Stopwatch sw_draw;
+                reset_fpu();
+                g_FormCur->Draw();
+                // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
+
 #if (defined _DEBUG) && !(defined _RELDEBUG)
-            CHelper::AfterDraw();
+                CHelper::AfterDraw();
 #endif
-            fps++;
+                fps++;
 
-            g_Network.graphics_frame += 1;
+                g_Network.graphics_frame += 1;
 
-            g_DrawFPS = fps.count();
+                g_DrawFPS = fps.count();
+            }
+
+
 
             g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
 
@@ -569,8 +594,8 @@ int L3GRun()
                 g_Network.frames_passed_since_last_check = 0;
             }
         }
-        //g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
-        //g_Network.lgr.debug("====================================");
+        // g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
+        // g_Network.lgr.debug("====================================");
     }
 
     return 1;

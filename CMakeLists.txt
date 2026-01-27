@@ -52,6 +52,9 @@ else()
         $<$<CONFIG:Release>:-Os>
         -ftrivial-auto-var-init=zero
 
+        # for determinism
+        -msse2 -mfpmath=sse -mstackrealign
+
         -Wall
         -Wextra
         -Wpedantic

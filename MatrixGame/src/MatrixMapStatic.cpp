@@ -705,7 +705,7 @@ void CMatrixMapStatic::SortEndRecalcTerainColor(void) {
     DTRACE();
 
     for (int i = objects_left; i < objects_rite; ++i) {
-        objects[i]->RecalcTerainColor();
+        // objects[i]->RecalcTerainColor(); // ATTENTION: potential desync
     }
 }
 void CMatrixMapStatic::CalcDistances(void) {
@@ -765,8 +765,9 @@ void CMatrixMapStatic::SortEndDrawShadowStencil(void) {
 }
 
 void CMatrixMapStatic::Sort(const D3DXMATRIX &sort) {
-    if (FLAG(m_ObjectState, OBJECT_STATE_INVISIBLE))
-        return;
+    // ATTENTION: temporary measure, potential desync
+    // if (FLAG(m_ObjectState, OBJECT_STATE_INVISIBLE))
+    //     return;
 
     if (g_MatrixMap->GetCurrentFrame() == m_LastVisFrame) {
         return;
@@ -780,10 +781,12 @@ void CMatrixMapStatic::Sort(const D3DXMATRIX &sort) {
             return;
     }
     else {
-        if (!g_MatrixMap->m_Camera.IsInFrustum(m_AdditionalPoint)) {
-            if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
-                return;
-        }
+        // ATTENTION: temporary measure, potential desync
+        // return;
+        // if (!g_MatrixMap->m_Camera.IsInFrustum(m_AdditionalPoint)) {
+        //     if (!g_MatrixMap->m_Camera.IsInFrustum(GetGeoCenter(), GetRadius()))
+        //         return;
+        // }
     }
 
 #if SHOW_ASSIGNED_GROUPS
@@ -859,7 +862,7 @@ void CMatrixMapStatic::Sort(const D3DXMATRIX &sort) {
         }
     }
 
-    WillDraw();
+    // WillDraw();
 }
 
 CMatrixMapStatic *CMatrixMapStatic::GetVisObj(int i) {

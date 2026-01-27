@@ -1344,8 +1344,11 @@ void CMatrixMap::BeforeDraw(void) {
     CMatrixMapStatic::SortBegin();
     // CMatrixMapStatic::OnEndOfDraw(); // this will call OnOutScreen for all
 
-    int cnt = m_VisibleGroupsCount;
-    CMatrixMapGroup **md = m_VisibleGroups;
+    // ATTENTION: temporary measure, potential desync
+    // int cnt = m_VisibleGroupsCount;
+    // CMatrixMapGroup **md = m_VisibleGroups;
+    int cnt = m_GroupSize.x * m_GroupSize.y;
+    CMatrixMapGroup **md = m_Group;
     while ((cnt--) > 0) {
         if (*(md) != NULL) {
             (*(md))->SortObjects(m_Camera.GetViewMatrix());
@@ -1354,14 +1357,15 @@ void CMatrixMap::BeforeDraw(void) {
         ++md;
     }
 
-    for (int od = 0; od < m_AD_Obj_cnt; ++od) {
-        m_AD_Obj[od]->Sort(m_Camera.GetViewMatrix());
-        if (m_AD_Obj[od]->GetObjectType() == OBJECT_TYPE_FLYER) {
-            if (((CMatrixFlyer *)m_AD_Obj[od])->CarryingRobot()) {
-                ((CMatrixFlyer *)m_AD_Obj[od])->GetCarryingRobot()->Sort(m_Camera.GetViewMatrix());
-            }
-        }
-    }
+    // ATTENTION: temporary measure, potential desync
+    // for (int od = 0; od < m_AD_Obj_cnt; ++od) {
+    //     m_AD_Obj[od]->Sort(m_Camera.GetViewMatrix());
+    //     if (m_AD_Obj[od]->GetObjectType() == OBJECT_TYPE_FLYER) {
+    //         if (((CMatrixFlyer *)m_AD_Obj[od])->CarryingRobot()) {
+    //             ((CMatrixFlyer *)m_AD_Obj[od])->GetCarryingRobot()->Sort(m_Camera.GetViewMatrix());
+    //         }
+    //     }
+    // }
 
     if (FLAG(m_Flags, MMFLAG_NEEDRECALCTER)) {
         CMatrixMapStatic::SortEndRecalcTerainColor();

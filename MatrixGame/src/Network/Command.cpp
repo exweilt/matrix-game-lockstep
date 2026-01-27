@@ -28,6 +28,7 @@ void Command::serialize_to_buffer(u8 *buffer) const
 
 void Command::execute_for_side(u32 side_id)
 {
+    // return;
     switch (type)
     {
     case CommandType::MOVE:

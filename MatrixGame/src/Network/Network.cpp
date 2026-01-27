@@ -76,14 +76,16 @@ void Network::process_incoming_message(const Message &msg)
     {
         game_ongoing = false;
         lgr.error("DESYNC detected at frame: {}")(msg.checksum.target_frame);
+        std::cerr << "DESYNC detected at frame: " << msg.checksum.target_frame << std::endl;
         std::cerr << "Desync" << std::endl;
     }
 }
 
 void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
 {
-    static std::chrono::time_point<std::chrono::steady_clock> prev_time = std::chrono::steady_clock::now();
-    std::chrono::time_point<std::chrono::steady_clock> curr_time = std::chrono::steady_clock::now();
+    static std::chrono::time_point<std::chrono::steady_clock>   prev_time = std::chrono::steady_clock::now();
+
+    std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
     f64 delta = std::chrono::duration<f64>(curr_time - prev_time).count();
     prev_time = curr_time;
 
@@ -93,7 +95,8 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
         if (time_to_next_input <= 0)
         {
             approve_final_input(input_frame);
-            time_to_next_input = 0.017;
+            const float INPUT_FRAME_DURATION = 0.013;
+            time_to_next_input = INPUT_FRAME_DURATION;
             input_frame += 1;
         }
     }
@@ -214,6 +217,7 @@ void Network::connect_to_server()
 void Network::static_init_networking()
 {
     controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
+    // controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
     commands_journal.push_back(CommandsFrameRecord(0));
 
     // Init ENet

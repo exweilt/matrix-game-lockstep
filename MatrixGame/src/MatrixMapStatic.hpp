@@ -48,7 +48,7 @@ typedef enum {
     EObjectType_FORCE_DWORD = 0x7FFFFFFF
 } EObjectType;
 
-#define MAX_OBJECTS_PER_SCREEN 2560
+#define MAX_OBJECTS_PER_SCREEN (2560*4) // ATTENTION: temporary measure
 
 #define UNDER_ATTACK_IDLE_TIME 120000
 
@@ -424,12 +424,13 @@ public:
     static void SortEndDrawShadowStencil(void);
     static void SortEndGraphicTakt(int step);
 
+    // Updates the distances to the cam
     static void CalcDistances(void);
 
     static void RemoveFromSorted(CMatrixMapStatic *ms);
 
     static int GetVisObjCnt(void);
-    static CMatrixMapStatic *GetVisObj(int i);
+    static CMatrixMapStatic *GetVisObj(int i); // used in MultiSelect
 
     inline EObjectType GetObjectType(void) const { return m_Core->m_Type; }
     inline const D3DXVECTOR3 &GetGeoCenter(void) const { return m_Core->m_GeoCenter; }
@@ -476,7 +477,7 @@ public:
 
     virtual void RNeed(dword need) = 0;  // Запрашиваем нужные ресурсы объекта
 
-    virtual void Takt(int cms) = 0;
+    virtual void Takt(int cms) = 0; // not logic
     virtual void LogicTakt(int cms) = 0;
 
     virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const = 0;

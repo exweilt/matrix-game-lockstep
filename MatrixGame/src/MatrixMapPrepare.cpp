@@ -733,6 +733,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
     }
 
     if (step == RS_CANNONS) {
+        return 0; // ATTENTION: temporary measure, no cannons
         // loading cannons
         CDataBuf *c0 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_X, ST_FLOAT);
         CDataBuf *c1 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_Y, ST_FLOAT);

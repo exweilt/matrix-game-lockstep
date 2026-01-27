@@ -898,6 +898,7 @@ void CMatrixRobot::Takt(int cms) {
         }
     }
 
+    // ATTENTION: maybe desync
     if (m_Unit[0].u1.s1.m_Kind != RUK_CHASSIS_PNEUMATIC)
         DoAnimation(cms);  // proceed animation only for NON pneumatic chassis
 

@@ -193,6 +193,7 @@ void CMatrixMapGroup::DrawShadowProj(void) {
 }
 
 bool CMatrixMapGroup::IsInFrustum(void) const {
+    return true; // Attention: temporary measure, desync probability
     D3DXVECTOR3 mins(p0.x, p0.y, m_minz);
     D3DXVECTOR3 maxs(p1.x, p1.y, m_maxz_obj_robots);
     return g_MatrixMap->m_Camera.IsInFrustum(mins, maxs);
