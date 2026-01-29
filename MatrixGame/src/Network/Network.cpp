@@ -280,6 +280,18 @@ void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& des
     g_Network.add_input_for_current_input_frame(command);
 }
 
+void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)
+{
+    Command command { CommandCaptureParams{entities_nid, target_nid} };
+    g_Network.add_input_for_current_input_frame(command);
+}
+
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
+{
+    Command command { CommandAttackParams{entities_nid, target_nid} };
+    g_Network.add_input_for_current_input_frame(command);
+}
+
 
 // }
 

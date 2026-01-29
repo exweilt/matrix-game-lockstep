@@ -10,7 +10,9 @@
 #include <cassert>
 #include <string>
 
+#include "BaseDef.hpp"
 #include "BitStream.hpp"
+
 // #include <variant>
 
 // Forward declarations because of circular dependencies
@@ -78,11 +80,19 @@ struct CommandMoveParams
 
 struct CommandCaptureParams
 {
-    u32 robot_nid;
-    u32 target_nid; // Target NID to capture
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
+    u32 target_nid;
 
-    CommandCaptureParams()            : robot_nid(0), target_nid(0) {};
-    CommandCaptureParams(const u32 r_nid, const u32 target) : robot_nid(r_nid), target_nid(target) {}
+    CommandCaptureParams() : number_of_robots(0), robot_nid(0), target_nid(0) {};
+    CommandCaptureParams(const u32 r_nid, u32 target);
+    CommandCaptureParams(std::vector<u32> robots_nid, u32 target)
+    {
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_nid = target;
+    };
 
     // u32 get_serialized_size() const
     // {
@@ -101,11 +111,14 @@ struct CommandCaptureParams
 
 struct CommandAttackParams
 {
-    u32 robot_nid;
-    u32 target_nid; // Target NID to attack
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
+    u32 target_nid;
+    CPoint target_pos;
+    bool is_attacking_position;
 
-    CommandAttackParams() : robot_nid(0), target_nid(0) {};
-    CommandAttackParams(const u32 r_nid, const u32 target) : robot_nid(r_nid), target_nid(target) {}
+    CommandAttackParams() : number_of_robots(0), robot_nid(0), target_nid(0), is_attacking_position(false) {};
+    CommandAttackParams(std::vector<u32> robots_nid, u32 target);
 
     // u32 get_serialized_size() const
     // {

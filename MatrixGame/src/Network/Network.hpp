@@ -157,15 +157,13 @@ private:
 // Places an order to move robot
 void NetOrderMoveTo(u32 entity_nid, const D3DXVECTOR3& destination);
 
-inline void NetOrderMoveTo([[maybe_unused]]u32 entity_nid, [[maybe_unused]]const D3DXVECTOR3 &destination)
-{
-}
-
 // Places an order to move robot
 void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination);
 
 // Places an order to attack robot
-void NetOrderAttack(u32 attacker_nid, u32 target_nid);
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);
+
+void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid);
 
 // Places an order to construct a robot
 void NetOrderConstruct(u32 entity_nid, const D3DXVECTOR3& destination);

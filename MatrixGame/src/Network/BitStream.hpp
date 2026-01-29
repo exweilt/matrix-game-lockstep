@@ -8,9 +8,9 @@
 
 // TODO: optimize?
 // TODO: add bit support?
-// Note, this thing does some woodoo magic here, playing with BigEndian, LittleEndian,
+// Note, this thing does some voodoo magic here, playing with BigEndian, LittleEndian,
 //      this is not a general writer (probably this is bad). Also, the name ByteWriter would
-//      fit better, but maybe we'll support bits later on (this would tank perfomance a bit)
+//      fit better, but maybe we'll support bits later on (this would tank performance a bit)
 //      - exweilt 29/01/2026
 class BitWriter {
 private:

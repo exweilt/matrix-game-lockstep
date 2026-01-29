@@ -36,7 +36,7 @@
 
 inline bool PrepareBreakOrder(CMatrixMapStatic *robot);
 inline bool IsLiveUnit(CMatrixMapStatic *obj);
-inline CPoint GetMapPos(CMatrixMapStatic *obj);
+// inline CPoint GetMapPos(CMatrixMapStatic *obj);
 inline D3DXVECTOR2 GetWorldPos(CMatrixMapStatic *obj);
 inline bool IsToPlace(CMatrixRobotAI *robot, int place);  // Движется ли робот к назначенному месту
 inline bool IsInPlace(CMatrixRobotAI *robot, int place);  // Если робот стоит на месте
@@ -740,7 +740,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
             if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != g_Network.controllable_side_id) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE | ORDERING_MODE);
 
-                PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
+                // PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
             }
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_PATROL)) {
@@ -872,11 +872,30 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != m_Id) {
             // Capture
             // PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
+            std::vector<u32> robots_nid{};
+            for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+            {
+                if (go->m_Object->IsLiveRobot())
+                {
+                    robots_nid.push_back(go->m_Object->m_NID);
+                }
+            }
+            NetOrderCapture(robots_nid, pObject->m_NID);
         }
         else if (IS_TRACE_STOP_OBJECT(pObject) &&
                  ((IsLiveUnit(pObject) && pObject->GetSide() != m_Id) || pObject->IsSpecial())) {
             // Attack
             // PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
+            std::vector<u32> robots_nid{};
+            for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+            {
+                if (go->m_Object->IsLiveRobot())
+                {
+                    robots_nid.push_back(go->m_Object->m_NID);
+                }
+            }
+            NetOrderAttack(robots_nid, pObject->m_NID);
+
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo

@@ -30,6 +30,8 @@
 
 #define FRIENDLY_SEARCH_RADIUS 400
 
+CPoint GetMapPos(CMatrixMapStatic *obj); // TODO: Move it somewhere, it was in .cpp originally
+
 class CMatrixEffectWeapon;
 class CMatrixMapStatic;
 class CConstructor;

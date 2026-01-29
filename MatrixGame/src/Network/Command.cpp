@@ -2,12 +2,39 @@
 
 #include "MatrixRobot.hpp"
 
+#include <MatrixSide.hpp>
+
 #define SERIALIZE_U32_TO_BUFF(member_name, buffer_name)                 \
     {                                                                   \
         const u32 be_member_name = this->member_name;                   \
         memcpy(buffer_name, &be_member_name, sizeof(be_member_name));   \
         buffer_name += sizeof(be_member_name);                          \
     }
+
+
+// bundles robots together, slow. TODO: optimize
+// dangerous, changes the world!
+i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_of_robots)
+{
+    // TODO: add asserts
+    int no = side->GetNextFreeLogicGroup();
+
+    side->m_PlayerGroup[no].Order(mpo_Stop);
+    side->m_PlayerGroup[no].m_Obj = NULL;
+    side->m_PlayerGroup[no].SetWar(false);
+    side->m_PlayerGroup[no].m_RoadPath->Clear();
+
+    for (i32 i = 0; i < number_of_robots; i++)
+    {
+        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
+        assert(obj->IsLiveRobot());
+
+        obj->AsRobot()->SetGroupLogic(no);
+        side->m_PlayerGroup[no].m_RobotCnt++;
+    }
+
+    return no;
+}
 
 // namespace network
 // {
@@ -66,21 +93,7 @@ CommandMoveParams::CommandMoveParams(const u32 r_nid, const D3DXVECTOR3 &dest)
 void CommandMoveParams::execute_for_side(u32 side_id)
 {
     CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
-    int no = side->GetNextFreeLogicGroup();
-
-    side->m_PlayerGroup[no].Order(mpo_Stop);
-    side->m_PlayerGroup[no].m_Obj = NULL;
-    side->m_PlayerGroup[no].SetWar(false);
-    side->m_PlayerGroup[no].m_RoadPath->Clear();
-
-    for (i32 i = 0; i < this->number_of_robots; i++)
-    {
-        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(this->robot_nid[i]);
-        assert(obj->IsLiveRobot());
-
-        obj->AsRobot()->SetGroupLogic(no);
-        side->m_PlayerGroup[no].m_RobotCnt++;
-    }
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
 
     int mx = Float2Int(target_pos.x / GLOBAL_SCALE_MOVE);
     int my = Float2Int(target_pos.y / GLOBAL_SCALE_MOVE);
@@ -116,70 +129,106 @@ CommandMoveParams CommandMoveParams::deserialize_from_bitstream(BitReader &reade
     return result;
 }
 
+CommandCaptureParams::CommandCaptureParams(const u32 r_nid, u32 target)
+{
+    number_of_robots = 1;
+    robot_nid[0] = r_nid;
+    target_nid = target;
+};
+
 void CommandCaptureParams::serialize_to_bitstream([[maybe_unused]]BitWriter &writer) const
 {
-    // // robot_nid
-    // const u32 be_robot_nid = htonl(this->robot_nid); // Big Endian
-    // memcpy(buffer, &be_robot_nid, sizeof(be_robot_nid));
-    // buffer += sizeof(be_robot_nid);
-    //
-    // // target_nid
-    // const u32 be_target_nid = htonl(this->target_nid); // Big Endian
-    // memcpy(buffer, &be_target_nid, sizeof(be_target_nid));
-    // // buffer += sizeof(be_target_nid);
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8( this->number_of_robots );
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_u32(target_nid);
 }
 
 CommandCaptureParams CommandCaptureParams::deserialize_from_bitstream([[maybe_unused]]BitReader &reader)
 {
-    // u32 host_robot_nid;
-    // memcpy(&host_robot_nid, buffer, sizeof(host_robot_nid));
-    // host_robot_nid = ntohl(host_robot_nid);
-    // buffer += sizeof(host_robot_nid);
-    //
-    // u32 host_target_nid;
-    // memcpy(&host_target_nid, buffer, sizeof(host_target_nid));
-    // host_target_nid = ntohl(host_target_nid);
-    // // buffer += sizeof(host_target_nid);
-    //
-    // return CommandCaptureParams{host_robot_nid, host_target_nid};
-    return CommandCaptureParams{};
+    CommandCaptureParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.target_nid = reader.read_u32();
+
+    return result;
 }
 
 void CommandCaptureParams::execute_for_side([[maybe_unused]]u32 side_id)
 {
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+
+    // TODO: add check? assert(bui)
+    CMatrixBuilding *building = g_MatrixMap->find_static_with_nid(target_nid)->AsBuilding();
+    side->PGOrderCapture(no, building);
 }
+
+CommandAttackParams::CommandAttackParams(std::vector<u32> robots_nid, u32 target)
+{
+    assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+    number_of_robots = robots_nid.size();
+    memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+    target_nid = target;
+    target_pos = GetMapPos(g_MatrixMap->find_static_with_nid(target));
+    is_attacking_position = false;
+};
+
 
 void CommandAttackParams::serialize_to_bitstream([[maybe_unused]]BitWriter &writer) const
 {
-    // // robot_nid
-    // const u32 be_robot_nid = htonl(this->robot_nid); // Big Endian
-    // memcpy(buffer, &be_robot_nid, sizeof(be_robot_nid));
-    // buffer += sizeof(be_robot_nid);
-    //
-    // // target_nid
-    // const u32 be_target_nid = htonl(this->target_nid); // Big Endian
-    // memcpy(buffer, &be_target_nid, sizeof(be_target_nid));
-    // // buffer += sizeof(be_target_nid);
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8( this->number_of_robots );
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_u32(target_nid);
+    writer.write_u32(std::bit_cast<u32>(target_pos.x));
+    writer.write_u32(std::bit_cast<u32>(target_pos.y));
+    writer.write_u8(is_attacking_position);
 }
 
 CommandAttackParams CommandAttackParams::deserialize_from_bitstream([[maybe_unused]]BitReader &reader)
 {
-    // u32 host_robot_nid;
-    // memcpy(&host_robot_nid, buffer, sizeof(host_robot_nid));
-    // host_robot_nid = ntohl(host_robot_nid);
-    // buffer += sizeof(host_robot_nid);
-    //
-    // u32 host_target_nid;
-    // memcpy(&host_target_nid, buffer, sizeof(host_target_nid));
-    // host_target_nid = ntohl(host_target_nid);
-    // // buffer += sizeof(host_target_nid);
-    //
-    // return CommandAttackParams{host_robot_nid, host_target_nid};
-    return CommandAttackParams{};
+    CommandAttackParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.target_pos.x = std::bit_cast<int>(reader.read_u32());
+    result.target_pos.y = std::bit_cast<int>(reader.read_u32());
+
+    result.is_attacking_position = reader.read_u8();
+
+    return result;
 }
 
 void CommandAttackParams::execute_for_side([[maybe_unused]]u32 side_id)
 {
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+
+    // TODO: add check? assert(bui)
+    CMatrixMapStatic *tgt = is_attacking_position ? nullptr : g_MatrixMap->find_static_with_nid(target_nid);
+    side->PGOrderAttack(no, target_pos, tgt);
 }
 
 void CommandBuildParams::serialize_to_bitstream([[maybe_unused]]BitWriter &writer) const
