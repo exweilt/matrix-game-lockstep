@@ -3664,3 +3664,19 @@ void CMatrixMapLogic::DumpLogic() {
 
     fclose(fi);
 }
+
+CMatrixMapStatic * CMatrixMapLogic::find_static_with_nid(u32 nid)
+{
+    CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+    while (ms)
+    {
+        if (ms->m_NID == nid)
+        {
+            assert(ms->IsRobot() || ms->IsCannon() || ms->IsBuilding() || ms->IsBase());
+            return ms;
+        }
+        ms = ms->GetNextLogic();
+    }
+
+    return nullptr;
+}

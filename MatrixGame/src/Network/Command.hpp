@@ -9,6 +9,8 @@
 
 #include <cassert>
 #include <string>
+
+#include "BitStream.hpp"
 // #include <variant>
 
 // Forward declarations because of circular dependencies
@@ -22,6 +24,9 @@ template <class Archive>
 void serialize(Archive& ar, D3DXVECTOR3& v) {
     ar(CEREAL_NVP(v.x), CEREAL_NVP(v.y), CEREAL_NVP(v.z));
 }
+
+constexpr int MAX_ROBOTS_PER_COMMAND = 16;
+
 
 // namespace network
 // {
@@ -42,18 +47,28 @@ enum class CommandType : u8
 
 struct CommandMoveParams
 {
-    u32 robot_nid;
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
     D3DXVECTOR3 target_pos;
 
-    CommandMoveParams()                                         : robot_nid(0) {};
-    CommandMoveParams(const u32 r_nid, const D3DXVECTOR3 &dest) : robot_nid(r_nid), target_pos(dest) {}
-
-    u32 get_serialized_size() const
+    CommandMoveParams() : number_of_robots(0), robot_nid(0) {};
+    CommandMoveParams(const u32 r_nid, const D3DXVECTOR3 &dest);
+    CommandMoveParams(std::vector<u32> robots_nid, const D3DXVECTOR3 &dest)
     {
-        return sizeof(robot_nid) + sizeof(target_pos);
-    }
-    void serialize_to_buffer(u8* buffer) const;
-    static CommandMoveParams deserialize_from_buffer(const u8 * buffer);
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_pos = dest;
+    };
+
+    // u32 get_serialized_size() const
+    // {
+    //     return sizeof(number_of_robots) + sizeof(robot_nid) + sizeof(target_pos);
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static CommandMoveParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -69,12 +84,14 @@ struct CommandCaptureParams
     CommandCaptureParams()            : robot_nid(0), target_nid(0) {};
     CommandCaptureParams(const u32 r_nid, const u32 target) : robot_nid(r_nid), target_nid(target) {}
 
-    u32 get_serialized_size() const
-    {
-        return sizeof(robot_nid) + sizeof(target_nid);
-    }
-    void serialize_to_buffer(u8* buffer) const;
-    static CommandCaptureParams deserialize_from_buffer(const u8* buffer);
+    // u32 get_serialized_size() const
+    // {
+    //     return sizeof(robot_nid) + sizeof(target_nid);
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static CommandCaptureParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -90,12 +107,14 @@ struct CommandAttackParams
     CommandAttackParams() : robot_nid(0), target_nid(0) {};
     CommandAttackParams(const u32 r_nid, const u32 target) : robot_nid(r_nid), target_nid(target) {}
 
-    u32 get_serialized_size() const
-    {
-        return sizeof(robot_nid) + sizeof(target_nid);
-    }
-    void serialize_to_buffer(u8* buffer) const;
-    static CommandAttackParams deserialize_from_buffer(const u8* buffer);
+    // u32 get_serialized_size() const
+    // {
+    //     return sizeof(robot_nid) + sizeof(target_nid);
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static CommandAttackParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -122,12 +141,14 @@ struct CommandBuildParams
         }
     };
 
-    u32 get_serialized_size() const
-    {
-        return sizeof(chassis) + sizeof(hull) + sizeof(head) + sizeof(weapons) + sizeof(robot_count) + sizeof(target_base_nid);
-    }
-    void serialize_to_buffer(u8* buffer) const;
-    static CommandBuildParams deserialize_from_buffer(const u8* buffer);
+    // u32 get_serialized_size() const
+    // {
+    //     return sizeof(chassis) + sizeof(hull) + sizeof(head) + sizeof(weapons) + sizeof(robot_count) + sizeof(target_base_nid);
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static CommandBuildParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -152,22 +173,22 @@ struct Command
     Command(CommandCaptureParams cpt)   : type(CommandType::CAPTURE),   capture(cpt) {};
     Command(CommandBuildParams bld)     : type(CommandType::BUILD),     build(bld) {};
 
-    void execute_for_side(u32 side_id = 1);
+    void execute_for_side(u32 side_id);
 
-    u32 get_serialized_size() const
-    {
-        switch (type)
-        {
-            case CommandType::MOVE:     return sizeof(u8) + move.get_serialized_size();
-            case CommandType::CAPTURE:  return sizeof(u8) + capture.get_serialized_size();
-            case CommandType::ATTACK:   return sizeof(u8) + attack.get_serialized_size();
-            case CommandType::BUILD:    return sizeof(u8) + build.get_serialized_size();
-            default:                    return 0;
-        }
-    }
+    // u32 get_serialized_size() const
+    // {
+    //     switch (type)
+    //     {
+    //         case CommandType::MOVE:     return sizeof(u8) + move.get_serialized_size();
+    //         case CommandType::CAPTURE:  return sizeof(u8) + capture.get_serialized_size();
+    //         case CommandType::ATTACK:   return sizeof(u8) + attack.get_serialized_size();
+    //         case CommandType::BUILD:    return sizeof(u8) + build.get_serialized_size();
+    //         default:                    return 0;
+    //     }
+    // }
 
-    void serialize_to_buffer(u8* buffer) const;
-    static Command deserialize_from_buffer(const u8* buffer);
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static Command deserialize_from_bitstream(BitReader &reader);
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -183,74 +204,73 @@ struct Command
         }
     }
 };
+//
+// inline void serialize_vector3_to_buffer(const D3DXVECTOR3 &vector, u8* buffer)
+// {
+//     // f32 are reinterpreted as u32
+//     const u32 be_points[3]
+//     {
+//         htonl(std::bit_cast<u32>(vector.x)),
+//         htonl(std::bit_cast<u32>(vector.y)),
+//         htonl(std::bit_cast<u32>(vector.z))
+//     };
+//
+//     memcpy(buffer, &be_points, sizeof(be_points));
+// }
+//
+// /**
+//  *
+//  * @param buffer Should be 4 * 3 = 12 bytes long
+//  */
+// inline D3DXVECTOR3 deserialize_vector3_from_buffer(const u8* buffer)
+// {
+//     D3DXVECTOR3 result;
+//
+//     memcpy(&result.x, buffer, sizeof(FLOAT));
+//     memcpy(&result.y, buffer + 4, sizeof(FLOAT));
+//     memcpy(&result.z, buffer + 8, sizeof(FLOAT));
+//
+//     result.x = std::bit_cast<f32>( std::bit_cast<u32>(result.x) );
+//     result.y = std::bit_cast<f32>( std::bit_cast<u32>(result.y) );
+//     result.z = std::bit_cast<f32>( std::bit_cast<u32>(result.z) );
+//
+//     return result;
+// }
+//
+// /**
+//  * Important: buffer is MUTATED!
+//  */
+// inline void serialize_string_to_buffer(const std::string &str, u8* &buffer)
+// {
+//     const u32 be_len = htonl(str.size());
+//     memcpy(buffer, &be_len, sizeof(be_len));
+//     buffer += sizeof(be_len);
+//
+//     if (!str.empty())
+//     {
+//         memcpy(buffer, &str[0], str.size());
+//     }
+//     buffer += str.size();
+// }
+//
+// inline std::string deserialize_string_from_buffer(const u8* buffer)
+// {
+//     std::string result;
+//
+//     u32 host_len;
+//     memcpy(&host_len, buffer, sizeof(host_len));
+//     buffer += sizeof(host_len);
+//     result.resize(host_len);
+//
+//     memcpy(result.data(), buffer, sizeof(host_len));
+//
+//     return result;
+// }
 
-inline void serialize_vector3_to_buffer(const D3DXVECTOR3 &vector, u8* buffer)
-{
-    // f32 are reinterpreted as u32
-    const u32 be_points[3]
-    {
-        htonl(std::bit_cast<u32>(vector.x)),
-        htonl(std::bit_cast<u32>(vector.y)),
-        htonl(std::bit_cast<u32>(vector.z))
-    };
-
-    memcpy(buffer, &be_points, sizeof(be_points));
-}
-
-/**
- *
- * @param buffer Should be 4 * 3 = 12 bytes long
- */
-inline D3DXVECTOR3 deserialize_vector3_from_buffer(const u8* buffer)
-{
-    D3DXVECTOR3 result;
-
-    memcpy(&result.x, buffer, sizeof(FLOAT));
-    memcpy(&result.y, buffer + 4, sizeof(FLOAT));
-    memcpy(&result.z, buffer + 8, sizeof(FLOAT));
-
-    result.x = std::bit_cast<f32>( ntohl(std::bit_cast<u32>(result.x)) );
-    result.y = std::bit_cast<f32>( ntohl(std::bit_cast<u32>(result.y)) );
-    result.z = std::bit_cast<f32>( ntohl(std::bit_cast<u32>(result.z)) );
-
-    return result;
-}
-
-/**
- * Important: buffer is MUTATED!
- */
-inline void serialize_string_to_buffer(const std::string &str, u8* &buffer)
-{
-    const u32 be_len = htonl(str.size());
-    memcpy(buffer, &be_len, sizeof(be_len));
-    buffer += sizeof(be_len);
-
-    if (!str.empty())
-    {
-        memcpy(buffer, &str[0], str.size());
-    }
-    buffer += str.size();
-}
-
-inline std::string deserialize_string_from_buffer(const u8* buffer)
-{
-    std::string result;
-
-    u32 host_len;
-    memcpy(&host_len, buffer, sizeof(host_len));
-    host_len = ntohl(host_len);
-    buffer += sizeof(host_len);
-    result.resize(host_len);
-
-    memcpy(result.data(), buffer, sizeof(host_len));
-
-    return result;
-}
-
-inline u32 get_string_serialized_size(const std::string &str)
-{
-    return sizeof(u32) + str.size();
-}
+// inline u32 get_string_serialized_size(const std::string &str)
+// {
+//     return sizeof(u32) + str.size();
+// }
 // }
 
 

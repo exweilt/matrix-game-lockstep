@@ -6,6 +6,7 @@
 #include <variant>
 #include <vector>
 
+#include "BitStream.hpp"
 #include "Command.hpp"
 
 #include <cassert>
@@ -37,22 +38,23 @@ struct MessageCommandBatchParams
     u8 target_side; // SideID
     std::vector<Command> commands;
 
+    MessageCommandBatchParams(): target_frame(0), target_side(0) {}
     MessageCommandBatchParams(const u32 frame, const u8 side) : target_frame(frame), target_side(side), commands() {}
     ~MessageCommandBatchParams() {}
 
-    u32 get_serialized_size() const
-    {
-        u32 size = sizeof(target_frame) + sizeof(target_side) + sizeof(size_t);
-
-        for (u32 i = 0; i < commands.size(); i++)
-        {
-            size += commands[i].get_serialized_size();
-        }
-
-        return size;
-    }
-    void serialize_to_buffer(u8* buffer);
-    static MessageCommandBatchParams deserialize_from_buffer(u8* buffer);
+    // u32 get_serialized_size() const
+    // {
+    //     u32 size = sizeof(target_frame) + sizeof(target_side) + sizeof(size_t);
+    //
+    //     for (u32 i = 0; i < commands.size(); i++)
+    //     {
+    //         size += commands[i].get_serialized_size();
+    //     }
+    //
+    //     return size;
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandBatchParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageJoinParams
@@ -63,9 +65,9 @@ struct MessageJoinParams
     MessageJoinParams(u8 side = 0, std::string name = "Greph") : player_side(side), username(name) {}
     ~MessageJoinParams() {}
 
-    u32 get_serialized_size() const { return sizeof(player_side) + get_string_serialized_size(username); }
-    void serialize_to_buffer(u8* buffer) const;
-    static MessageJoinParams deserialize_from_buffer(const u8* buffer);
+    // u32 get_serialized_size() const { return sizeof(player_side) + get_string_serialized_size(username); }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageJoinParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageChecksumParams
@@ -76,9 +78,9 @@ struct MessageChecksumParams
     MessageChecksumParams(u32 target_frame, u64 checksum) : target_frame(target_frame), checksum(checksum) {}
     ~MessageChecksumParams() {}
 
-    u32 get_serialized_size() const { return sizeof(u32) + sizeof(u64); }
-    void serialize_to_buffer(u8* buffer) const;
-    static MessageChecksumParams deserialize_from_buffer(const u8* buffer);
+    // u32 get_serialized_size() const { return sizeof(u32) + sizeof(u64); }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageChecksumParams deserialize_from_bitstream(BitReader &reader);
 };
 
 /**
@@ -123,54 +125,89 @@ struct Message
         }
     }
 
-    u32 get_serialized_size() const
-    {
-        switch (type)
-        {
-            case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
-            case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
-            case MessageType::START:        return sizeof(u8);
-            case MessageType::CHECKSUM:     return sizeof(u8) + checksum.get_serialized_size();
-            case MessageType::DESYNC:       return sizeof(u8);
-            default:                        return 0;
-        }
-    }
+    // u32 get_serialized_size() const
+    // {
+    //     switch (type)
+    //     {
+    //         case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
+    //         case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
+    //         case MessageType::START:        return sizeof(u8);
+    //         case MessageType::CHECKSUM:     return sizeof(u8) + checksum.get_serialized_size();
+    //         case MessageType::DESYNC:       return sizeof(u8);
+    //         default:                        return 0;
+    //     }
+    // }
 
-    void serialize_to_buffer(u8* buffer)
+    void serialize_to_bitstream(BitWriter &writer)
     {
-        // Write down the type tag
-        buffer[0] = static_cast<u8>(type);
+        writer.write_u8(static_cast<u8>(type)); // Write down the type tag
 
         // Write down the message itself
         switch (type)
         {
-            case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
-            case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
-            case MessageType::CHECKSUM:     checksum.serialize_to_buffer(buffer + 1);       break;
-            case MessageType::START:        break;
-            case MessageType::DESYNC:       break;
-            default:                        assert(false);
+            case MessageType::COMMAND_BATCH:    command_batch   .serialize_to_bitstream(writer); break;
+            case MessageType::JOIN:             join            .serialize_to_bitstream(writer); break;
+            case MessageType::CHECKSUM:         checksum        .serialize_to_bitstream(writer); break;
+            case MessageType::START:            break;
+            case MessageType::DESYNC:           break;
+            default:                            assert(false);
         }
     }
 
-    static Message deserialize_from_buffer(u8* buffer /*, size_t size */)
+    static Message deserialize_from_bitstream(BitReader &reader)
     {
-        switch (static_cast<MessageType>(buffer[0]))
+        switch (static_cast<MessageType>(reader.read_u8()))
         {
             case MessageType::COMMAND_BATCH:
-                return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
+                return MessageCommandBatchParams::  deserialize_from_bitstream(reader);
             case MessageType::JOIN:
-                return MessageJoinParams::deserialize_from_buffer(buffer + 1);
+                return MessageJoinParams::          deserialize_from_bitstream(reader);
             case MessageType::START:
-                    return Message(MessageType::START);
+                return Message(MessageType::START);
             case MessageType::DESYNC:
                 return Message(MessageType::DESYNC);
             case MessageType::CHECKSUM:
-                return MessageChecksumParams::deserialize_from_buffer(buffer + 1);
+                return MessageChecksumParams::      deserialize_from_bitstream(reader);
             default:
                 assert(false);
         }
     }
+
+    // void serialize_to_buffer(u8* buffer)
+    // {
+    //     // Write down the type tag
+    //     buffer[0] = static_cast<u8>(type);
+    //
+    //     // Write down the message itself
+    //     switch (type)
+    //     {
+    //         case MessageType::COMMAND_BATCH: command_batch.serialize_to_buffer(buffer + 1); break;
+    //         case MessageType::JOIN:         join.serialize_to_buffer(buffer + 1);           break;
+    //         case MessageType::CHECKSUM:     checksum.serialize_to_buffer(buffer + 1);       break;
+    //         case MessageType::START:        break;
+    //         case MessageType::DESYNC:       break;
+    //         default:                        assert(false);
+    //     }
+    // }
+
+    // static Message deserialize_from_buffer(u8* buffer /*, size_t size */)
+    // {
+    //     switch (static_cast<MessageType>(buffer[0]))
+    //     {
+    //         case MessageType::COMMAND_BATCH:
+    //             return MessageCommandBatchParams::deserialize_from_buffer(buffer + 1);
+    //         case MessageType::JOIN:
+    //             return MessageJoinParams::deserialize_from_buffer(buffer + 1);
+    //         case MessageType::START:
+    //                 return Message(MessageType::START);
+    //         case MessageType::DESYNC:
+    //             return Message(MessageType::DESYNC);
+    //         case MessageType::CHECKSUM:
+    //             return MessageChecksumParams::deserialize_from_buffer(buffer + 1);
+    //         default:
+    //             assert(false);
+    //     }
+    // }
 };
 // }
 

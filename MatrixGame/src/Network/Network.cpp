@@ -29,9 +29,12 @@ Network g_Network{};
 
 void Network::send_message(Message &msg)
 {
-    u32 size = msg.get_serialized_size();
-    ENetPacket* packet = enet_packet_create(nullptr, size, ENET_PACKET_FLAG_RELIABLE);
-    msg.serialize_to_buffer(packet->data);
+    BitWriter writer;
+    msg.serialize_to_bitstream(writer);
+
+    ENetPacket* packet = enet_packet_create(
+        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+    );
 
     enet_peer_send(client_host->peers, 0, packet);
 
@@ -124,7 +127,8 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
             //         event.channelID);
 
             {
-                Message msg{Message::deserialize_from_buffer(event.packet->data)};
+                BitReader reader = BitReader(event.packet->data);
+                Message msg{Message::deserialize_from_bitstream(reader)};
                 process_incoming_message(msg);
 
                 /* Clean up the packet now that we're done using it. */
@@ -257,5 +261,25 @@ void Network::save_commands_journal_to_file()
     cereal::JSONOutputArchive oarchive(fs);
     oarchive(cereal::make_nvp("commands_journal", commands_journal));
 }
+
+void Network::add_input_for_current_input_frame(const Command &command)
+{
+    // if there is no vector for inputs yet - create it
+    if (!this->get_frame_record(this->input_frame)->is_side_input_ready(this->controllable_side_id))
+    {
+        this->get_frame_record(this->input_frame)->set_side_inputs(this->controllable_side_id);
+    }
+
+    // Add command to the vector
+    this->get_frame_record(this->input_frame)->get_side_inputs(this->controllable_side_id)->push_back(command);
+}
+
+void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination)
+{
+    Command command { CommandMoveParams{entities_nid, destination} };
+    g_Network.add_input_for_current_input_frame(command);
+}
+
+
 // }
 

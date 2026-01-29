@@ -989,7 +989,7 @@ void CMatrixCamera::Takt(float ms) {
             D3DXVECTOR2 dir(GetFrustPlaneB().norm.x, GetFrustPlaneB().norm.y);
             D3DXVec2Normalize(&dir, &dir);
 
-            dir *= 0.1 * g_Config.m_CamMoveSpeed * ms;
+            dir *= 1.0 * g_Config.m_CamMoveSpeed * ms;
 
             D3DXVECTOR2 lDir(dir.y, -dir.x);
             D3DXVECTOR2 rDir(-dir.y, dir.x);

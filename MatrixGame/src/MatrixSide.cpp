@@ -871,29 +871,29 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     {
         if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != m_Id) {
             // Capture
-            PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
+            // PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
         }
         else if (IS_TRACE_STOP_OBJECT(pObject) &&
                  ((IsLiveUnit(pObject) && pObject->GetSide() != m_Id) || pObject->IsSpecial())) {
             // Attack
-            PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
+            // PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
             // PGOrderMoveTo(SelGroupToLogicGroup(),
             //               CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
-            Command command
-            {
-                CommandMoveParams
-                {
-                    GetCurGroup()->m_FirstObject->m_Object->m_NID, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0}
-                }
-            };
-            std::vector<Command> commands;
-            commands.push_back(command);
 
-            // current_input = commands;
-            g_Network.get_frame_record(g_Network.input_frame)->set_side_inputs(g_Network.controllable_side_id, commands);
+            // Issue Net Order for each robot in selection
+            std::vector<u32> robots_nid{};
+            for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+            {
+                if (go->m_Object->IsLiveRobot())
+                {
+                    robots_nid.push_back(go->m_Object->m_NID);
+                }
+            }
+            NetOrderMoveTo(robots_nid, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0});
+
 
 #ifdef NON_MULTIPLAYER
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;

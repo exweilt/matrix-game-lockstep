@@ -194,6 +194,8 @@ public:
     bool IsLogicVisible(CMatrixMapStatic *ofrom, CMatrixMapStatic *oto, float second_z = 0.0f);
 
     void DumpLogic(void);
+
+    CMatrixMapStatic *find_static_with_nid(u32 nid);
 };
 
 inline int CMatrixMapGroup::ObjectsCnt(void) const {

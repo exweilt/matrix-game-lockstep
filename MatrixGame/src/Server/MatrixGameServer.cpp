@@ -100,8 +100,14 @@ void process_server_network_frame()
             if (g_server_host->connectedPeers == 2)
             {
                 Message msg { MessageType::START };
-                ENetPacket* packet = enet_packet_create(nullptr, msg.get_serialized_size(), ENET_PACKET_FLAG_RELIABLE);
-                memcpy(packet->data, &msg, msg.get_serialized_size());
+
+                BitWriter writer;
+                msg.serialize_to_bitstream(writer);
+
+                ENetPacket* packet = enet_packet_create(
+                    writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+                );
+
                 enet_host_broadcast(g_server_host, 0, packet);
                 // enet_packet_destroy(packet);
             }
@@ -115,7 +121,8 @@ void process_server_network_frame()
                 std::terminate();
             }
 
-            Message m { Message::deserialize_from_buffer(event.packet->data) };
+            BitReader reader = BitReader(event.packet->data);
+            Message m { Message::deserialize_from_bitstream(reader) };
 
             // // Find to which peer to retranslate the command_batch
             // ENetPeer* target = nullptr;
@@ -178,8 +185,13 @@ void process_server_network_frame()
                 if (is_desync)
                 {
                     Message msg { MessageType::DESYNC };
-                    ENetPacket* packet = enet_packet_create(nullptr, msg.get_serialized_size(), ENET_PACKET_FLAG_RELIABLE);
-                    msg.serialize_to_buffer(packet->data);
+                    BitWriter writer;
+                    msg.serialize_to_bitstream(writer);
+
+                    ENetPacket* packet = enet_packet_create(
+                        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+                    );
+
                     // memcpy(packet->data, &msg, msg.get_serialized_size());
                     enet_host_broadcast(g_server_host, 0, packet);
                     enet_host_flush(g_server_host);
