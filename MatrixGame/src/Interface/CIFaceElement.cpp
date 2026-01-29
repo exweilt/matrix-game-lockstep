@@ -137,7 +137,9 @@ IFaceElementState CIFaceElement::GetState() {
 }
 
 void CIFaceElement::BeforeRender(void) {
+    DCP();
     m_StateImages[m_CurState].pImage->Preload();
+    DCP();
 
     if (HasClearRect()) {
         D3DRECT r;

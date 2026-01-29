@@ -22,13 +22,13 @@ enum ERobotUnitKind : unsigned int;
 
 #include <d3dx9math.h>
 
+// Custom cereal-serializer for D3DXVector3
 template <class Archive>
 void serialize(Archive& ar, D3DXVECTOR3& v) {
     ar(CEREAL_NVP(v.x), CEREAL_NVP(v.y), CEREAL_NVP(v.z));
 }
 
 constexpr int MAX_ROBOTS_PER_COMMAND = 16;
-
 
 // namespace network
 // {
@@ -59,6 +59,7 @@ struct CommandMoveParams
     {
         assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
         number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
         memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
         target_pos = dest;
     };
@@ -74,7 +75,7 @@ struct CommandMoveParams
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
     }
 };
 
@@ -90,6 +91,7 @@ struct CommandCaptureParams
     {
         assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
         number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
         memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
         target_nid = target;
     };
@@ -105,7 +107,7 @@ struct CommandCaptureParams
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+         ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
     }
 };
 
@@ -131,7 +133,7 @@ struct CommandAttackParams
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid), CEREAL_NVP(target_pos), CEREAL_NVP(is_attacking_position));
     }
 };
 

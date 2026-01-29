@@ -27,10 +27,12 @@ i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_o
     for (i32 i = 0; i < number_of_robots; i++)
     {
         CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
-        assert(obj->IsLiveRobot());
-
-        obj->AsRobot()->SetGroupLogic(no);
-        side->m_PlayerGroup[no].m_RobotCnt++;
+        // assert(obj->IsLiveRobot()); // bad
+        if (obj->IsLiveRobot())
+        {
+            obj->AsRobot()->SetGroupLogic(no);
+            side->m_PlayerGroup[no].m_RobotCnt++;
+        }
     }
 
     return no;
@@ -119,6 +121,7 @@ CommandMoveParams CommandMoveParams::deserialize_from_bitstream(BitReader &reade
 
     result.number_of_robots = reader.read_u8();
 
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32)); //
     for (u32 i = 0; i < result.number_of_robots; i++)
     {
         result.robot_nid[i] =reader.read_u32();
@@ -155,6 +158,7 @@ CommandCaptureParams CommandCaptureParams::deserialize_from_bitstream([[maybe_un
 
     result.number_of_robots = reader.read_u8();
 
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
     for (u32 i = 0; i < result.number_of_robots; i++)
     {
         result.robot_nid[i] = reader.read_u32();
@@ -179,6 +183,7 @@ CommandAttackParams::CommandAttackParams(std::vector<u32> robots_nid, u32 target
 {
     assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
     number_of_robots = robots_nid.size();
+    memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
     memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
     target_nid = target;
     target_pos = GetMapPos(g_MatrixMap->find_static_with_nid(target));
@@ -208,10 +213,13 @@ CommandAttackParams CommandAttackParams::deserialize_from_bitstream([[maybe_unus
 
     result.number_of_robots = reader.read_u8();
 
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
     for (u32 i = 0; i < result.number_of_robots; i++)
     {
         result.robot_nid[i] = reader.read_u32();
     }
+
+    result.target_nid = reader.read_u32();
 
     result.target_pos.x = std::bit_cast<int>(reader.read_u32());
     result.target_pos.y = std::bit_cast<int>(reader.read_u32());
