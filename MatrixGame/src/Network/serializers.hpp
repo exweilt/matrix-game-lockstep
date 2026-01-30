@@ -13,6 +13,15 @@ void serialize(Archive& ar, CMatrixRobotAI& robot) {
     );
 }
 
+template <class Archive>
+void serialize(Archive& ar, CMatrixBuilding& building) {
+    ar(
+        CEREAL_NVP(building.m_Kind),
+        CEREAL_NVP(building.m_Side),
+        cereal::make_nvp("hitpoints", building.GetHitPoint())
+    );
+}
+
 /**
  * Serializes some most relevant things of the game world for the current frame, calculates checksum of that state
  *      and saves that state as json file.

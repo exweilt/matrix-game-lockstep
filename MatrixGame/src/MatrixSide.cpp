@@ -6943,7 +6943,8 @@ void CMatrixSideUnit::TaktPL(int onlygroup) {
     EscapeFromBomb();
 
     // Для всех мест рассчитываем коэффициент вражеских объектов в зоне поражения
-    if (m_LastTaktUnderfire == 0 || (g_MatrixMap->GetTime() - m_LastTaktUnderfire) > 500) {
+    if (m_LastTaktUnderfire == 0 || (g_MatrixMap->GetTime() - m_LastTaktUnderfire) > 500)
+    {
         m_LastTaktUnderfire = g_MatrixMap->GetTime();
 
         SMatrixPlace *place = g_MatrixMap->m_RN.m_Place;
