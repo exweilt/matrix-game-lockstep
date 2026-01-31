@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <cwchar>
 
 ////////////////////////////////////////////////////////////////////////////////
 #include <stupid_logger.hpp>
@@ -38,24 +39,70 @@ CMatrixMapLogic *g_MatrixMap;
 CRenderPipeline *g_Render;
 CLoadProgress *g_LoadProgress;
 
+const wchar_t* get_cmd_flag_value(const wchar_t* flag, wchar_t** args, int num_args)
+{
+    size_t flag_len = wcslen(flag);
+
+    // Loop through args (start at 1 to skip executable name)
+    for (int i = 1; i < num_args; ++i)
+    {
+        // CASE 1: Space separated (e.g. "-m" "value")
+        // Check if current arg matches the flag exactly
+        if (wcscmp(args[i], flag) == 0)
+        {
+            // Make sure we aren't at the very end of the array
+            if (i + 1 < num_args) {
+                return args[i + 1]; // Return the NEXT argument
+            }
+        }
+
+        // CASE 2: Equals separated (e.g. "-m=value" or "--map=value")
+        // Check if starts with flag AND the next char is '='
+        if (wcsncmp(args[i], flag, flag_len) == 0 && args[i][flag_len] == L'=')
+        {
+            // Return the address of the character immediately after the '='
+            return &args[i][flag_len + 1];
+        }
+    }
+
+    return nullptr; // Flag not found
+}
+
+void print_help()
+{
+    std::cout << "Matrix Game Usage:" << std::endl;
+    std::cout << "  -a=\"127.0.0.1\"    (specify target IP address)" << std::endl;
+    std::cout << "  -s=\"1\"    (specify playing side: 1-4)" << std::endl;
+    std::cout << "  -m=\"mapname\"    (specify map, optional)" << std::endl;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 {
-    const wchar *cmd = GetCommandLineW();
-
     lgr.info("===== Started as EXE =====");
 
     int numarg;
+    const wchar *cmd = GetCommandLineW();
     wchar **args = CommandLineToArgvW(cmd, &numarg);
-    wchar *map = nullptr;
 
     std::filesystem::path app_path{args[0]};
 
     lgr.info(utils::from_wstring(app_path.native()));
     std::filesystem::current_path(app_path.parent_path());
 
-    if (numarg > 1) {
-        map = args[1];
+    wchar *ip_addr       = _wcsdup(get_cmd_flag_value(L"-a", args, numarg));
+    const wchar *playing_side  = get_cmd_flag_value(L"-s", args, numarg);
+    const wchar *map           = get_cmd_flag_value(L"-m", args, numarg);
+
+    if (ip_addr == nullptr || playing_side == nullptr)
+    {
+        std::cout << "Incorrect usage. Please specify both ip and playing side." << std::endl << std::endl;
+        print_help();
+        return 1;
     }
+
+    // save arguments into network manager
+    g_Network.server_ip = std::string(ip_addr, ip_addr + wcslen(ip_addr));
+    g_Network.isClient2 = wcscmp(playing_side, L"2") == 0;
 
     try {
         uint32_t seed = 0; // ATTENTION: For testing multiplayer

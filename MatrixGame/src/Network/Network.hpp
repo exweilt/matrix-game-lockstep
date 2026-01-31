@@ -90,7 +90,9 @@ public:
     u32 physics_frame         = 0; // current physics frame
     u32 input_frame           = 0; // new inputs are sampled for this physics frame
     u32 total_ms              = 0;
-    bool isClient2              = std::getenv("CLIENT2") != nullptr;
+    // bool isClient2              = std::getenv("CLIENT2") != nullptr;
+    bool isClient2              = false;
+    std::string server_ip;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
     bool game_ongoing           = false;
     // bool next_frame_requested   = false; // should simulate next physics frame

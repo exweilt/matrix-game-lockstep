@@ -180,7 +180,7 @@ void Network::connect_to_server()
     ENetPeer *peer;
 
     /* Connect to some.server.net:1234. */
-    enet_address_set_host (& address, "127.0.0.1");
+    enet_address_set_host (& address, server_ip.c_str());
     address.port = 1234;
 
 
@@ -257,7 +257,7 @@ void Network::consume_input_frame(const u32 frame)
 
 void Network::save_commands_journal_to_file()
 {
-    std::ofstream fs("Client" + std::to_string(controllable_side_id) + "_commands.json");
+    std::ofstream fs(isClient2 ? "Client2_commands.json" : "Client1_commands.json");
     cereal::JSONOutputArchive oarchive(fs);
     oarchive(cereal::make_nvp("commands_journal", commands_journal));
 }

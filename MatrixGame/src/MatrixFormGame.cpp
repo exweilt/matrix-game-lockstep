@@ -770,7 +770,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F4 && down)
     {
-        u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client3_map.json");
+        u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client1_map.json");
         g_Network.lgr.debug("Checksum for frame {}: {}")(g_Network.physics_frame, checksum);
         // g_Network.current_input = std::vector<Command>();
         // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
