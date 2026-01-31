@@ -166,7 +166,8 @@ void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);
 void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid);
 
 // Places an order to construct a robot
-void NetOrderConstruct(u32 entity_nid, const D3DXVECTOR3& destination);
+void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
+                        const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base);
 
 // namespace nw = network;
 

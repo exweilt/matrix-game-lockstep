@@ -7,7 +7,7 @@
 #include "../MatrixGame.h"
 #include "../MatrixMap.hpp"
 
-CHistory *g_ConfigHistory;
+CHistory *g_ConfigHistory; // robot construction history
 
 CHistory::CHistory() {
     m_FirstConfig = NULL;

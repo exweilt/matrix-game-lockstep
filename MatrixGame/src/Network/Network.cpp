@@ -292,6 +292,21 @@ void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
     g_Network.add_input_for_current_input_frame(command);
 }
 
+void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
+                        const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base)
+{
+    DTRACE();
+    assert(weapons.size() == MAX_WEAPON_CNT);
+    // ERobotUnitKind *weapons_data = weapons.data();
+    Command command { CommandBuildParams {chassis, hull, head, weapons, robot_count, base} };
+    // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+    // {
+    //     command.build.weapons[i] = weapons[i];
+    // }
+    DCP();
+    g_Network.add_input_for_current_input_frame(command);
+}
+
 
 // }
 

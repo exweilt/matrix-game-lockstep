@@ -1604,7 +1604,9 @@ void CBuildStack::TickTimer(int ms) {
         return;
     }
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+    // ATTENTION:
+    // CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetSideById(m_ParentBase->m_Side);
     m_Timer += ms;
 
     if (m_Items && m_Top->IsRobot()) {
@@ -1776,9 +1778,9 @@ void CBuildStack::AddItem(CMatrixMapStatic *item) {
         LIST_ADD(item, m_Top, m_Bottom, m_PrevStackItem, m_NextStackItem);
         m_Items++;
         // STUB:
-        if (item->GetSide() == g_Network.controllable_side_id) {
+        // if (item->GetSide() == g_Network.controllable_side_id) {
             g_IFaceList->CreateStackIcon(m_Items, m_ParentBase, item);
-        }
+        // }
     }
 }
 

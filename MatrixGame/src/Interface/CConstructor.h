@@ -64,6 +64,7 @@ struct SNewBorn {
     //~SNewBorn();
 };
 
+// Seems to be the blueprints of robots the AI sides choose from
 struct SSpecialBot {
     SUnit m_Head;
     SWeaponUnit m_Weapon[MAX_WEAPON_CNT];
@@ -121,6 +122,8 @@ class CConstructor : public CMain {
 
 public:
     CMatrixRobotAI *GetRenderBot() { return m_Robot; }
+
+    // returns -1 if weapon is not legal
     int CheckWeaponLegality(SWeaponUnit *weapons, int weaponKind, int armorKind);
     void GetConstructionPrice(int *res);
     int GetConstructionStructure();
@@ -144,11 +147,11 @@ public:
     }
 
     void __stdcall RemoteOperateUnit(void *pObj);
-    void OperateUnit(ERobotUnitType type, ERobotUnitKind kind);
+    void OperateUnit(ERobotUnitType type, ERobotUnitKind kind); // select a unit for current blueprint
     void SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pilon, bool ld_from_history = false);
     void Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon); // WTF???
 
-    void __stdcall RemoteBuild(void *pObj); // Button: Build Robot Callback
+    void __stdcall RemoteBuild(void *pObj); // player only: Button: Build Robot Callback
     SNewBorn *ProduceRobot(void *pObject); // Unused
     void StackRobot(void *pObject, int team = 0); // Add robot to build queue
     void BeforeRender(void);
@@ -162,24 +165,25 @@ public:
     void Render();
 
     // STUB: FAKE FUNCTIONS MOTHERFUCKERS
-    void BuildRandomBot() {
-        // Chassis
-        int rnd = g_MatrixMap->Rnd(1, 5);  //(int)RND(1, 5);
-        // if(rnd == 2) rnd = 4;
-        // rnd = 4;
-        OperateUnit(MRT_CHASSIS, (ERobotUnitKind)rnd);
-        // ARMOR
-        rnd = g_MatrixMap->Rnd(1, 6);
-
-        OperateUnit(MRT_ARMOR, (ERobotUnitKind)rnd);
-        // WEAPON
-        rnd = (int)RND(1, 5);
-        for (int nC = 0; nC <= rnd; nC++) {
-            OperateUnit(MRT_WEAPON, (ERobotUnitKind) /*6*/ g_MatrixMap->Rnd(1, 9));
-        }
-        // HEAD
-        OperateUnit(MRT_HEAD, (ERobotUnitKind)g_MatrixMap->Rnd(1, 7));
-    }
+    // not used!
+    // void BuildRandomBot() {
+    //     // Chassis
+    //     int rnd = g_MatrixMap->Rnd(1, 5);  //(int)RND(1, 5);
+    //     // if(rnd == 2) rnd = 4;
+    //     // rnd = 4;
+    //     OperateUnit(MRT_CHASSIS, (ERobotUnitKind)rnd);
+    //     // ARMOR
+    //     rnd = g_MatrixMap->Rnd(1, 6);
+    //
+    //     OperateUnit(MRT_ARMOR, (ERobotUnitKind)rnd);
+    //     // WEAPON
+    //     rnd = (int)RND(1, 5);
+    //     for (int nC = 0; nC <= rnd; nC++) {
+    //         OperateUnit(MRT_WEAPON, (ERobotUnitKind) /*6*/ g_MatrixMap->Rnd(1, 9));
+    //     }
+    //     // HEAD
+    //     OperateUnit(MRT_HEAD, (ERobotUnitKind)g_MatrixMap->Rnd(1, 7));
+    // }
 
     // STUB:
     void BuildSpecialBot(const SSpecialBot &bot);

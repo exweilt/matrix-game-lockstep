@@ -137,6 +137,7 @@ struct CommandAttackParams
     }
 };
 
+// TODO: change name to be consistent: build-construct
 struct CommandBuildParams
 {
     ERobotUnitKind chassis;
@@ -147,8 +148,17 @@ struct CommandBuildParams
     u32 target_base_nid; // Base NID to build at.
 
     CommandBuildParams() : chassis(), hull(), head(), weapons{}, robot_count(0), target_base_nid(0) {};
-    CommandBuildParams(ERobotUnitKind ch, ERobotUnitKind hu, ERobotUnitKind he, ERobotUnitKind wp[5], u8 cnt, u32 base)
-        : chassis(ch), hull(hu), head(he), robot_count(cnt), target_base_nid(base)
+    // CommandBuildParams(ERobotUnitKind ch, ERobotUnitKind hu, ERobotUnitKind he, ERobotUnitKind *wp, u8 cnt, u32 base)
+    //     : chassis(ch), hull(hu), head(he), robot_count(cnt), target_base_nid(base)
+    // {
+    //     for (u32 i = 0; i < MAX_WEAPON_CNT; i++)
+    //     {
+    //         this->weapons[i] = wp[i];
+    //     }
+    // };
+
+    CommandBuildParams(ERobotUnitKind ch, ERobotUnitKind hu, ERobotUnitKind he, const std::vector<ERobotUnitKind> &wp, u8 cnt, u32 base)
+    : chassis(ch), hull(hu), head(he), robot_count(cnt), target_base_nid(base)
     {
         for (u32 i = 0; i < MAX_WEAPON_CNT; i++)
         {
@@ -167,7 +177,7 @@ struct CommandBuildParams
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(robot_count));
+        ar(CEREAL_NVP(chassis), CEREAL_NVP(hull), CEREAL_NVP(head), CEREAL_NVP(weapons), CEREAL_NVP(robot_count), CEREAL_NVP(target_base_nid));
     }
 };
 

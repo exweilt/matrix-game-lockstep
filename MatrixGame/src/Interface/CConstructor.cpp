@@ -218,32 +218,45 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
     }
 }
 
-void __stdcall CConstructor::RemoteBuild(void *pObj) {
+void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
     DTRACE();
+    DCP();
     if (m_Base->m_Side != g_Network.controllable_side_id) {
         return;
     }
     CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
+    DCP();
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
     g_ConfigHistory->AddConfig(&player_side->m_ConstructPanel->m_Configs[cfg_num]);
 
-    for (int i = 0; i < g_IFaceList->m_RCountControl->GetCounter(); i++) {
-        StackRobot(pObj);
+    // order n robots
+    i32 robot_count = g_IFaceList->m_RCountControl->GetCounter();
+    // for (int i = 0; i < robot_count; i++) {
+    //     StackRobot(pObj);
+    // }
+    DCP();
+    std::vector<ERobotUnitKind> weapons{};
+    for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        weapons.emplace_back(m_Weapon[i].m_Unit.m_nKind);
     }
-
-    int res[MAX_RESOURCES];
-    GetConstructionPrice(res);
-    player_side->AddResourceAmount(TITAN, -res[TITAN] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(ENERGY, -res[ENERGY] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(PLASMA, -res[PLASMA] * g_IFaceList->m_RCountControl->GetCounter());
-
+    DCP();
+    NetOrderConstruct(m_Chassis.m_nKind, m_Armor.m_Unit.m_nKind, m_Head.m_nKind, weapons, robot_count, m_Base->m_NID);
+    DCP();
+    // int res[MAX_RESOURCES];
+    // GetConstructionPrice(res);
+    // player_side->AddResourceAmount(TITAN, -res[TITAN] * robot_count);
+    // player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * robot_count);
+    // player_side->AddResourceAmount(ENERGY, -res[ENERGY] * robot_count);
+    // player_side->AddResourceAmount(PLASMA, -res[PLASMA] * robot_count);
+    //
     if (player_side && player_side->m_ConstructPanel) {
         player_side->m_ConstructPanel->ResetGroupNClose();
     }
     g_IFaceList->m_RCountControl->Reset();
     g_IFaceList->m_RCountControl->CheckUp();
+    DCP();
 }
 void CConstructor::BeforeRender(void) {
     // static float za = 0;

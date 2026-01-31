@@ -4,6 +4,8 @@
 
 #include <MatrixSide.hpp>
 
+#include "Interface/CConstructor.h"
+
 #define SERIALIZE_U32_TO_BUFF(member_name, buffer_name)                 \
     {                                                                   \
         const u32 be_member_name = this->member_name;                   \
@@ -241,23 +243,36 @@ void CommandAttackParams::execute_for_side([[maybe_unused]]u32 side_id)
 
 void CommandBuildParams::serialize_to_bitstream([[maybe_unused]]BitWriter &writer) const
 {
-    // SERIALIZE_U32_TO_BUFF(chassis, buffer)
-    // SERIALIZE_U32_TO_BUFF(hull, buffer)
-    // SERIALIZE_U32_TO_BUFF(head, buffer)
-    // buffer[0] = this->robot_count;
-    // buffer += 1;
-    // SERIALIZE_U32_TO_BUFF(target_base_nid, buffer)
-    //
-    // for (u32 i = 0; i < MAX_WEAPON_CNT; i++)
-    // {
-    //     const u32 be_weapon = htonl(this->weapons[i]);
-    //     memcpy(buffer, &be_weapon, sizeof(be_weapon));
-    //     buffer += sizeof(be_weapon);
-    // }
+    writer.write_u8(chassis);
+    writer.write_u8(hull);
+    writer.write_u8(head);
+
+    for (int i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        writer.write_u8(weapons[i]);
+    }
+
+    writer.write_u8(robot_count);
+    writer.write_u32(target_base_nid);
 }
 
 CommandBuildParams CommandBuildParams::deserialize_from_bitstream([[maybe_unused]]BitReader &reader)
 {
+    CommandBuildParams result;
+
+    result.chassis  = static_cast<ERobotUnitKind>(reader.read_u8());
+    result.hull     = static_cast<ERobotUnitKind>(reader.read_u8());
+    result.head     = static_cast<ERobotUnitKind>(reader.read_u8());
+
+    for (int i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        result.weapons[i] = static_cast<ERobotUnitKind>(reader.read_u8());
+    }
+
+    result.robot_count = reader.read_u8();
+    result.target_base_nid = reader.read_u32();
+
+    return result;
     // u32 host_chassis;
     // memcpy(&host_chassis, buffer, sizeof(host_chassis));
     // host_chassis = ntohl(host_chassis);
@@ -298,12 +313,56 @@ CommandBuildParams CommandBuildParams::deserialize_from_bitstream([[maybe_unused
     //     host_robot_count,
     //     host_target_base_nid
     // };
-    return CommandBuildParams{};
+    // return CommandBuildParams{};
 }
 
 void CommandBuildParams::execute_for_side([[maybe_unused]]u32 side_id)
 {
+    DTRACE();
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    CMatrixMapStatic *base_static = g_MatrixMap->find_static_with_nid(target_base_nid);
+    if (base_static == nullptr || !base_static->IsBase())
+        return; // some scheisse
 
+    CMatrixBuilding *base = base_static->AsBuilding();
+
+    if (base->m_Side != side_id)
+        return;
+
+    DCP();
+
+    side->m_Constructor->SetBase(base);
+    DCP();
+    side->m_Constructor->OperateUnit(MRT_CHASSIS, chassis);
+    side->m_Constructor->OperateUnit(MRT_ARMOR, hull);
+    side->m_Constructor->OperateUnit(MRT_HEAD, head);
+
+    DCP();
+
+    for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        side->m_Constructor->OperateUnit(MRT_WEAPON, weapons[i]);
+    }
+
+    DCP();
+    for (i32 i = 0; i < robot_count; i++)
+    {
+        side->m_Constructor->StackRobot(nullptr);
+    }
+
+    DCP();
+    int res[MAX_RESOURCES];
+    side->m_Constructor->GetConstructionPrice(res);
+    side->AddResourceAmount(TITAN, -res[TITAN] * robot_count);
+    side->AddResourceAmount(ENERGY, -res[ENERGY] * robot_count);
+    side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * robot_count);
+    side->AddResourceAmount(PLASMA, -res[PLASMA] * robot_count);
+    //
+    // if (player_side && player_side->m_ConstructPanel) {
+    //     player_side->m_ConstructPanel->ResetGroupNClose();
+    // }
+    // g_IFaceList->m_RCountControl->Reset();
+    // g_IFaceList->m_RCountControl->CheckUp();
 }
 
 // } // namespace network

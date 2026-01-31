@@ -6392,7 +6392,7 @@ void CMatrixSideUnit::BuildRobot(void) {
     float minstrange = 0;
 
     int basecnt = 0;
-    int wr[MAX_RESOURCES];
+    int wr[MAX_RESOURCES]; // number of owned factories
     for (r = 0; r < MAX_RESOURCES; r++)
         wr[r] = 0;
 

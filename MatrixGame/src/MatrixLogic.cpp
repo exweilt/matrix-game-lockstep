@@ -2977,7 +2977,7 @@ void CMatrixMapLogic::Takt(int step) {
     DCP();
 
 
-    DCP();
+    // DCP();
 
     // Next physics frame
     if (
@@ -2990,19 +2990,23 @@ void CMatrixMapLogic::Takt(int step) {
         if (g_Network.physics_frame == 1000) {
             // g_Network.game_ongoing = false;
         }
+        DCP();
         m_Time += step;
         // g_Network.next_frame_requested = false;
         g_Network.consume_input_frame(g_Network.physics_frame);
+        DCP();
         physics_process(step);
         g_Network.physics_frame += 1;
         g_Network.get_frame_record(g_Network.physics_frame); // create record if it is not present yet
+        DCP();
         // network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame));
         g_IFaceList->LogicTakt(step); // ATTENTION
         g_Network.frames_passed_since_last_check += 1;
-
+        DCP();
         // Current implementation does not work for frame 0:
         Message msg = MessageChecksumParams{g_Network.physics_frame - 1, serialize_map(true)};
         g_Network.send_message(msg);
+        DCP();
 
         CMatrixMap::Takt(step);  // graphic takts after logic takt
     }
