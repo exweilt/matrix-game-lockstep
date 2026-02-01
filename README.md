@@ -1,5 +1,7 @@
 # MatrixGame Networking
 Forked from https://github.com/vladislavrv/MatrixGame
+<br>
+Status: `~55%` ready (more or less playable with bad performance, occasional desyncs, limited functionality and restricted convenience)
 
 ## Architecture 
 Deterministic Lockstep with Server Relay
@@ -26,21 +28,32 @@ Deterministic Lockstep with Server Relay
 - Make sure at least some basic Determinism is present ✔️
 - Add buffer for inputs delay to address jitter(i.e. replace the variable string the List of Actions for the current frame with some kind of data struct storing the Lists of Actions for number of frames) ✔️
 - Compute checksums of state to detect desyncs ✔️
-- Implement most in game controls: building, attacking etc. ❌
-- Ensure rock-solid determinism through controlling FPU + fixed points ❌
+- Implement most in game controls: building, attacking etc. (except turrets and manual) ✔️
+- Track gamestates for recent frames via RingBuffer and access those, where desync happened ❌
+- Add desync TRACE macro to track the spot inside the code, where desync happened ❌
+- Ensure solid determinism across different CPU through controlling FPU, fixed points? (can play most games without desync) ❌
 - Make sure game runs smoothly, measure fps in original, bring up fps to 90 and maybe add physics interpolation. ❌
-- Add more fancy functionality to control the flow of the game. Allow configuring IP addresses to connect, maps to play etc. ❌
+- Some utilities to debug desyncs quickly when playing across different PC. ❌
+- Add game schema settings to customize game rules. ❌
+- Add GUI for server game creation, for connecting a game (ensure graceful game ending). ❌
+- Add NAT puncturing via a server. ❌
+- Add game replay, and recover desync functionality. ❌
+- Add robot palette config file, to start the game with preset configurations. ❌
 
 ## Additional
 
 You would need to install xxHash library somewhere in your system so CMake can find it. 
-Either download it through your system package manager or build it yourself with:\
+Either download it through your system package manager or build it yourself with:
 ```bash
 cd ./xxHash_repo/
 cmake -S build/cmake -B cmake_build -A Win32 -DCMAKE_BUILD_TYPE=Release
 cmake --build cmake_build --config Release --parallel
 cmake --install cmake_build --config Release
 ```
+
+
+To start the game you need to start the `MatrixGameServer.exe` and 2 instances of `MatrixGame.exe` with correct cmd arguments passed.
+You can run `MatrixGame.exe` to print out possible cmd flags.
 
 
 The rest is from the original repository:
