@@ -22,6 +22,12 @@
 	income_period_energy 		= 7.0
 	income_period_plasma 		= 7.0
 	friendly_fire_modifier		= 1.0
+	robot_capacity_bonus_per_factory = 2 	# can be negative
+	robot_capacity_bonus_per_base = 5		# can be negative
+	starting_bonus_titanium 	= 0			# can be negative
+	starting_bonus_electronics 	= 0			# can be negative
+	starting_bonus_energy 		= 0			# can be negative
+	starting_bonus_plasma 		= 0			# can be negative
 
 [hull]
 	[hull.monostack]
