@@ -114,7 +114,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 
     // save arguments into network manager
     g_Network.server_ip = std::string(ip_addr, ip_addr + wcslen(ip_addr));
-    g_Network.isClient2 = wcscmp(playing_side, L"2") == 0;
+    g_Network.isClient2 = wcscmp(playing_side, L"3") == 0;
     g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
 
 

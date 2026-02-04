@@ -5,6 +5,9 @@
 #include <cereal/archives/binary.hpp>
 
 #include "MatrixRobot.hpp"
+#include "Stopwatch.hpp"
+
+#define PROFILING
 
 std::string WorldSnapshot::to_json_string()
 {
@@ -16,6 +19,9 @@ std::string WorldSnapshot::to_json_string()
 
 u64 WorldSnapshot::hash()
 {
+#ifdef PROFILING
+    Stopwatch stopwatch;
+#endif
     // std::ostringstream ss(std::ios::binary);
     // cereal::BinaryOutputArchive archive(os);
     // archive(data);
@@ -23,11 +29,21 @@ u64 WorldSnapshot::hash()
     std::ostringstream ss(std::ios::binary);
     cereal::BinaryOutputArchive oarchive(ss);
     oarchive(cereal::make_nvp("world_snapshot", *this));
-    return XXH64(ss.str().c_str(), ss.str().length(), 0);
+
+    u64 hash = XXH64(ss.str().c_str(), ss.str().length(), 0);
+
+#ifdef PROFILING
+    std::cout << "=== Hash world elapsed time: " << stopwatch.elapsed_ms() << "\n";
+#endif
+    return hash;
 }
 
 WorldSnapshot capture_world_snapshot()
 {
+
+#ifdef PROFILING
+Stopwatch cws_stopwatch;
+#endif
     WorldSnapshot result;
 
     result.frame = g_Network.physics_frame;
@@ -70,5 +86,8 @@ WorldSnapshot capture_world_snapshot()
         }
     }
 
+#ifdef PROFILING
+    std::cout << "= Capture world snapshot elapsed time: " << cws_stopwatch.elapsed_ms() << "\n";
+#endif
     return result;
 }
