@@ -77,10 +77,12 @@ void Network::process_incoming_message(const Message &msg)
     }
     else if (msg.type == MessageType::DESYNC)
     {
-        game_ongoing = false;
-        lgr.error("DESYNC detected at frame: {}")(msg.checksum.target_frame);
-        std::cerr << "DESYNC detected at frame: " << msg.checksum.target_frame << std::endl;
-        std::cerr << "Desync" << std::endl;
+        lgr.error("DESYNC detected at frame: {}")(msg.desync.target_frame);
+        std::cerr << "DESYNC detected at frame: " << msg.desync.target_frame << std::endl;
+
+        game_ongoing = false; // pause the game
+        g_Network.desync_happened_at_frame = msg.desync.target_frame;  // log this
+        g_Network.desync_happened = true;
     }
 }
 
@@ -220,6 +222,7 @@ void Network::connect_to_server()
 }
 void Network::static_init_networking()
 {
+    history_game_states.set_next_frame(1); // skip 0
     controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
     // controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
     commands_journal.push_back(CommandsFrameRecord(0));
@@ -260,6 +263,14 @@ void Network::save_commands_journal_to_file()
     std::ofstream fs(isClient2 ? "Client2_commands.json" : "Client1_commands.json");
     cereal::JSONOutputArchive oarchive(fs);
     oarchive(cereal::make_nvp("commands_journal", commands_journal));
+}
+
+std::string Network::commands_journal_to_json_string()
+{
+    std::ostringstream ss;
+    cereal::JSONOutputArchive oarchive(ss);
+    oarchive(cereal::make_nvp("commands_journal", commands_journal));
+    return ss.str();
 }
 
 void Network::add_input_for_current_input_frame(const Command &command)

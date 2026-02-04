@@ -1,0 +1,74 @@
+#include "Snapshot.hpp"
+
+#include <xxhash.h>
+
+#include <cereal/archives/binary.hpp>
+
+#include "MatrixRobot.hpp"
+
+std::string WorldSnapshot::to_json_string()
+{
+    std::ostringstream ss;
+    cereal::JSONOutputArchive oarchive(ss);
+    oarchive(cereal::make_nvp("world_snapshot", *this));
+    return ss.str();
+}
+
+u64 WorldSnapshot::hash()
+{
+    // std::ostringstream ss(std::ios::binary);
+    // cereal::BinaryOutputArchive archive(os);
+    // archive(data);
+
+    std::ostringstream ss(std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(ss);
+    oarchive(cereal::make_nvp("world_snapshot", *this));
+    return XXH64(ss.str().c_str(), ss.str().length(), 0);
+}
+
+WorldSnapshot capture_world_snapshot()
+{
+    WorldSnapshot result;
+
+    result.frame = g_Network.physics_frame;
+
+    // ============= Serialize sides ===============
+    for (u8 i = 0; i < g_MatrixMap->m_SideCnt; i++)
+    {
+        CMatrixSideUnit *side = g_MatrixMap->m_Side + i;
+
+        result.sides.emplace(side->m_Id, SideSnapshot{
+            static_cast<u8>(side->m_Id),
+            side->GetStatus(),
+            side->GetResourcesAmount(TITAN),
+            side->GetResourcesAmount(ELECTRONICS),
+            side->GetResourcesAmount(ENERGY),
+            side->GetResourcesAmount(PLASMA)
+        });
+    }
+
+    // ============= Serialize statics ===============
+    for (CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic(); obj; obj = obj->GetNextLogic())
+    {
+        if (obj->IsBuilding())
+        {
+            CMatrixBuilding *building = obj->AsBuilding();
+            result.buildings.emplace(building->m_NID, BuildingSnapshot{
+                building->m_Kind,
+                static_cast<u8>(building->m_Side),
+                building->GetHitPoint()
+            });
+        }
+        else if (obj->IsLiveRobot())
+        {
+            CMatrixRobotAI *robot = obj->AsRobot();
+            result.robots.emplace(robot->m_NID, RobotSnapshot{
+                robot->m_PosX,
+                robot->m_PosY,
+                robot->GetHitPoint()
+            });
+        }
+    }
+
+    return result;
+}

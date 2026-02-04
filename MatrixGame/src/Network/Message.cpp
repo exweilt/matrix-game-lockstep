@@ -75,4 +75,33 @@ MessageChecksumParams MessageChecksumParams::deserialize_from_bitstream(BitReade
     };
 }
 
+void MessageReportParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u8(this->player_side);
+    writer.write_u8(this->type);
+    writer.write_string(this->data);
+}
+
+MessageReportParams MessageReportParams::deserialize_from_bitstream(BitReader &reader)
+{
+    u8 side = reader.read_u8();
+    u8 type = reader.read_u8();
+    std::string data = reader.read_string();
+
+    return MessageReportParams
+    {
+        side, data, type
+    };
+}
+
+void MessageDesyncParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(this->target_frame);
+}
+
+MessageDesyncParams MessageDesyncParams::deserialize_from_bitstream(BitReader &reader)
+{
+    return MessageDesyncParams { reader.read_u32() };
+}
+
 // } // namespace network

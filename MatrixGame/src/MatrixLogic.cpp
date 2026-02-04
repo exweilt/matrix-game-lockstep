@@ -2987,28 +2987,42 @@ void CMatrixMapLogic::Takt(int step) {
             // || g_Network.next_frame_requested)
         )
     {
-        if (g_Network.physics_frame == 1000) {
-            // g_Network.game_ongoing = false;
-        }
+        // if (g_Network.physics_frame == 1000) {
+        //     // g_Network.game_ongoing = false;
+        // }
         DCP();
-        m_Time += step;
+
         // g_Network.next_frame_requested = false;
+
+        // Execute the commands sides have submitted
         g_Network.consume_input_frame(g_Network.physics_frame);
         DCP();
+
+        // Do the main logic of the simulation
         physics_process(step);
-        g_Network.physics_frame += 1;
-        g_Network.get_frame_record(g_Network.physics_frame); // create record if it is not present yet
         DCP();
-        // network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame));
+
+        // Other logic?!
         g_IFaceList->LogicTakt(step); // ATTENTION
-        g_Network.frames_passed_since_last_check += 1;
+        CMatrixMap::Takt(step);  // graphic takts after logic takt
+
+        // register the new frame
+        g_Network.physics_frame += 1;
+        m_Time += step;
+        g_Network.frames_passed_since_last_check += 1; // to calc physics fps
+        g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
+
         DCP();
-        // Current implementation does not work for frame 0:
-        Message msg = MessageChecksumParams{g_Network.physics_frame - 1, serialize_map(true)};
+
+        // Save the World Snapshot for the new frame, so we can access it later, if desync happened.
+        g_Network.history_game_states.put(g_Network.physics_frame, capture_world_snapshot());
+
+        // send the checksum to the server
+        u64 checksum = g_Network.history_game_states.get(g_Network.physics_frame).hash();
+        Message msg = MessageChecksumParams{g_Network.physics_frame, checksum};
         g_Network.send_message(msg);
         DCP();
 
-        CMatrixMap::Takt(step);  // graphic takts after logic takt
     }
     else
     {

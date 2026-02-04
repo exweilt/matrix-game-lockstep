@@ -29,7 +29,8 @@ enum class MessageType : u8
     PING,
     PONG,
     DESYNC, //happened
-    CHECKSUM
+    CHECKSUM,
+    STATE_REPORT,
 };
 
 struct MessageCommandBatchParams
@@ -42,17 +43,7 @@ struct MessageCommandBatchParams
     MessageCommandBatchParams(const u32 frame, const u8 side) : target_frame(frame), target_side(side), commands() {}
     ~MessageCommandBatchParams() {}
 
-    // u32 get_serialized_size() const
-    // {
-    //     u32 size = sizeof(target_frame) + sizeof(target_side) + sizeof(size_t);
-    //
-    //     for (u32 i = 0; i < commands.size(); i++)
-    //     {
-    //         size += commands[i].get_serialized_size();
-    //     }
-    //
-    //     return size;
-    // }
+
     void serialize_to_bitstream(BitWriter &writer) const;
     static MessageCommandBatchParams deserialize_from_bitstream(BitReader &reader);
 };
@@ -65,7 +56,6 @@ struct MessageJoinParams
     MessageJoinParams(u8 side = 0, std::string name = "Greph") : player_side(side), username(name) {}
     ~MessageJoinParams() {}
 
-    // u32 get_serialized_size() const { return sizeof(player_side) + get_string_serialized_size(username); }
     void serialize_to_bitstream(BitWriter &writer) const;
     static MessageJoinParams deserialize_from_bitstream(BitReader &reader);
 };
@@ -81,6 +71,31 @@ struct MessageChecksumParams
     // u32 get_serialized_size() const { return sizeof(u32) + sizeof(u64); }
     void serialize_to_bitstream(BitWriter &writer) const;
     static MessageChecksumParams deserialize_from_bitstream(BitReader &reader);
+};
+
+struct MessageReportParams
+{
+    u8 player_side;
+    u8 type;    // optional
+    std::string data;
+
+    MessageReportParams(u8 side, std::string dat = "") : player_side(side), type(0), data(dat) {}
+    MessageReportParams(u8 side, std::string dat, u8 typ) : player_side(side), type(typ), data(dat) {}
+    ~MessageReportParams() {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageReportParams deserialize_from_bitstream(BitReader &reader);
+};
+
+struct MessageDesyncParams
+{
+    u32 target_frame;
+
+    MessageDesyncParams(u32 target_frame) : target_frame(target_frame) {}
+    ~MessageDesyncParams() {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageDesyncParams deserialize_from_bitstream(BitReader &reader);
 };
 
 /**
@@ -100,6 +115,8 @@ struct Message
         MessageCommandBatchParams command_batch;
         MessageJoinParams join;
         MessageChecksumParams checksum;
+        MessageReportParams report;
+        MessageDesyncParams desync;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -107,6 +124,8 @@ struct Message
     Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
     Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
     Message(MessageChecksumParams ch)       : type(MessageType::CHECKSUM),      checksum(ch)     {};
+    Message(MessageReportParams r)         : type(MessageType::STATE_REPORT),      report(r)     {};
+    Message(MessageDesyncParams d)         : type(MessageType::DESYNC),      desync(d)     {};
 
     ~Message()
     {
@@ -121,22 +140,15 @@ struct Message
             case MessageType::CHECKSUM:
                 checksum.~MessageChecksumParams();
                 break;
+            case MessageType::STATE_REPORT:
+                report.~MessageReportParams();
+                break;
+            case MessageType::DESYNC:
+                desync.~MessageDesyncParams();
+                break;
             default:;
         }
     }
-
-    // u32 get_serialized_size() const
-    // {
-    //     switch (type)
-    //     {
-    //         case MessageType::COMMAND_BATCH: return sizeof(u8) + command_batch.get_serialized_size();
-    //         case MessageType::JOIN:         return sizeof(u8) + join.get_serialized_size();
-    //         case MessageType::START:        return sizeof(u8);
-    //         case MessageType::CHECKSUM:     return sizeof(u8) + checksum.get_serialized_size();
-    //         case MessageType::DESYNC:       return sizeof(u8);
-    //         default:                        return 0;
-    //     }
-    // }
 
     void serialize_to_bitstream(BitWriter &writer)
     {
@@ -149,7 +161,8 @@ struct Message
             case MessageType::JOIN:             join            .serialize_to_bitstream(writer); break;
             case MessageType::CHECKSUM:         checksum        .serialize_to_bitstream(writer); break;
             case MessageType::START:            break;
-            case MessageType::DESYNC:           break;
+            case MessageType::DESYNC:           desync          .serialize_to_bitstream(writer); break;
+            case MessageType::STATE_REPORT:     report          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
     }
@@ -165,7 +178,9 @@ struct Message
             case MessageType::START:
                 return Message(MessageType::START);
             case MessageType::DESYNC:
-                return Message(MessageType::DESYNC);
+                return MessageDesyncParams::        deserialize_from_bitstream(reader);
+            case MessageType::STATE_REPORT:
+                return MessageReportParams::        deserialize_from_bitstream(reader);
             case MessageType::CHECKSUM:
                 return MessageChecksumParams::      deserialize_from_bitstream(reader);
             default:

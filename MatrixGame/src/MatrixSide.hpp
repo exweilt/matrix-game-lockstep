@@ -92,7 +92,7 @@ struct SRobot {
     SRobot() { m_CrossCatched = false; }
 };
 
-enum ESideStatus {
+enum ESideStatus : u32 {
     SS_NONE,       // side dead (if side is not present, there there is no object for it!)
     SS_ACTIVE,     // active side
     SS_JUST_DEAD,  // just dead side. switch this status to SS_NONE, after you get it

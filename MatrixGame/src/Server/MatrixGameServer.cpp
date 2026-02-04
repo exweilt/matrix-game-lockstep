@@ -23,6 +23,7 @@ std::map<enet_uint32, u8> peer_to_side{}; // TODO: does not work correctly
 // MessageChecksumParams last_frame_checksums[4]{};
 std::map<u32, u64> frame_checksums[4] {}; // physical frame to checksum for every side. Yellow=0
 
+ServerState g_server_state = ServerState::BROADCASTING;
 
 void init_server_host()
 {
@@ -124,83 +125,77 @@ void process_server_network_frame()
             BitReader reader = BitReader(event.packet->data);
             Message m { Message::deserialize_from_bitstream(reader) };
 
-            // // Find to which peer to retranslate the command_batch
-            // ENetPeer* target = nullptr;
-            // for (int i = 0; i < g_server_host->connectedPeers; i++)
-            // {
-            //     if (g_server_host->peers[i].connectID != event.peer->connectID)
-            //     {
-            //         target = g_server_host->peers + i;
-            //         break;
-            //     }
-            // }
-
-            // if (target != nullptr)
-            // {
-            //     std::cout << "Relaying to " << target->connectID << "\n\n";
-            //     enet_peer_send(target, 0, event.packet);
-            // }
-            // else
-            // {
-            //     std::cerr << "No target found.\n";
-            // }
-
-            if (m.type == MessageType::COMMAND_BATCH)
+            if (g_server_state == ServerState::BROADCASTING)
             {
-                std::cout << "Got command batch for " << m.command_batch.target_frame << "\n";
-                // Find to which peer to retranslate the command_batch
-                ENetPeer* target = nullptr;
-                for (int i = 0; i < g_server_host->connectedPeers; i++)
+                if (m.type == MessageType::COMMAND_BATCH)
                 {
-                    if (g_server_host->peers[i].connectID != event.peer->connectID)
+                    std::cout << "Got command batch for " << m.command_batch.target_frame << "\n";
+                    // Find to which peer to retranslate the command_batch
+                    ENetPeer* target = nullptr;
+                    for (int i = 0; i < g_server_host->connectedPeers; i++)
                     {
-                        target = g_server_host->peers + i;
-                        break;
+                        if (g_server_host->peers[i].connectID != event.peer->connectID)
+                        {
+                            target = g_server_host->peers + i;
+                            break;
+                        }
+                    }
+
+                    if (target != nullptr)
+                    {
+                        std::cout << "Relaying to " << target->connectID << "\n\n";
+                        ENetPacket* packet = enet_packet_create(nullptr, event.packet->dataLength, ENET_PACKET_FLAG_RELIABLE);
+                        memcpy(packet->data, event.packet->data, event.packet->dataLength);
+                        enet_peer_send(target, 0, packet);
+                        enet_host_flush(g_server_host);
+                        // enet_packet_destroy(packet);
+
+                    }
+                    else
+                    {
+                        std::cerr << "No target found.\n";
                     }
                 }
-
-                if (target != nullptr)
+                else if (m.type == MessageType::CHECKSUM)
                 {
-                    std::cout << "Relaying to " << target->connectID << "\n\n";
-                    ENetPacket* packet = enet_packet_create(nullptr, event.packet->dataLength, ENET_PACKET_FLAG_RELIABLE);
-                    memcpy(packet->data, event.packet->data, event.packet->dataLength);
-                    enet_peer_send(target, 0, packet);
-                    enet_host_flush(g_server_host);
-                    // enet_packet_destroy(packet);
+                    std::cout << "got checksum: " << m.checksum.checksum << ", for frame: " << m.checksum.target_frame << std::endl;
+                    register_checksum(peer_to_side[event.peer->connectID], m.checksum);
+                    bool is_desync = check_checksums(m.checksum.target_frame);
 
-                }
-                else
-                {
-                    std::cerr << "No target found.\n";
+                    // Panic here
+                    if (is_desync)
+                    {
+                        Message msg { MessageDesyncParams {m.checksum.target_frame} };
+                        BitWriter writer;
+                        msg.serialize_to_bitstream(writer);
+
+                        ENetPacket* packet = enet_packet_create(
+                            writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+                        );
+
+                        // memcpy(packet->data, &msg, msg.get_serialized_size());
+                        enet_host_broadcast(g_server_host, 0, packet);
+                        enet_host_flush(g_server_host);
+                        // enet_packet_destroy(packet);
+
+                        std::cerr << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
+                        // std::cerr << "Panicking!" << m.checksum.target_frame << "\n";
+                        g_server_state = ServerState::DESYNC_HAPPENED;
+                        std::cout << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
+                        std::cout << "\nStopping broadcasting..." << "\n";
+                        // std::terminate();
+                    }
                 }
             }
-
-            if (m.type == MessageType::CHECKSUM)
+            else
             {
-                std::cout << "got checksum: " << m.checksum.checksum << ", for frame: " << m.checksum.target_frame << std::endl;
-                register_checksum(peer_to_side[event.peer->connectID], m.checksum);
-                bool is_desync = check_checksums(m.checksum.target_frame);
-
-                // Panic here
-                if (is_desync)
+                if (m.type == MessageType::STATE_REPORT)
                 {
-                    Message msg { MessageType::DESYNC };
-                    BitWriter writer;
-                    msg.serialize_to_bitstream(writer);
-
-                    ENetPacket* packet = enet_packet_create(
-                        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
-                    );
-
-                    // memcpy(packet->data, &msg, msg.get_serialized_size());
-                    enet_host_broadcast(g_server_host, 0, packet);
-                    enet_host_flush(g_server_host);
-                    // enet_packet_destroy(packet);
-
-                    std::cerr << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
-                    std::cerr << "Panicking!" << m.checksum.target_frame << "\n";
-                    std::cout << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
-                    std::terminate();
+                    std::string filename = "received_report_side" + std::to_string(m.report.player_side) + ".txt";
+                    std::ofstream file(filename, std::ios::out | std::ios::trunc);
+                    file << m.report.data;
+                    std::cout << "Got world snapshot from side: " << std::to_string(m.report.player_side)
+                                << ", saving the data to the file: " << filename << "\n";
                 }
             }
 

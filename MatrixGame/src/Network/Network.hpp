@@ -3,6 +3,8 @@
 #include "Command.hpp"
 #include "Message.hpp"
 #include "Types.hpp"
+#include "RingBuffer.hpp"
+#include "Snapshot.hpp"
 #include "stupid_logger.hpp"
 
 #include <enet/enet.h>
@@ -95,12 +97,16 @@ public:
     std::string server_ip;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
     bool game_ongoing           = false;
+    u32 desync_happened_at_frame = 0;
+    bool desync_happened = false;
     // bool next_frame_requested   = false; // should simulate next physics frame
 
     bool isCompactMode;
     // The next "free" networkable ID.
     // Used for robots, turrets, factories and bases.
     u32 next_nid              = 0;
+
+    RingBuffer<WorldSnapshot, INPUT_BUFFER_SIZE> history_game_states;
 
     // std::vector<Command> current_input{}; // list of all actions for
 
@@ -141,6 +147,9 @@ public:
     void send_message(Message &msg);
 
     void save_commands_journal_to_file();
+
+    std::string commands_journal_to_json_string();
+
     logger_type lgr{isClient2 ? "client2.log" : "client3.log"};
 
     void add_input_for_current_input_frame(const Command &command);

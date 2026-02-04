@@ -57,7 +57,7 @@ enum EBuildingTurrets {
     EBuildingTurrets_FORCE_DWORD = 0x7FFFFFFF
 };
 
-enum EBuildingType {
+enum EBuildingType : u32 {
     BUILDING_BASE = 0,
     BUILDING_TITAN = 1,
     BUILDING_PLASMA = 2,

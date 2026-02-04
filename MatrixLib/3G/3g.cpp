@@ -555,8 +555,8 @@ int L3GRun()
             g_Network.lgr.add_ticks(17);
             //SRemindCore::Takt(delta); ATTENTION
             Stopwatch sw_phys;
-            if (g_Network.game_ongoing
-                && (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
+            if (
+                (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
             {
                 reset_fpu();
 

@@ -765,20 +765,32 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F2 && down)
     {
-        g_Network.save_commands_journal_to_file();
-        // g_Network.current_input = std::vector<Command>();
-        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-        // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
+        // g_Network.save_commands_journal_to_file();
+        //
+        // u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client1_map.json");
+        // g_Network.lgr.debug("Checksum for frame {}: {}")(g_Network.physics_frame, checksum);
+
+        u32 target_frame = g_Network.desync_happened ? g_Network.desync_happened_at_frame : g_Network.physics_frame;
+
+        Message msg
+        {
+            MessageReportParams
+            {
+                g_Network.controllable_side_id, g_Network.history_game_states.get(target_frame).to_json_string()
+                            + g_Network.commands_journal_to_json_string()
+            }
+        };
+
+        g_Network.send_message(msg);
     }
 
-    if (vk == VK_F4 && down)
-    {
-        u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client1_map.json");
-        g_Network.lgr.debug("Checksum for frame {}: {}")(g_Network.physics_frame, checksum);
-        // g_Network.current_input = std::vector<Command>();
-        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
-        // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
-    }
+    // if (vk == VK_F4 && down)
+    // {
+    //
+    //     // g_Network.current_input = std::vector<Command>();
+    //     // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+    //     // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
+    // }
 
     if (vk == VK_F1 && down)
     {
