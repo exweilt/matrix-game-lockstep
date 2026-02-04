@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-#define MOUSE_BORDER          4
+#define MOUSE_BORDER          22 // ATTENTION: was 4
 
 /**
  * @brief The form(high-level window) which holds the game.

@@ -97,6 +97,7 @@ public:
     bool game_ongoing           = false;
     // bool next_frame_requested   = false; // should simulate next physics frame
 
+    bool isCompactMode;
     // The next "free" networkable ID.
     // Used for robots, turrets, factories and bases.
     u32 next_nid              = 0;

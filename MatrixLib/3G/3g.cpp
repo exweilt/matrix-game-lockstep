@@ -150,8 +150,11 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
 
     // ATTENTION
 #ifdef _DEBUG
-    g_ScreenX = 700;
-    g_ScreenY = 700;
+    if (g_Network.isCompactMode)
+    {
+        g_ScreenY = 700;
+        g_ScreenX = 700;
+    }
 #endif
 
     if (cntpar < 1)
@@ -211,7 +214,7 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
         // const bool isClient2 = std::getenv("CLIENT2") != nullptr;
         long x = 0, y = 0;
 
-        if (g_Network.isClient2)
+        if (g_Network.isCompactMode && g_Network.isClient2)
         {
             x = 800;
         }

@@ -354,19 +354,22 @@ void CFormMatrixGame::Takt(int step) {
     g_MatrixMap->Takt(step);
 
     // ATTENTION: Disable for testing
-    // CPoint mp = g_MatrixMap->m_Cursor.GetPos();
-    // if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode()) {
-    //     if (mp.x >= 0 && mp.x < g_ScreenX && mp.y >= 0 && mp.y < g_ScreenY) {
-    //         if (mp.x < MOUSE_BORDER)
-    //             g_MatrixMap->m_Camera.MoveLeft();
-    //         if (mp.x > (g_ScreenX - MOUSE_BORDER))
-    //             g_MatrixMap->m_Camera.MoveRight();
-    //         if (mp.y < MOUSE_BORDER)
-    //             g_MatrixMap->m_Camera.MoveUp();
-    //         if (mp.y > (g_ScreenY - MOUSE_BORDER))
-    //             g_MatrixMap->m_Camera.MoveDown();
-    //     }
-    // }
+    if (!g_Network.isCompactMode)
+    {
+        CPoint mp = g_MatrixMap->m_Cursor.GetPos();
+        if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode()) {
+            if (mp.x >= 0 && mp.x < g_ScreenX && mp.y >= 0 && mp.y < g_ScreenY) {
+                if (mp.x < MOUSE_BORDER)
+                    g_MatrixMap->m_Camera.MoveLeft();
+                if (mp.x > (g_ScreenX - MOUSE_BORDER))
+                    g_MatrixMap->m_Camera.MoveRight();
+                if (mp.y < MOUSE_BORDER)
+                    g_MatrixMap->m_Camera.MoveUp();
+                if (mp.y > (g_ScreenY - MOUSE_BORDER))
+                    g_MatrixMap->m_Camera.MoveDown();
+            }
+        }
+    }
 
     if (g_MatrixMap->m_Console.IsActive())
         return;

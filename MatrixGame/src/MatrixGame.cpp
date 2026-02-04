@@ -68,6 +68,18 @@ const wchar_t* get_cmd_flag_value(const wchar_t* flag, wchar_t** args, int num_a
     return nullptr; // Flag not found
 }
 
+bool cmd_flag_exists(const wchar_t* flag, wchar_t** args, int num_args)
+{
+    for (int i = 1; i < num_args; ++i)
+    {
+        if (wcscmp(args[i], flag) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void print_help()
 {
     std::cout << "Matrix Game Usage:" << std::endl;
@@ -103,6 +115,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     // save arguments into network manager
     g_Network.server_ip = std::string(ip_addr, ip_addr + wcslen(ip_addr));
     g_Network.isClient2 = wcscmp(playing_side, L"2") == 0;
+    g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
+
 
     try {
         uint32_t seed = 0; // ATTENTION: For testing multiplayer
