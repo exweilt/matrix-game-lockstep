@@ -19,6 +19,7 @@
 #include "Effects/MatrixEffectSmokeAndFire.hpp"
 
 #include "CFile.hpp"
+#include "Network/SyncDebugger.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1476,6 +1477,7 @@ correction:
 
         m_PosX -= curlink.x;
         m_PosY -= curlink.y;
+        SYNC_TRACE_VAR(m_PosX);
     }
 }
 

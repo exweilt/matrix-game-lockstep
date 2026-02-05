@@ -73,14 +73,20 @@ struct MessageChecksumParams
     static MessageChecksumParams deserialize_from_bitstream(BitReader &reader);
 };
 
+enum class ReportType {
+    DEFAULT = 0,
+    WORLD_STATE = 1,
+    CODE_TRACE_DESYNC = 2,
+    COMMAND_BATCH = 3,
+};
 struct MessageReportParams
 {
     u8 player_side;
-    u8 type;    // optional
+    ReportType type;    // optional
     std::string data;
 
-    MessageReportParams(u8 side, std::string dat = "") : player_side(side), type(0), data(dat) {}
-    MessageReportParams(u8 side, std::string dat, u8 typ) : player_side(side), type(typ), data(dat) {}
+    MessageReportParams(u8 side, std::string dat = "") : player_side(side), type(ReportType::DEFAULT), data(dat) {}
+    MessageReportParams(u8 side, std::string dat, ReportType typ) : player_side(side), type(typ), data(dat) {}
     ~MessageReportParams() {}
 
     void serialize_to_bitstream(BitWriter &writer) const;

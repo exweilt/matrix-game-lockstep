@@ -78,7 +78,7 @@ MessageChecksumParams MessageChecksumParams::deserialize_from_bitstream(BitReade
 void MessageReportParams::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u8(this->player_side);
-    writer.write_u8(this->type);
+    writer.write_u8(static_cast<u8>(this->type));
     writer.write_string(this->data);
 }
 
@@ -90,7 +90,7 @@ MessageReportParams MessageReportParams::deserialize_from_bitstream(BitReader &r
 
     return MessageReportParams
     {
-        side, data, type
+        side, data, static_cast<ReportType>(type)
     };
 }
 

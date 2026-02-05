@@ -189,15 +189,28 @@ void process_server_network_frame()
             }
             else
             {
+
+
+            }
                 if (m.type == MessageType::STATE_REPORT)
                 {
-                    std::string filename = "received_report_side" + std::to_string(m.report.player_side) + ".txt";
-                    std::ofstream file(filename, std::ios::out | std::ios::trunc);
-                    file << m.report.data;
-                    std::cout << "Got world snapshot from side: " << std::to_string(m.report.player_side)
-                                << ", saving the data to the file: " << filename << "\n";
+                    if (m.report.type == ReportType::DEFAULT)
+                    {
+                        std::string filename = "received_report_side" + std::to_string(m.report.player_side) + ".txt";
+                        std::ofstream file(filename, std::ios::out | std::ios::trunc);
+                        file << m.report.data;
+                        std::cout << "Got world snapshot from side: " << std::to_string(m.report.player_side)
+                                    << ", saving the data to the file: " << filename << "\n";
+                    }
+                    else
+                    {
+                        std::string filename = "code_trace_report_side" + std::to_string(m.report.player_side) + ".json";
+                        std::ofstream file(filename, std::ios::out | std::ios::trunc);
+                        file << m.report.data;
+                        std::cout << "Got code trace report from side: " << std::to_string(m.report.player_side)
+                                    << ", saving the data to the file: " << filename << "\n";
+                    }
                 }
-            }
 
             enet_packet_destroy(event.packet);
             break;

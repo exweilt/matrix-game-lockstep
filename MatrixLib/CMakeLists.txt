@@ -100,6 +100,7 @@ target_include_directories(
         Bitmap
         ../ThirdParty/cereal/include
         "${ENET_SOURCE_DIR}/include"
+        "${XXHASH_DIR}/include"
 )
 
 target_link_libraries(

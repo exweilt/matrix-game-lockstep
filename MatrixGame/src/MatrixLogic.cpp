@@ -19,6 +19,7 @@
 #include <random.hpp>
 
 #include "Network/serializers.hpp"
+#include "Network/SyncDebugger.hpp"
 
 // CPoint MatrixDir45[8]={	CPoint(-1,0),	CPoint(1,0),CPoint(0,-1),CPoint(0,1),
 //						CPoint(-1,-1),CPoint(1,1),CPoint(-1,1),CPoint(1,-1)};
@@ -2991,7 +2992,7 @@ void CMatrixMapLogic::Takt(int step) {
         //     // g_Network.game_ongoing = false;
         // }
         DCP();
-
+        SYNC_TRACE();
         // g_Network.next_frame_requested = false;
 
         // Execute the commands sides have submitted
@@ -3038,7 +3039,7 @@ void CMatrixMapLogic::Takt(int step) {
 
     // check side status
 
-    if ((GetTime() - m_PrevTimeCheckStatus) > 1001) {
+    if (false && (GetTime() - m_PrevTimeCheckStatus) > 1001) {
         // check easter egg :)
         std::wstring mn(MapName());
         utils::to_lower(mn);

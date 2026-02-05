@@ -16,6 +16,7 @@
 #include <chrono>
 
 #include "../../MatrixGame/src/Network/Network.hpp"
+#include "../../MatrixGame/src/Network/SyncDebugger.hpp"
 
 
 #include <utils.hpp>
@@ -495,6 +496,14 @@ int L3GRun()
     {
         Stopwatch sw_total;
         Stopwatch sw_event;
+
+        // std::cout << "===== curr: " << g_Network.physics_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
+        if (!g_SyncLogs.has(g_Network.physics_frame + 1))
+        {
+            SyncFrameLog sync_frame_log(g_Network.physics_frame + 1);
+            g_SyncLogs.put(sync_frame_log.frame, sync_frame_log);
+        }
+
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             DispatchMessage(&msg); // Effectively calls L3GWndProc() handler

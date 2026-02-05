@@ -14,7 +14,7 @@
 #include "stupid_logger.hpp"
 
 #include <enet/enet.h>
-
+#include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
 Network g_Network{};
@@ -223,6 +223,8 @@ void Network::connect_to_server()
 void Network::static_init_networking()
 {
     history_game_states.set_next_frame(1); // skip 0
+    g_SyncLogs.set_next_frame(2);
+
     controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
     // controllable_side_id = static_cast<u8>(isClient2 ? SideID::BLUE : SideID::RED);
     commands_journal.push_back(CommandsFrameRecord(0));

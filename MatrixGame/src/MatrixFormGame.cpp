@@ -42,6 +42,8 @@
 #include <chrono>
 #include <format>
 
+#include "Network/SyncDebugger.hpp"
+
 namespace {
 
 using Input::isKeyPressed;
@@ -780,8 +782,21 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                             + g_Network.commands_journal_to_json_string()
             }
         };
-
         g_Network.send_message(msg);
+
+        // std::cout << "======= curr: " << g_Network.physics_frame << ", tgt: " << target_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
+        // Log the code stack
+
+        Message msg2
+        {
+            MessageReportParams
+            {
+                g_Network.controllable_side_id, sync_logs_to_json(), ReportType::CODE_TRACE_DESYNC
+                // g_Network.controllable_side_id, g_SyncLogs.get(target_frame).to_json_string(), ReportType::CODE_TRACE_DESYNC
+            }
+        };
+        g_Network.send_message(msg2);
+
     }
 
     // if (vk == VK_F4 && down)
@@ -1725,6 +1740,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             }
         }
         if (vk == VK_K && IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj)) {
+            SYNC_TRACE();
             CMatrixMapStatic *f = g_MatrixMap->m_TraceStopObj;
             if (f->GetObjectType() == OBJECT_TYPE_FLYER || f->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
                 CMatrixMapStatic::SortBegin();

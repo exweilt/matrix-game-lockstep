@@ -20,6 +20,8 @@
 
 #include <input.hpp>
 
+#include "Network/SyncDebugger.hpp"
+
 namespace {
 
 using Input::isKeyPressed;
@@ -677,6 +679,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         // m_PosY = m_Matrix._42;
         m_PosX = m_Core->m_GeoCenter.x;
         m_PosY = m_Core->m_GeoCenter.y;
+        SYNC_TRACE_VAR(m_PosX);
 
         RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
 
@@ -1736,6 +1739,7 @@ void CMatrixRobotAI::MoveByMovePath(int ms) {
             else {
                 m_PosX = des_x;
                 m_PosY = des_y;
+                SYNC_TRACE_VAR(m_PosX);
                 StopMoving();
             }
         }
@@ -1893,6 +1897,8 @@ bool CMatrixRobotAI::Damage(
         if (weap == WEAPON_BIGBOOM)
             damage -= damage * m_BombProtect;
         m_HitPoint -= damage;
+        // std::cout << "===== tgt: " << g_Network.physics_frame + 1 << ", logs: " << g_SyncLogs.next_free << std::endl;
+        SYNC_TRACE_VAR(m_HitPoint);
 
         if (m_HitPoint >= 0) {
             m_PB.Modify(m_HitPoint * m_MaxHitPointInversed);
@@ -2639,6 +2645,7 @@ void CMatrixRobotAI::LowLevelMove(int ms, const D3DXVECTOR3 &dest, bool robot_co
 
     m_PosX += genetic_mutated_velocity.x + result_coll.x;
     m_PosY += genetic_mutated_velocity.y + result_coll.y;
+    SYNC_TRACE_VAR(m_PosX);
 
     if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC) {
         if (rotate || result_coll.x != 0 || result_coll.y != 0 || GetColsWeight2() ||
@@ -2705,6 +2712,7 @@ void CMatrixRobotAI::LowLevelDecelerate(int ms, bool robot_coll, bool obst_coll)
 
     m_PosX += genetic_mutated_velocity.x + result_coll.x;
     m_PosY += genetic_mutated_velocity.y + result_coll.y;
+    SYNC_TRACE_VAR(m_PosX);
     JoinToGroup();
 }
 

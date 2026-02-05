@@ -7,7 +7,7 @@
 #include "MatrixRobot.hpp"
 #include "Stopwatch.hpp"
 
-#define PROFILING
+// #define PROFILING
 
 std::string WorldSnapshot::to_json_string()
 {

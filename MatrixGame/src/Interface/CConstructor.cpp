@@ -12,6 +12,7 @@
 #include "CIFaceMenu.h"
 #include "CHistory.h"
 #include "../Effects/MatrixEffectWeapon.hpp"
+#include "Network/SyncDebugger.hpp"
 
 CConstructor::CConstructor() {
     m_ViewPosX = 0;
@@ -86,6 +87,7 @@ SNewBorn *CConstructor::ProduceRobot(void *) {
         m_Build->RobotWeaponInit();
         m_Build->m_PosX = m_Base->m_Pos.x;
         m_Build->m_PosY = m_Base->m_Pos.y;
+        SYNC_TRACE_VAR(m_Build->m_PosX);
 
         m_Build->CalcRobotMass();
         if (m_Base->m_Angle == 0)
@@ -176,6 +178,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
         m_Build->RobotWeaponInit();
         m_Build->m_PosX = m_Base->m_Pos.x;
         m_Build->m_PosY = m_Base->m_Pos.y;
+        SYNC_TRACE_VAR(m_Build->m_PosX);
 
         m_Build->CalcRobotMass();
         if (m_Base->m_Angle == 0)
@@ -1440,6 +1443,7 @@ CMatrixRobotAI *SSpecialBot::GetRobot(const D3DXVECTOR3 &pos, int side_id) {
 
     robot->m_PosX = pos.x;
     robot->m_PosY = pos.y;
+    SYNC_TRACE_VAR(robot->m_PosX);
 
     robot->CalcRobotMass();
 

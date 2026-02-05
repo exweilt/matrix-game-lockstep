@@ -72,6 +72,7 @@ else()
         -Wno-empty-body
         -Wno-pedantic
         -Wno-uninitialized
+        -Wno-unused-parameter
     )
 
     set(LINK_OPTIONS
