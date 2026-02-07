@@ -316,6 +316,7 @@ void CMatrixRobotAI::PauseTakt(int cms) {
 
 void CMatrixRobotAI::LogicTakt(int ms) {
     DTRACE();
+    SYNC_TRACE_VAR(m_PosX);
 
     if (0) {
     do_animation:;
@@ -492,7 +493,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                 return;
         }
     }
-
+    SYNC_TRACE_VAR(m_PosX);
     DCP();
 
     if (IsCrazy()) {
@@ -581,7 +582,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
         return;
     }
-
+    SYNC_TRACE_VAR(m_PosX);
     DCP();
 
     if (m_CurrState == ROBOT_CARRYING) {
@@ -711,7 +712,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         *(D3DXVECTOR3 *)&m_Core->m_Matrix._31 = LERPVECTOR(mul, *(D3DXVECTOR3 *)&m_Core->m_Matrix._31, up);
     }
     DCP();
-
+    SYNC_TRACE_VAR(m_PosX);
     // soles
     if (m_CurrState != ROBOT_IN_SPAWN) {
         DCP();
@@ -763,6 +764,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     else if (m_CurrState == ROBOT_BASE_MOVEOUT) {
         DCP();
         LowLevelMove(ms, m_Forward * 100, true, false);
+        SYNC_TRACE_VAR(m_PosX);
         DCP();
         RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
 
@@ -823,7 +825,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         }
     }
     DCP();
-
+    SYNC_TRACE_VAR(m_PosX);
     // TODO : fire while capture here!
 
     if (this != g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
@@ -984,6 +986,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     // if(this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()){
     //    ASSERT(1);
     //}
+    SYNC_TRACE_VAR(m_PosX);
     int cnt = 0;
     while (cnt < m_OrdersInPool) {
         float f1 = 0, f2 = 0, f3 = 0, x = 0, y = 0;
@@ -991,6 +994,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
         CMatrixBuilding *factory = NULL;
         int mx = 0, my = 0, d = 0;
         bool StillMoving = false;
+        SYNC_TRACE_VAR(m_PosX);
         switch (m_OrdersList[0].GetOrderType()) {
             case ROT_MOVE_TO:
             case ROT_MOVE_TO_BACK: {
@@ -1001,12 +1005,14 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                         D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
                         dest += m_Forward * m_maxSpeed;
                         LowLevelMove(ms, dest, true, true, false);
+                        SYNC_TRACE_VAR(m_PosX);
                     }
                     else if (isKeyPressed(KA_UNIT_BACKWARD) || isKeyPressed(KA_UNIT_BACKWARD_ALT))
                     {
                         D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
                         dest -= m_Forward * m_maxSpeed;
                         LowLevelMove(ms, dest, true, true, false, true);
+                        SYNC_TRACE_VAR(m_PosX);
                     }
                     else {
                         StopMoving();
@@ -1037,7 +1043,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                 //	            if(!(g_MatrixMap->PlaceFindNear(m_Unit[0].u1.s1.m_Kind-1,4,m_MapX,m_MapY,this))) ERROR_E;
 
                 ZoneCurFind();
-
+                SYNC_TRACE_VAR(m_PosX);
                 if (m_ZoneCur < 0) {
                     if (m_MovePathCnt > 0)
                         MoveByMovePath(ms);
@@ -1106,6 +1112,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                 DCP();
                 if (0 /*this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject()*/) {
                     LowLevelDecelerate(ms, true, true);
+                    SYNC_TRACE_VAR(m_PosX);
                     if (m_Speed <= ZERO_VELOCITY) {
                         LowLevelStop();
                         RemoveOrderFromTop();
@@ -1250,9 +1257,11 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                         SETFLAG(m_ObjectState, ROBOT_FLAG_DISABLE_MANUAL);
 
                         LowLevelMove(ms, D3DXVECTOR3(factory->m_Pos.x, factory->m_Pos.y, 0), false, false);
+                        SYNC_TRACE_VAR(m_PosX);
                     }
                     else {
                         LowLevelMove(ms, D3DXVECTOR3(factory->m_Pos.x, factory->m_Pos.y, 0), true, true);
+                        SYNC_TRACE_VAR(m_PosX);
                     }
 
                     if (fabs(m_PosX - factory->m_Pos.x) < 2.0f && fabs(m_PosY - factory->m_Pos.y) < 2.0f) {
@@ -1718,6 +1727,7 @@ void CMatrixRobotAI::MoveByMovePath(int ms) {
     bool globalend = (m_DesX == m_MovePath[m_MovePathCur + 1].x) && (m_DesY == m_MovePath[m_MovePathCur + 1].y);
 
     LowLevelMove(ms, D3DXVECTOR3(des_x, des_y, 0), true, true, globalend && (m_MovePathCur + 1) == (m_MovePathCnt - 1));
+    SYNC_TRACE_VAR(m_PosX);
 
     D3DXVECTOR2 vMe = D3DXVECTOR2(m_PosX, m_PosY) - D3DXVECTOR2(sou_x, sou_y);
     D3DXVECTOR2 vPath = D3DXVECTOR2(des_x, des_y) - D3DXVECTOR2(sou_x, sou_y);
@@ -2583,6 +2593,7 @@ bool CMatrixRobotAI::Seek(const D3DXVECTOR3 &dest, bool &rotate, bool end_path, 
 
 void CMatrixRobotAI::LowLevelMove(int ms, const D3DXVECTOR3 &dest, bool robot_coll, bool obst_coll, bool end_path,
                                   bool back) {
+    SYNC_TRACE_VAR(m_PosX);
     bool rotate = false;
     bool vel = Seek(dest, rotate, end_path, back);
 

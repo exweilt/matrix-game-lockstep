@@ -355,7 +355,7 @@ void CFormMatrixGame::Takt(int step) {
 
     g_MatrixMap->Takt(step);
 
-    // ATTENTION: Disable for testing
+
     if (!g_Network.isCompactMode)
     {
         CPoint mp = g_MatrixMap->m_Cursor.GetPos();
@@ -791,8 +791,8 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
         {
             MessageReportParams
             {
-                g_Network.controllable_side_id, sync_logs_to_json(), ReportType::CODE_TRACE_DESYNC
-                // g_Network.controllable_side_id, g_SyncLogs.get(target_frame).to_json_string(), ReportType::CODE_TRACE_DESYNC
+                // g_Network.controllable_side_id, sync_logs_to_json(), ReportType::CODE_TRACE_DESYNC
+                g_Network.controllable_side_id, g_SyncLogs.get(target_frame).to_json_string(), ReportType::CODE_TRACE_DESYNC
             }
         };
         g_Network.send_message(msg2);

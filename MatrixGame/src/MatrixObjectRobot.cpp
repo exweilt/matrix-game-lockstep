@@ -1405,6 +1405,7 @@ SPneumaticData *CMatrixRobot::m_Pneumaic;
 int g_fcnt;
 
 void CMatrixRobot::LinkPneumatic(void) {
+    SYNC_TRACE_VAR(m_PosX);
     if (!FLAG(m_ObjectState, ROBOT_FLAG_LINKED))
         return;  // never linked
     if (!m_Unit[0].m_Graph->IsAnim(ANIMATION_NAME_MOVE) && !m_Unit[0].m_Graph->IsAnim(ANIMATION_NAME_MOVE_BACK))

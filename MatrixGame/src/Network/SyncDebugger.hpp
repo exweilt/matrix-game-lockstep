@@ -25,7 +25,7 @@ struct SyncLogEntry
 {
     u32 line;
     const char* file;
-    u32 value;
+    f32 value;
     // u64 running_hash;
 
     template <class Archive>
@@ -53,7 +53,7 @@ struct SyncFrameLog
         XXH64_reset(hash_state, 0);
     }
 
-    void trace(const char* file, u32 line, u32 val, const char* varName = "");
+    void trace(const char* file, u32 line, f32 val, const char* varName = "");
 
     inline void hash_combine([[maybe_unused]] u32 val)
     {

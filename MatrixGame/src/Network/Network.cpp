@@ -270,8 +270,12 @@ void Network::save_commands_journal_to_file()
 std::string Network::commands_journal_to_json_string()
 {
     std::ostringstream ss;
-    cereal::JSONOutputArchive oarchive(ss);
-    oarchive(cereal::make_nvp("commands_journal", commands_journal));
+
+    {
+        cereal::JSONOutputArchive oarchive(ss);
+        oarchive(cereal::make_nvp("commands_journal", commands_journal));
+    }
+
     return ss.str();
 }
 

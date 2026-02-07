@@ -12,8 +12,11 @@
 std::string WorldSnapshot::to_json_string()
 {
     std::ostringstream ss;
-    cereal::JSONOutputArchive oarchive(ss);
-    oarchive(cereal::make_nvp("world_snapshot", *this));
+
+    {
+        cereal::JSONOutputArchive oarchive(ss);
+        oarchive(cereal::make_nvp("world_snapshot", *this));
+    }
     return ss.str();
 }
 

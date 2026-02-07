@@ -14,6 +14,7 @@
 #include "MatrixObjectCannon.hpp"
 
 #include "Mem.hpp"
+#include "Network/SyncDebugger.hpp"
 
 bool FreeObjResources(uintptr_t user) {
     DTRACE();
@@ -83,6 +84,7 @@ CMatrixMapStatic::~CMatrixMapStatic() {
 
 void CMatrixMapStatic::StaticTakt(int ms) {
     DTRACE();
+    SYNC_TRACE();
 
     if (IsAblaze()) {
         DCP();
@@ -293,6 +295,7 @@ void CMatrixMapStatic::ProceedLogic(int takts) {
     //__int64 tv[7];
     // int tc[7];
     // for(int i=0;i<7;i++) { tv[i]=0; tc[i]=0; }
+    SYNC_TRACE();
 
     DTRACE();
     CMatrixMapStatic *ms;
@@ -303,6 +306,7 @@ void CMatrixMapStatic::ProceedLogic(int takts) {
             //__int64 t1,t2;
             // EObjectType ot=ms->GetObjectType();
             // QueryPerformanceCounter((LARGE_INTEGER *)(&t1));
+            SYNC_TRACE();
             ms->StaticTakt(takts);
             // QueryPerformanceCounter((LARGE_INTEGER *)(&t2));
             // tv[ot]+=t2-t1;
