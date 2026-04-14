@@ -29,6 +29,7 @@ enum ERes {
     ERes_FORCE_DWORD = 0x7FFFFFFF
 };
 
+// TODO: change to u8 ?
 enum ERobotUnitKind : unsigned int {
     RUK_UNKNOWN = 0,
 

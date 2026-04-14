@@ -6,9 +6,14 @@
 #pragma once
 
 #include "CReminder.hpp"
+#include "Types.hpp"
 #include "VectorObject.hpp"
 
 #include <utils.hpp>
+#include <Network/Network.hpp>
+
+// extern u32 g_next_nid;
+// #include "Network/StateManager.hpp"
 
 class CMatrixMapGroup;
 typedef CMatrixMapGroup *PCMatrixMapGroup;
@@ -229,8 +234,8 @@ class CMatrixMapStatic : public CMain {
     static CMatrixMapStatic *m_FirstVisNew;
     static CMatrixMapStatic *m_LastVisNew;
 
-    static CMatrixMapStatic *m_FirstVisOld;
-    static CMatrixMapStatic *m_LastVisOld;
+    static CMatrixMapStatic *m_FirstVisOld; // Effectively Not used
+    static CMatrixMapStatic *m_LastVisOld;  // Effectively Not used
 
     CMatrixMapStatic *m_NextVis; // Not used
     CMatrixMapStatic *m_PrevVis; // Not used
@@ -284,6 +289,13 @@ protected:
     }
 
 public:
+    /**
+    * @brief Unique ID used in Networking command sync.
+    *
+    * TODO: Probably this unique ID space should only be shared by buildings, factories, turrets and robots.
+    */
+    const u32 m_NID{g_Network.next_nid++};
+
     CMatrixMapStatic *m_NextStackItem;
     CMatrixMapStatic *m_PrevStackItem;
 
@@ -412,12 +424,13 @@ public:
     static void SortEndDrawShadowStencil(void);
     static void SortEndGraphicTakt(int step);
 
+    // Updates the distances to the cam
     static void CalcDistances(void);
 
     static void RemoveFromSorted(CMatrixMapStatic *ms);
 
     static int GetVisObjCnt(void);
-    static CMatrixMapStatic *GetVisObj(int i);
+    static CMatrixMapStatic *GetVisObj(int i); // used in MultiSelect
 
     inline EObjectType GetObjectType(void) const { return m_Core->m_Type; }
     inline const D3DXVECTOR3 &GetGeoCenter(void) const { return m_Core->m_GeoCenter; }
@@ -464,7 +477,7 @@ public:
 
     virtual void RNeed(dword need) = 0;  // Запрашиваем нужные ресурсы объекта
 
-    virtual void Takt(int cms) = 0;
+    virtual void Takt(int cms) = 0; // not logic
     virtual void LogicTakt(int cms) = 0;
 
     virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const = 0;

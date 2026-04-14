@@ -106,7 +106,7 @@ SNewBorn *CConstructor::ProduceRobot(void *) {
 
         m_NewBorn->m_Robot = m_Build;
 
-        CMatrixSideUnit *si = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *si = g_MatrixMap->GetControllableSide();
 
         if (si->GetTeam(0)->m_RobotCnt < si->GetTeam(1)->m_RobotCnt &&
             si->GetTeam(0)->m_RobotCnt < si->GetTeam(2)->m_RobotCnt)
@@ -189,8 +189,8 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
         m_Build->m_HullForward = m_Build->m_Forward;
 
-        if (m_Base->m_Side == PLAYER_SIDE) {
-            CMatrixSideUnit *si = g_MatrixMap->GetPlayerSide();
+        if (m_Base->m_Side == g_Network.controllable_side_id) {
+            CMatrixSideUnit *si = g_MatrixMap->GetControllableSide();
             int cfg_num = si->m_ConstructPanel->m_CurrentConfig;
         }
 
@@ -210,7 +210,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
         //}
 
-        if (m_Base->m_Side == PLAYER_SIDE)
+        if (m_Base->m_Side == g_Network.controllable_side_id)
             m_Build->CreateTextures();
         m_Build->SetBase(m_Base);
         GetConstructionName((CMatrixRobotAI *)m_Build);
@@ -218,15 +218,32 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
     }
 }
 
-void __stdcall CConstructor::RemoteBuild(void *pObj) {
+void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
     DTRACE();
-    if (m_Base->m_Side != PLAYER_SIDE) {
+    DCP();
+    if (m_Base->m_Side != g_Network.controllable_side_id) {
         return;
     }
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
+    DCP();
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
     g_ConfigHistory->AddConfig(&player_side->m_ConstructPanel->m_Configs[cfg_num]);
+
+    // // order n robots
+    // i32 robot_count = g_IFaceList->m_RCountControl->GetCounter();
+    // // for (int i = 0; i < robot_count; i++) {
+    // //     StackRobot(pObj);
+    // // }
+    // DCP();
+    // std::vector<ERobotUnitKind> weapons{};
+    // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+    // {
+    //     weapons.emplace_back(m_Weapon[i].m_Unit.m_nKind);
+    // }
+    // DCP();
+    // NetOrderConstruct(m_Chassis.m_nKind, m_Armor.m_Unit.m_nKind, m_Head.m_nKind, weapons, robot_count, m_Base->m_NID);
+    // DCP();
 
     for (int i = 0; i < g_IFaceList->m_RCountControl->GetCounter(); i++) {
         StackRobot(pObj);
@@ -244,6 +261,7 @@ void __stdcall CConstructor::RemoteBuild(void *pObj) {
     }
     g_IFaceList->m_RCountControl->Reset();
     g_IFaceList->m_RCountControl->CheckUp();
+    DCP();
 }
 void CConstructor::BeforeRender(void) {
     // static float za = 0;
@@ -306,7 +324,6 @@ void CConstructor::Render(void) {
     else {
         ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 0, 0), 1.0f, 0));
     }
-
     float h = m_Robot->GetChassisHeight();
 
     D3DXMatrixIdentity(&matWorld);
@@ -356,7 +373,7 @@ void CConstructor::Render(void) {
 void __stdcall CConstructor::RemoteOperateUnit(void *pObj) {
     DTRACE();
     CIFaceButton *pButton = (CIFaceButton *)pObj;
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     if (!pButton || !player_side)
         return;
@@ -451,8 +468,8 @@ void CConstructor::SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pil
     if (g_IFaceList && g_IFaceList->m_RCountControl)
         g_IFaceList->m_RCountControl->Reset();
 
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
-    int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
+    int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig; // SEG
     SRobotConfig *old_cfg = NULL;
 
     if (type == MRT_HEAD) {
@@ -517,7 +534,7 @@ void CConstructor::SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pil
         player_side->m_ConstructPanel->FocusElement(g_IFaceList->m_WeaponPilon[pilon]);
 
         InsertUnits();
-        GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+        GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
         g_IFaceList->CreateSummPrice();
         g_IFaceList->m_RCountControl->CheckUp();
         return;
@@ -559,14 +576,14 @@ void CConstructor::SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pil
         player_side->m_ConstructPanel->FocusElement(g_IFaceList->m_WeaponPilon[4]);
 
         InsertUnits();
-        GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+        GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
         g_IFaceList->CreateSummPrice();
         g_IFaceList->m_RCountControl->CheckUp();
         return;
     }
 
     OperateUnit(type, kind);
-    GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+    GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
 
     if (type == MRT_HEAD) {
         player_side->m_ConstructPanel->UnFocusElement(g_IFaceList->m_HeadPilon);
@@ -616,7 +633,7 @@ void CConstructor::SuperDjeans(ERobotUnitType type, ERobotUnitKind kind, int pil
 
 void CConstructor::Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon) {
     g_IFaceList->m_RCountControl->Reset();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
 
     if (type == MRT_WEAPON && pilon != 4) {
@@ -654,7 +671,7 @@ void CConstructor::Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon
         player_side->m_ConstructPanel->SetLabelsAndPrice(MRT_WEAPON, kind);
 
         InsertUnits();
-        GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+        GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
         player_side->m_ConstructPanel->m_FocusedElement = g_IFaceList->m_Weapon[kind];
         g_IFaceList->CreateSummPrice();
         g_IFaceList->m_RCountControl->CheckUp();
@@ -692,7 +709,7 @@ void CConstructor::Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon
         player_side->m_ConstructPanel->SetLabelsAndPrice(MRT_WEAPON, kind);
 
         InsertUnits();
-        GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+        GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
         player_side->m_ConstructPanel->m_FocusedElement = g_IFaceList->m_Weapon[kind];
 
         g_IFaceList->CreateSummPrice();
@@ -703,7 +720,7 @@ void CConstructor::Djeans007(ERobotUnitType type, ERobotUnitKind kind, int pilon
 
     OperateUnit(type, kind);
     g_IFaceList->CreateSummPrice();
-    GetConstructionName(g_MatrixMap->GetPlayerSide()->m_Constructor->GetRenderBot());
+    GetConstructionName(g_MatrixMap->GetControllableSide()->m_Constructor->GetRenderBot());
 
     if (type == MRT_HEAD) {
         player_side->m_ConstructPanel->m_FocusedElement = g_IFaceList->m_Head[int(kind)];
@@ -767,7 +784,7 @@ void CConstructor::OperateUnit(ERobotUnitType type, ERobotUnitKind kind) {
         }
     }
 
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
 
     m_nUnitCnt = 0;
@@ -871,7 +888,7 @@ void CConstructor::BuildSpecialBot(const SSpecialBot &bot) {
 
 void CConstructor::OperateCurrentConstruction() {
     DTRACE();
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
     ResetConstruction();
 
@@ -1065,7 +1082,7 @@ bool CConstructorPanel::IsEnoughResourcesForThisPieceOfShit(int pilon, ERobotUni
     int plus_res[4];
     int item_res[4];
 
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
     ps->m_Constructor->GetConstructionPrice(total_res);
     ZeroMemory(minus_res, sizeof(int) * 4);
     ZeroMemory(plus_res, sizeof(int) * 4);

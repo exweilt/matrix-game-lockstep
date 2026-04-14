@@ -22,11 +22,16 @@
 #include "Interface/CCounter.h"
 #include "MatrixGamePathUtils.hpp"
 
+#include "Network/Command.hpp"
+#include "Network/Message.hpp"
+#include "Network/Network.hpp"
+
 #include <input.hpp>
 
 #include <time.h>
 #include <sys/timeb.h>
 #include "stdio.h"
+#include "Network/serializers.hpp"
 
 #include <utils.hpp>
 #include <stupid_logger.hpp>
@@ -238,6 +243,14 @@ void CFormMatrixGame::Leave(void) {
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
+    g_MatrixMap->m_DI.T(L"Physics FPS", utils::format(L"%d", g_Network.physics_fps).c_str());
+    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_Network.physics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_Network.input_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_Network.graphics_frame).c_str());
+    g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_Network.total_ms).c_str());
+    g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", g_Network.controllable_side_id).c_str());
+    g_MatrixMap->m_DI.T(L"game_ongoing", utils::format(L"%d", g_Network.game_ongoing).c_str());
+
     if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
     {
         return;
@@ -340,18 +353,21 @@ void CFormMatrixGame::Takt(int step) {
 
     g_MatrixMap->Takt(step);
 
-    CPoint mp = g_MatrixMap->m_Cursor.GetPos();
 
-    if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode()) {
-        if (mp.x >= 0 && mp.x < g_ScreenX && mp.y >= 0 && mp.y < g_ScreenY) {
-            if (mp.x < MOUSE_BORDER)
-                g_MatrixMap->m_Camera.MoveLeft();
-            if (mp.x > (g_ScreenX - MOUSE_BORDER))
-                g_MatrixMap->m_Camera.MoveRight();
-            if (mp.y < MOUSE_BORDER)
-                g_MatrixMap->m_Camera.MoveUp();
-            if (mp.y > (g_ScreenY - MOUSE_BORDER))
-                g_MatrixMap->m_Camera.MoveDown();
+    if (!g_Network.isCompactMode)
+    {
+        CPoint mp = g_MatrixMap->m_Cursor.GetPos();
+        if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode()) {
+            if (mp.x >= 0 && mp.x < g_ScreenX && mp.y >= 0 && mp.y < g_ScreenY) {
+                if (mp.x < MOUSE_BORDER)
+                    g_MatrixMap->m_Camera.MoveLeft();
+                if (mp.x > (g_ScreenX - MOUSE_BORDER))
+                    g_MatrixMap->m_Camera.MoveRight();
+                if (mp.y < MOUSE_BORDER)
+                    g_MatrixMap->m_Camera.MoveUp();
+                if (mp.y > (g_ScreenY - MOUSE_BORDER))
+                    g_MatrixMap->m_Camera.MoveDown();
+            }
         }
     }
 
@@ -430,7 +446,6 @@ void selcallback(CMatrixMapStatic *ms, uintptr_t param) {
 
 void CFormMatrixGame::MouseMove(int x, int y) {
     DTRACE();
-
     CMatrixSideUnit *p_side = g_MatrixMap->GetPlayerSide();
 
     if (g_MatrixMap->IsMouseCam()) {
@@ -554,7 +569,8 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
 
     if (status == B_UP && key == VK_LBUTTON) {
         DCP();
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+        // CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
         if (CMultiSelection::m_GameSelection) {
             SCallback cbs;
             cbs.mp = CPoint(-1, -1);
@@ -565,8 +581,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
 
             if (1 /*cbs.calls > 0*/) {
                 DCP();
-                if (ps->GetCurSelGroup()->GetFlyersCnt() > 1 ||
-                    ps->GetCurSelGroup()->GetRobotsCnt() > 1 ||
+                if (ps->GetCurSelGroup()->GetFlyersCnt() > 1 || ps->GetCurSelGroup()->GetRobotsCnt() > 1 ||
                     (ps->GetCurSelGroup()->GetFlyersCnt() + ps->GetCurSelGroup()->GetRobotsCnt()) > 1)
                 {
                     ps->GetCurSelGroup()->RemoveBuildings();
@@ -590,7 +605,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                     if (ps->GetCurGroup() && ps->GetCurGroup()->GetRobotsCnt() && ps->GetCurGroup()->GetFlyersCnt()) {
                         ps->GetCurGroup()->SortFlyers();
                     }
-                    ps->Select(GROUP, NULL);
+                    ps->Select(SELECTION_GROUP, NULL);
                 }
                 else if (ps->GetCurSelGroup()->GetFlyersCnt() == 1 && !ps->GetCurSelGroup()->GetRobotsCnt()) {
                     DCP();
@@ -606,7 +621,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                             ps->GetCurGroup()->GetFlyersCnt()) {
                             ps->GetCurGroup()->SortFlyers();
                         }
-                        ps->Select(GROUP, NULL);
+                        ps->Select(SELECTION_GROUP, NULL);
                     }
                     else {
                         ps->SetCurGroup(ps->CreateGroupFromCurrent());
@@ -628,7 +643,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                             ps->GetCurGroup()->GetFlyersCnt()) {
                             ps->GetCurGroup()->SortFlyers();
                         }
-                        ps->Select(GROUP, NULL);
+                        ps->Select(SELECTION_GROUP, NULL);
                     }
                     else {
                         ps->SetCurGroup(ps->CreateGroupFromCurrent());
@@ -666,14 +681,14 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         DCP();
         if (status == B_DOWN && key == VK_RBUTTON) {
             DCP();
-            g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
         }
         else if (status == B_DOWN && key == VK_LBUTTON) {
             DCP();
-            if (CMultiSelection::m_GameSelection == NULL &&
-                !g_MatrixMap->GetPlayerSide()->IsArcadeMode() &&
-                !IS_PREORDERING_NOSELECT &&
-                g_MatrixMap->GetPlayerSide()->m_CurrentAction != BUILDING_TURRET)
+            // return;
+            if (CMultiSelection::m_GameSelection == NULL && !g_MatrixMap->GetControllableSide()->IsArcadeMode() &&
+                !IS_PREORDERING_NOSELECT && g_MatrixMap->GetControllableSide()->m_CurrentAction != BUILDING_TURRET)
             {
                 int dx = 0, dy = 0;
                 if (IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj) && IS_TRACE_UNIT(g_MatrixMap->m_TraceStopObj)) {
@@ -691,7 +706,8 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                                                              TRACE_ROBOT | TRACE_BUILDING, selcallback, (uintptr_t)&cbs);
                 }
             }
-            g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_RBUTTON) {
             DCP();
@@ -704,7 +720,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         }
         else if (status == B_DOUBLE && key == VK_LBUTTON) {
             DCP();
-            g_MatrixMap->GetPlayerSide()->OnLButtonDouble(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonDouble(CPoint(x, y));
         }
         else if (status == B_DOUBLE && key == VK_RBUTTON) {
             DCP();
@@ -731,6 +747,94 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
     {
         Input::onKeyUp(vk);
         g_MatrixMap->m_VKeyDown = 0;
+    }
+
+    if (vk == VK_NUMPAD5 && down)
+    {
+        // g_Network.game_ongoing = !g_Network.game_ongoing;
+        // if (network::commands_journal.size() > g_physics_frame)
+        // {
+        //     nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        //     if (frame->is_side_input_ready(2) && frame->is_side_input_ready(3))
+        //     {
+        //         next_frame_requested = true;
+        //         network::commands_journal.push_back(nw::CommandsFrameRecord(g_physics_frame + 1));
+        //     }
+        // }
+    }
+
+    if (vk == VK_F2 && down)
+    {
+        // g_Network.save_commands_journal_to_file();
+        //
+        // u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client1_map.json");
+        // g_Network.lgr.debug("Checksum for frame {}: {}")(g_Network.physics_frame, checksum);
+
+        // u32 target_frame = g_Network.desync_happened ? g_Network.desync_happened_at_frame : g_Network.physics_frame;
+        //
+        // Message msg
+        // {
+        //     MessageReportParams
+        //     {
+        //         g_Network.controllable_side_id, g_Network.history_game_states.get(target_frame).to_json_string()
+        //                     + g_Network.commands_journal_to_json_string()
+        //     }
+        // };
+        // g_Network.send_message(msg);
+        //
+        // // std::cout << "======= curr: " << g_Network.physics_frame << ", tgt: " << target_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
+        // // Log the code stack
+        //
+        // Message msg2
+        // {
+        //     MessageReportParams
+        //     {
+        //         // g_Network.controllable_side_id, sync_logs_to_json(), ReportType::CODE_TRACE_DESYNC
+        //         g_Network.controllable_side_id, g_SyncLogs.get(target_frame).to_json_string(), ReportType::CODE_TRACE_DESYNC
+        //     }
+        // };
+        // g_Network.send_message(msg2);
+
+    }
+
+    // if (vk == VK_F4 && down)
+    // {
+    //
+    //     // g_Network.current_input = std::vector<Command>();
+    //     // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+    //     // frame->set_side_inputs(controllable_side_id, std::vector<nw::Command>());
+    // }
+
+    if (vk == VK_F1 && down)
+    {
+        g_Network.approve_final_input(g_Network.physics_frame);
+
+        // MoveWindow(g_Wnd, 100, 100, 700, 700, FALSE);
+
+        // nw::CommandsFrameRecord* frame = nw::get_current_frame_record();
+        // std::vector<nw::Command> commands{};
+        // commands.push_back(nw::CommandMoveParams{2910, {3000.0f, 1600.0f, 0}});
+        // frame->set_side_inputs(3, commands);
+
+
+
+        // nw::CommandMoveParams m1 = nw::CommandMoveParams(10, D3DXVECTOR3 {100, 5, 100});
+        // nw::CommandMoveParams m2 = nw::CommandMoveParams(11, D3DXVECTOR3 {100, 5, 100});
+        // nw::Message msg { nw::MessageCommandBatchParams{0, 1} };
+        // msg.command_batch.commands.push_back(m1);
+        // msg.command_batch.commands.push_back(m2);
+        //
+        // u32 sz = msg.get_serialized_size();
+        //
+        // void *from = malloc(sz + 5);
+        // msg.serialize_to_buffer(static_cast<u8*>(from));
+        //
+        // void *to = malloc(sz);
+        // memcpy(to, from, sz);
+        //
+        // nw::Message msg2 = nw::Message::deserialize_from_buffer(static_cast<u8*>(to));
+        // nw::MessageCommandBatchParams com_batch2 = msg2.command_batch;
+        // return;
     }
 
     if (g_MatrixMap->m_Console.IsActive())
@@ -876,7 +980,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             }
         }
         else {
-            CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+            CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
             if (!FLAG(g_IFaceList->m_IfListFlags, ORDERING_MODE) /*!IS_PREORDERING_NOSELECT*/) {
                 //Если мы не в режиме приказа
 
@@ -1002,7 +1106,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                             CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
                             for (; ms; ms = ms->GetNextLogic()) {
                                 if (ms == ps->m_ActiveObject && ms->IsLiveBuilding() &&
-                                    ms->AsBuilding()->m_Side == PLAYER_SIDE) {
+                                    ms->AsBuilding()->m_Side == g_Network.controllable_side_id) {
                                     ms->AsBuilding()->CreatePlacesShow();
                                     break;
                                 }
@@ -1164,7 +1268,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == PLAYER_SIDE) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == g_Network.controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1194,7 +1298,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 int cnt = 0;
                 while (1) {
                     if (obj) {
-                        if (obj->IsLiveRobot() && obj->GetSide() == PLAYER_SIDE) {
+                        if (obj->IsLiveRobot() && obj->GetSide() == g_Network.controllable_side_id) {
                             ps->GetCurSelGroup()->RemoveAll();
                             ps->CreateGroupFromCurrent(obj);
                             ps->Select(ROBOT, obj);
@@ -1293,7 +1397,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 prev_key_time = g_MatrixMap->GetTime();
 
                 while (o) {
-                    if (o->GetSide() == PLAYER_SIDE) {
+                    if (o->GetSide() == g_Network.controllable_side_id) {
                         if (o->IsLiveRobot() && o->AsRobot()->GetCtrlGroup() == vk) {
                             if (!prev_unselected) {
                                 prev_unselected = true;
@@ -1312,7 +1416,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                     if (ps->GetCurGroup() && ps->GetCurGroup()->GetRobotsCnt() && ps->GetCurGroup()->GetFlyersCnt()) {
                         ps->GetCurGroup()->SortFlyers();
                     }
-                    ps->Select(GROUP, NULL);
+                    ps->Select(SELECTION_GROUP, NULL);
                 }
                 else if (ps->GetCurSelGroup()->GetFlyersCnt() == 1 && !ps->GetCurSelGroup()->GetRobotsCnt()) {
                     ps->CreateGroupFromCurrent();
@@ -1367,7 +1471,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             sb.m_Weapon[4].m_Unit.m_nKind = RUK_WEAPON_MORTAR;
             sb.m_Head.m_nKind = RUK_HEAD_BLOCKER;
 
-            int side_id = PLAYER_SIDE;
+            int side_id = g_Network.controllable_side_id;
             CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
 
             if (side->GetRobotsCnt() + side->GetRobotsInStack() >= side->GetMaxSideRobots()) {

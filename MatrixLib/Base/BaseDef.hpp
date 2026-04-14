@@ -29,6 +29,9 @@ namespace Base {
 
 // lint -e1401
 
+/**
+ * @brief Point in screen(?) space.
+ */
 class CPoint {
 public:
     int x, y;
@@ -52,6 +55,11 @@ public:
     }
 
     int Dist2(const CPoint &p) const { return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); }
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(x, y);
+    }
 };
 
 class CRect {

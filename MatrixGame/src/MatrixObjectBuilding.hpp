@@ -57,7 +57,7 @@ enum EBuildingTurrets {
     EBuildingTurrets_FORCE_DWORD = 0x7FFFFFFF
 };
 
-enum EBuildingType {
+enum EBuildingType : u32 {
     BUILDING_BASE = 0,
     BUILDING_TITAN = 1,
     BUILDING_PLASMA = 2,
@@ -103,6 +103,17 @@ struct SResource {
     // int             m_BaseRCycle;
 };
 
+/**
+ *  Contrary to it's name this is NOT a stack,
+ *  it's used as a queue (implemented with linked lists),
+ *  but it's also possible to remove in-middle
+ *
+ *  It stores the items to be constructed in order,
+ *  only one construction is possible at a time,
+ *  it mixes both robots and turrets
+ *
+ *  AI sides don't stack multiple robots at a time.
+ */
 class CBuildStack : public CMain {
     int m_Items;
     int m_Timer;
@@ -113,7 +124,7 @@ class CBuildStack : public CMain {
 
 public:
     void AddItem(CMatrixMapStatic *item);
-    int DeleteItem(int no);
+    int DeleteItem(int no); // Refund
     void DeleteItem(CMatrixMapStatic *item);
     void ClearStack();
     CMatrixMapStatic *GetTopItem() { return m_Top; }
@@ -124,7 +135,7 @@ public:
     CMatrixBuilding *GetParentBase() { return m_ParentBase; }
     bool IsMaxItems() { return m_Items >= MAX_STACK_UNITS; }
 
-    void ReturnRobotResources(CMatrixRobotAI *robot);
+    void ReturnRobotResources(CMatrixRobotAI *robot); // Refund
     void ReturnTurretResources(CMatrixCannon *turret);
 
     int GetRobotsCnt(void) const;

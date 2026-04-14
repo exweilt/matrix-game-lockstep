@@ -366,7 +366,8 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
     DCP();
 
-    if (!g_MatrixMap->GetPlayerSide()->FindObjectInSelection(this)) {
+    // if (!g_MatrixMap->GetPlayerSide()->FindObjectInSelection(this)) {
+    if (!g_MatrixMap->GetControllableSide()->FindObjectInSelection(this)) {
         UnSelect();
     }
 
@@ -433,8 +434,11 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                 }
 
                 for (int i = 0; i < OBJECT_ROBOT_ABLAZE_PERIOD_EFFECT; i += OBJECT_ROBOT_ABLAZE_PERIOD)
+                {
                     if (Damage(WEAPON_ABLAZE, pos, dir, m_LastDelayDamageSide, NULL))
                         return;
+                }
+
             }
         }
     }
@@ -927,8 +931,8 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
     // ORDERS PROCESSING/////////////////////////////////////////////////////
 
-    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()
-                        ->GetArcadedObject() /* && !Input::is_down(VK_RBUTTON)*/) {
+    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject() /* && !Input::is_down(VK_RBUTTON)*/)
+    {
         if (isKeyPressed(KA_UNIT_LEFT) || isKeyPressed(KA_UNIT_LEFT_ALT))
         {
             RotateRobotLeft();
@@ -974,8 +978,8 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     }
     DCP();
 
-    if (FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE) || m_Side != PLAYER_SIDE)
-        TaktCaptureCandidate(ms);
+    // if (FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE) || m_Side != PLAYER_SIDE)
+    //     TaktCaptureCandidate(ms);
 
     // if(this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()){
     //    ASSERT(1);
@@ -1247,7 +1251,8 @@ void CMatrixRobotAI::LogicTakt(int ms) {
 
                         LowLevelMove(ms, D3DXVECTOR3(factory->m_Pos.x, factory->m_Pos.y, 0), false, false);
                     }
-                    else {
+                    else
+                    {
                         LowLevelMove(ms, D3DXVECTOR3(factory->m_Pos.x, factory->m_Pos.y, 0), true, true);
                     }
 
@@ -1266,7 +1271,7 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                     RotateHull(D3DXVECTOR3(m_PosX + m_Forward.x, m_PosY + m_Forward.y, 0));
                 }
                 else if (m_OrdersList[0].GetOrderPhase() == ROP_CAPTURING) {
-                    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+                    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
                     if (ps->m_CurrSel == BUILDING_SELECTED || ps->m_CurrSel == BASE_SELECTED) {
                         CMatrixBuilding *bld = ((CMatrixBuilding *)ps->m_ActiveObject);
                         if (bld == factory) {
@@ -1282,11 +1287,11 @@ void CMatrixRobotAI::LogicTakt(int ms) {
                             factory->Close();
                         }
                         else if (factory->m_State == BASE_CLOSED) {
-                            if (m_Side == PLAYER_SIDE) {
+                            if (m_Side == g_Network.controllable_side_id) {
                                 CSound::Play(S_ENEMY_BASE_CAPTURED);
                             }
                             else {
-                                if (factory->m_Side == PLAYER_SIDE)
+                                if (factory->m_Side == g_Network.controllable_side_id)
                                     CSound::Play(S_PLAYER_BASE_CAPTURED);
                             }
 
@@ -1560,13 +1565,13 @@ void CMatrixRobotAI::ZonePathCalc() {
     //	m_ZonePathCnt=g_MatrixMap->ZoneFindPath(m_Unit[0].u1.s1.m_Kind-1,m_ZoneCur,m_ZoneDes,m_ZonePath);
 
     CMatrixSideUnit *side = g_MatrixMap->GetSideById(GetSide());
-    if (GetSide() == PLAYER_SIDE && GetGroupLogic() >= 0 &&
+    if (GetSide() == g_Network.controllable_side_id && GetGroupLogic() >= 0 &&
         side->m_PlayerGroup[GetGroupLogic()].m_RoadPath->m_ListCnt > 0) {
         m_ZonePathCnt = g_MatrixMap->FindPathInZone(m_Unit[0].u1.s1.m_Kind - 1, m_ZoneCur, m_ZoneDes,
                                                     side->m_PlayerGroup[GetGroupLogic()].m_RoadPath, 0, m_ZonePath,
                                                     g_TestRobot == this);
     }
-    else if (GetSide() != PLAYER_SIDE && GetTeam() >= 0 && side->m_Team[GetTeam()].m_RoadPath->m_ListCnt > 0) {
+    else if (GetSide() != g_Network.controllable_side_id && GetTeam() >= 0 && side->m_Team[GetTeam()].m_RoadPath->m_ListCnt > 0) {
         m_ZonePathCnt =
                 g_MatrixMap->FindPathInZone(m_Unit[0].u1.s1.m_Kind - 1, m_ZoneCur, m_ZoneDes,
                                             side->m_Team[GetTeam()].m_RoadPath, 0, m_ZonePath, g_TestRobot == this);
@@ -1582,7 +1587,7 @@ void CMatrixRobotAI::ZonePathCalc() {
     else
         m_ZonePathNext = -1;
 
-    if (GetSide() != PLAYER_SIDE && m_ZoneCur != m_ZoneDes &&
+    if (GetSide() != g_Network.controllable_side_id && m_ZoneCur != m_ZoneDes &&
         m_ZonePathCnt <= 0) {  // Если дойти не можем, то меняем команду
         SetTeam(g_MatrixMap->GetSideById(GetSide())->ClacSpawnTeam(GetRegion(), m_Unit[0].u1.s1.m_Kind - 1));
         SetGroupLogic(-1);
@@ -1839,9 +1844,12 @@ bool CMatrixRobotAI::Damage(
 
     friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
 
-    damagek =
-            (friendly_fire || m_Side != PLAYER_SIDE) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == PLAYER_SIDE)
+
+    damagek = (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
+    // damagek = 1.0;
+
+    // ATTENTION:
+    if (friendly_fire && m_Side == g_Network.controllable_side_id)
         damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
 
     idx = Weap2Index(weap);
@@ -1960,7 +1968,7 @@ bool CMatrixRobotAI::Damage(
 
         for (int nC = 0; nC < m_WeaponsCnt; ++nC) {
             if (m_Weapons[nC].IsEffectPresent() && m_Weapons[nC].GetWeaponType() == WEAPON_BIGBOOM) {
-                if (GetSide() == PLAYER_SIDE) {
+                if (GetSide() == g_Network.controllable_side_id) {
                     //                    BigBoom(nC);
                 }
                 else {
@@ -2197,7 +2205,7 @@ void CMatrixRobotAI::RobotSpawn(CMatrixBuilding *pBase) {
         RESETFLAG(g_MatrixMap->m_Flags, MMFLAG_SOUND_ORDER_ATTACK_DISABLE);
     }
     else {
-        if (side->m_Id != PLAYER_SIDE) {
+        if (false && side->m_Id != g_Network.controllable_side_id) {
             m_Team = side->ClacSpawnTeam(g_MatrixMap->GetRegion(CPoint(Float2Int(pBase->m_Pos.x / GLOBAL_SCALE_MOVE),
                                                                        Float2Int(pBase->m_Pos.x / GLOBAL_SCALE_MOVE))),
                                          m_Unit[0].u1.s1.m_Kind - 1);
@@ -2711,7 +2719,9 @@ void CMatrixRobotAI::Decelerate() {
     D3DXVECTOR3 vvv(0, 0, 0);
     D3DXVec3Normalize(&vvv, &m_Velocity);
     if (!IS_ZERO_VECTOR(vvv))
+    {
         m_Forward = vvv;
+    }
 }
 
 #if (defined _DEBUG) && !(defined _RELDEBUG)
@@ -4924,6 +4934,7 @@ void CMatrixRobotAI::StopCapture(void) {
     }
 }
 
+// unused
 void CMatrixRobotAI::TaktCaptureCandidate(int ms) {
     DTRACE();
 
@@ -5143,8 +5154,8 @@ void CMatrixRobotAI::ReleaseMe(void) {
 
     DCP();
 
-    if (GetSide() == PLAYER_SIDE) {
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    if (GetSide() == g_Network.controllable_side_id) {
+        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
         ps->RemoveFromSelection(this);
 

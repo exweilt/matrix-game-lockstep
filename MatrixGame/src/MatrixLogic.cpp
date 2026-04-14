@@ -15,7 +15,10 @@
 #include "MatrixGameDll.hpp"
 #include "MatrixMultiSelection.hpp"
 
+#include "Network/Network.hpp"
 #include <random.hpp>
+
+#include "Network/serializers.hpp"
 
 // CPoint MatrixDir45[8]={	CPoint(-1,0),	CPoint(1,0),CPoint(0,-1),CPoint(0,1),
 //						CPoint(-1,-1),CPoint(1,1),CPoint(-1,1),CPoint(1,-1)};
@@ -2255,54 +2258,54 @@ int CMatrixMapLogic::OptimizeMovePathSimple(int nsh, int size, int cnt, CPoint *
     return cnt;
 }
 
-int CMatrixMapLogic::RandomizeMovePath(int nsh, int size, int cnt, CPoint *path) {
-    int zonelast = -1;
-
-    for (int i = 1; i < (cnt - 1); i++) {
-        int zonecur = MoveGet(path[i].x, path[i].y)->m_Zone;
-        if (zonelast == zonecur)
-            continue;
-        zonelast = zonecur;
-
-        CRect re = m_RN.m_Zone[zonecur].m_Rect;
-        re.right -= size;
-        re.bottom -= size;
-        if (re.IsEmpty())
-            continue;
-
-        int dist2 = (path[i].x - path[i - 1].x) * (path[i].x - path[i - 1].x) +
-                    (path[i].y - path[i - 1].y) * (path[i].y - path[i - 1].y);
-        dist2 = std::min(dist2, (path[i].x - path[i + 1].x) * (path[i].x - path[i + 1].x) +
-                                   (path[i].y - path[i + 1].y) * (path[i].y - path[i + 1].y));
-        dist2 = std::min(dist2, 7 * 7);
-
-        for (int u = 0; u < 5; u++) {
-            int newpx = Rnd(re.left, re.right);
-            int newpy = Rnd(re.top, re.bottom);
-
-            if (!PlaceFindNear(nsh, size, newpx, newpy, 0, NULL, NULL))
-                continue;
-            if (newpx == path[i].x && newpy == path[i].y)
-                break;
-            if (zonecur != MoveGet(newpx, newpy)->m_Zone)
-                continue;
-
-            if (((newpx - path[i].x) * (newpx - path[i].x) + (newpy - path[i].y) * (newpy - path[i].y)) > dist2)
-                continue;
-
-            if (!CanMoveFromTo(nsh, size, path[i - 1].x, path[i - 1].y, newpx, newpy, path))
-                continue;
-            if (!CanMoveFromTo(nsh, size, path[i + 1].x, path[i + 1].y, newpx, newpy, path))
-                continue;
-
-            path[i].x = newpx;
-            path[i].y = newpy;
-            break;
-        }
-    }
-
-    return cnt;
-}
+// int CMatrixMapLogic::RandomizeMovePath(int nsh, int size, int cnt, CPoint *path) {
+//     int zonelast = -1;
+//
+//     for (int i = 1; i < (cnt - 1); i++) {
+//         int zonecur = MoveGet(path[i].x, path[i].y)->m_Zone;
+//         if (zonelast == zonecur)
+//             continue;
+//         zonelast = zonecur;
+//
+//         CRect re = m_RN.m_Zone[zonecur].m_Rect;
+//         re.right -= size;
+//         re.bottom -= size;
+//         if (re.IsEmpty())
+//             continue;
+//
+//         int dist2 = (path[i].x - path[i - 1].x) * (path[i].x - path[i - 1].x) +
+//                     (path[i].y - path[i - 1].y) * (path[i].y - path[i - 1].y);
+//         dist2 = std::min(dist2, (path[i].x - path[i + 1].x) * (path[i].x - path[i + 1].x) +
+//                                    (path[i].y - path[i + 1].y) * (path[i].y - path[i + 1].y));
+//         dist2 = std::min(dist2, 7 * 7);
+//
+//         for (int u = 0; u < 5; u++) {
+//             int newpx = Rnd(re.left, re.right);
+//             int newpy = Rnd(re.top, re.bottom);
+//
+//             if (!PlaceFindNear(nsh, size, newpx, newpy, 0, NULL, NULL))
+//                 continue;
+//             if (newpx == path[i].x && newpy == path[i].y)
+//                 break;
+//             if (zonecur != MoveGet(newpx, newpy)->m_Zone)
+//                 continue;
+//
+//             if (((newpx - path[i].x) * (newpx - path[i].x) + (newpy - path[i].y) * (newpy - path[i].y)) > dist2)
+//                 continue;
+//
+//             if (!CanMoveFromTo(nsh, size, path[i - 1].x, path[i - 1].y, newpx, newpy, path))
+//                 continue;
+//             if (!CanMoveFromTo(nsh, size, path[i + 1].x, path[i + 1].y, newpx, newpy, path))
+//                 continue;
+//
+//             path[i].x = newpx;
+//             path[i].y = newpy;
+//             break;
+//         }
+//     }
+//
+//     return cnt;
+// }
 
 /////////////////////////////////////////////////////////////////////////
 // TODO: hotfix for error C1001: Internal compiler error.
@@ -2879,7 +2882,8 @@ void CMatrixMapLogic::Takt(int step) {
         m_Console.Takt(step);
     }
 
-    if (IsPaused()) {
+    // Pause handling
+    if (false && IsPaused()) {
         if (m_PauseHint == NULL && g_RangersInterface && !FLAG(m_Flags, MMFLAG_DIALOG_MODE)) {
             m_PauseHint = CMatrixHint::Build(std::wstring{TEMPLATE_PAUSE});
             m_PauseHint->Show(14, 62);
@@ -2924,7 +2928,7 @@ void CMatrixMapLogic::Takt(int step) {
         }
     }
 
-    m_Time += step;
+    // m_Time += step;
     if (m_MaintenanceTime > 0) {
         m_MaintenanceTime -= step;
         if (m_MaintenanceTime < 0) {
@@ -2972,56 +2976,66 @@ void CMatrixMapLogic::Takt(int step) {
 
     DCP();
 
-    // TODO : 10 time per second
-    g_IFaceList->LogicTakt(step);
+    // if ((GetTime() - m_GatherInfoLast) > 100) {
+    //     m_GatherInfoLast = GetTime();
+    //
+    //     GatherInfo(0);
+    //     GatherInfo(1);
+    //     //        GatherInfo(2);
+    // }
 
     DCP();
 
-    if ((GetTime() - m_GatherInfoLast) > 100) {
-        m_GatherInfoLast = GetTime();
-
-        GatherInfo(0);
-        GatherInfo(1);
-        //        GatherInfo(2);
-    }
-    DCP();
-
-    int portions = step / LOGIC_TAKT_PERIOD;
-
-    for (int cnt = 0; cnt < portions; cnt++) {
-        CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-    }
-
-    DCP();
-
-    portions = step - portions * LOGIC_TAKT_PERIOD;
-    if (portions) {
-        CMatrixMapStatic::ProceedLogic(portions);
-    }
-    DCP();
-
-    while (GetTime() > m_TaktNext) {
-        m_TaktNext += LOGIC_TAKT_PERIOD;
-        // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-
-        for (int i = 0; i < m_SideCnt; i++) {
-            m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
-        }
-    }
-
-    DCP();
-
-    if (GetPlayerSide()->GetArcadedObject()) {
+    // Next physics frame
+    if (
+        // g_Network.physics_frame <= 1000 &&
+        g_Network.game_ongoing &&
+        (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3))
+            // || g_Network.next_frame_requested)
+        )
+    {
+        // if (g_Network.physics_frame == 1000) {
+        //     // g_Network.game_ongoing = false;
+        // }
         DCP();
-        GetPlayerSide()->GetArcadedObject()->StaticTakt(step);
-        if (GetPlayerSide()->GetArcadedObject()) {
-            GetPlayerSide()->GetArcadedObject()->RNeed(MR_Matrix);
-            GetPlayerSide()->InterpolateArcadedRobotArmorP(step);
-        }
-    }
-    DCP();
+        // g_Network.next_frame_requested = false;
 
-    CMatrixMap::Takt(step);  // graphic takts after logic takt
+        // Execute the commands sides have submitted
+        g_Network.consume_input_frame(g_Network.physics_frame);
+        DCP();
+
+        // Do the main logic of the simulation
+        physics_process(step);
+        DCP();
+
+        // Other logic?!
+        g_IFaceList->LogicTakt(step); // ATTENTION
+        CMatrixMap::Takt(step);  // graphic takts after logic takt
+
+        // register the new frame
+        // g_Network.physics_frame += 1;
+        m_Time += step;
+        g_Network.frames_passed_since_last_check += 1; // to calc physics fps
+        g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
+
+        DCP();
+
+        // Save the World Snapshot for the new frame, so we can access it later, if desync happened.
+        g_Network.history_game_states.put(g_Network.physics_frame + 1, capture_world_snapshot());
+
+        // send the checksum to the server
+        u64 checksum = g_Network.history_game_states.get(g_Network.physics_frame + 1).hash();
+        Message msg = MessageChecksumParams{g_Network.physics_frame + 1, checksum};
+        g_Network.send_message(msg);
+        DCP();
+
+        g_Network.has_physics_frame_run = true;
+    }
+    else
+    {
+        std::cout << "";
+    }
+
 
     DCP();
 
@@ -3031,7 +3045,7 @@ void CMatrixMapLogic::Takt(int step) {
 
     // check side status
 
-    if ((GetTime() - m_PrevTimeCheckStatus) > 1001) {
+    if (false && (GetTime() - m_PrevTimeCheckStatus) > 1001) {
         // check easter egg :)
         std::wstring mn(MapName());
         utils::to_lower(mn);
@@ -3429,6 +3443,87 @@ void CMatrixMapLogic::CalcCannonPlace(void) {
         obj = obj->GetNextLogic();
     }
 }
+void CMatrixMapLogic::physics_process(int step)
+{
+    if ((GetTime() - m_GatherInfoLast) > 100) {
+        m_GatherInfoLast = GetTime();
+
+        GatherInfo(0);
+        GatherInfo(1);
+        //        GatherInfo(2);
+    }
+    DCP();
+
+
+    CMatrixMapStatic::ProceedLogic(step);
+    // int portions = step / LOGIC_TAKT_PERIOD;
+    // for (int cnt = 0; cnt < portions; cnt++) {
+    //     CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
+    // }
+
+    // DCP();
+
+    // portions = step - portions * LOGIC_TAKT_PERIOD;
+    // if (portions) {
+    //     CMatrixMapStatic::ProceedLogic(portions);
+    // }
+    DCP();
+
+    // while (GetTime() > m_TaktNext) {
+    //     m_TaktNext += LOGIC_TAKT_PERIOD;
+    //     // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
+    //
+    //     for (int i = 0; i < m_SideCnt; i++) {
+    //         m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
+    //     }
+    // }
+    for (int i = 0; i < m_SideCnt; i++) {
+        m_Side[i].LogicTakt(step);
+    }
+
+    DCP();
+
+    if (GetPlayerSide()->GetArcadedObject()) {
+        DCP();
+        GetPlayerSide()->GetArcadedObject()->StaticTakt(step);
+        if (GetPlayerSide()->GetArcadedObject()) {
+            GetPlayerSide()->GetArcadedObject()->RNeed(MR_Matrix);
+            GetPlayerSide()->InterpolateArcadedRobotArmorP(step);
+        }
+    }
+    DCP();
+
+
+    for (int i = 0; i < m_EffectSpawnersCnt; ++i) {
+        m_EffectSpawners[i].Takt(step);
+    }
+    DCP();
+    RemoveEffectSpawnerByTime();
+    DCP();
+
+    // SETFLAG(m_Flags,MMFLAG_EFF_TAKT);
+    for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
+#ifdef DEAD_PTR_SPY_ENABLE
+        CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
+        if (deade) {
+            debugbreak();
+        }
+#endif
+#ifdef DEAD_CLASS_SPY_ENABLE
+        CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
+        if (spot) {
+            debugbreak();
+        }
+
+#endif
+
+        m_EffectsNextTakt = e->m_Next;
+        DCP();
+        e->Takt(step);
+        DCP();
+        e = m_EffectsNextTakt;
+    }
+}
 
 bool CMatrixMapLogic::IsLogicVisible(CMatrixMapStatic *ofrom, CMatrixMapStatic *oto, float second_z) {
     D3DXVECTOR3 vt;
@@ -3593,4 +3688,20 @@ void CMatrixMapLogic::DumpLogic() {
     }
 
     fclose(fi);
+}
+
+CMatrixMapStatic * CMatrixMapLogic::find_static_with_nid(u32 nid)
+{
+    CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+    while (ms)
+    {
+        if (ms->m_NID == nid)
+        {
+            assert(ms->IsRobot() || ms->IsCannon() || ms->IsBuilding() || ms->IsBase());
+            return ms;
+        }
+        ms = ms->GetNextLogic();
+    }
+
+    return nullptr;
 }

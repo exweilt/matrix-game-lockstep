@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <cwchar>
 
 ////////////////////////////////////////////////////////////////////////////////
 #include <stupid_logger.hpp>
@@ -38,27 +39,97 @@ CMatrixMapLogic *g_MatrixMap;
 CRenderPipeline *g_Render;
 CLoadProgress *g_LoadProgress;
 
+const wchar_t* get_cmd_flag_value(const wchar_t* flag, wchar_t** args, int num_args)
+{
+    size_t flag_len = wcslen(flag);
+
+    // Loop through args (start at 1 to skip executable name)
+    for (int i = 1; i < num_args; ++i)
+    {
+        // CASE 1: Space separated (e.g. "-m" "value")
+        // Check if current arg matches the flag exactly
+        if (wcscmp(args[i], flag) == 0)
+        {
+            // Make sure we aren't at the very end of the array
+            if (i + 1 < num_args) {
+                return args[i + 1]; // Return the NEXT argument
+            }
+        }
+
+        // CASE 2: Equals separated (e.g. "-m=value" or "--map=value")
+        // Check if starts with flag AND the next char is '='
+        if (wcsncmp(args[i], flag, flag_len) == 0 && args[i][flag_len] == L'=')
+        {
+            // Return the address of the character immediately after the '='
+            return &args[i][flag_len + 1];
+        }
+    }
+
+    return nullptr; // Flag not found
+}
+
+bool cmd_flag_exists(const wchar_t* flag, wchar_t** args, int num_args)
+{
+    for (int i = 1; i < num_args; ++i)
+    {
+        if (wcscmp(args[i], flag) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void print_help()
+{
+    std::cout << "Matrix Game Usage:" << std::endl;
+    std::cout << "  -a=\"127.0.0.1\"    (specify target IP address)" << std::endl;
+    std::cout << "  -s=\"1\"    (specify playing side: 1-4)" << std::endl;
+    std::cout << "  -m=\"mapname\"    (specify map, optional)" << std::endl;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 {
-    const wchar *cmd = GetCommandLineW();
-
     lgr.info("===== Started as EXE =====");
 
     int numarg;
+    const wchar *cmd = GetCommandLineW();
     wchar **args = CommandLineToArgvW(cmd, &numarg);
-    wchar *map = nullptr;
 
     std::filesystem::path app_path{args[0]};
 
     lgr.info(utils::from_wstring(app_path.native()));
     std::filesystem::current_path(app_path.parent_path());
 
-    if (numarg > 1) {
-        map = args[1];
+    wchar *ip_addr       = _wcsdup(get_cmd_flag_value(L"-a", args, numarg));
+    const wchar *playing_side  = get_cmd_flag_value(L"-s", args, numarg);
+    const wchar *map           = get_cmd_flag_value(L"-m", args, numarg);
+    const wchar *replaying_commands_filename = get_cmd_flag_value(L"-r", args, numarg);
+    const wchar *replaying_checksums_filename = get_cmd_flag_value(L"-rc", args, numarg);
+
+    if (ip_addr == nullptr || playing_side == nullptr)
+    {
+        std::cout << "Incorrect usage. Please specify both ip and playing side." << std::endl << std::endl;
+        print_help();
+        return 1;
     }
 
+    // save arguments into network manager
+    g_Network.server_ip = std::string(ip_addr, ip_addr + wcslen(ip_addr));
+    g_Network.isClient2 = wcscmp(playing_side, L"3") == 0;
+    g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
+
+    // if (replaying_commands_filename != nullptr)
+    // {
+    //     if (replaying_checksums_filename != nullptr)
+    //         g_Network.initialize_replay_mode_with_files(std::wstring(replaying_commands_filename));
+    //     else
+    //         g_Network.initialize_replay_mode_with_files(std::wstring(replaying_checksums_filename));
+    // }
+
     try {
-        uint32_t seed = (unsigned)time(nullptr);
+        uint32_t seed = 0; // ATTENTION: For testing multiplayer
+        // uint32_t seed = (unsigned)time(nullptr);
         CGame::Init(hInstance, nullptr, map, seed);
 
         CFormMatrixGame *formgame = HNew(NULL) CFormMatrixGame();
@@ -138,6 +209,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 static void static_init(void) {
     // Base
     CMain::BaseInit();
+
+    // Network
+    g_Network.static_init_networking();
 
     // 3G
 #ifdef _DEBUG
@@ -358,6 +432,7 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     {
         mapname = g_MatrixData->BlockGet(L"Config")->ParGet(L"Map");
     }
+    // mapname = L"Matrix\\Map\\PAW.cmap";
 
     stor.Load(mapname.c_str());
     DCP();
@@ -507,11 +582,12 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     g_MatrixMap->CreatePoolDefaultResources(true);
     g_MatrixMap->InitObjectsLights();
 
-    g_MatrixMap->GetPlayerSide()->Select(BUILDING, g_MatrixMap->GetPlayerSide()->m_ActiveObject);
+    g_MatrixMap->GetControllableSide()->Select(BUILDING, g_MatrixMap->GetControllableSide()->m_ActiveObject);
     g_MatrixMap->m_Cursor.Select(CURSOR_ARROW);
 
-    if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
-        g_MatrixMap->EnterDialogMode(TEMPLATE_DIALOG_BEGIN);
+    // ATTENTION: Disabled for some time
+    // if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
+    //     g_MatrixMap->EnterDialogMode(TEMPLATE_DIALOG_BEGIN);
 
     // this code can be safely removed from release : RELEASE_OFF
 
@@ -577,7 +653,8 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
     g_D3Dpp.BackBufferFormat = (set.m_BPP == 16) ? D3DFMT_R5G6B5 : D3DFMT_A8R8G8B8;
     g_D3Dpp.EnableAutoDepthStencil = TRUE;
     g_D3Dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-    g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+    g_D3Dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+    // g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
     g_D3Dpp.FullScreen_RefreshRateInHz = refresh_rate_required;
     g_D3Dpp.BackBufferWidth = set.m_ResolutionX;
     g_D3Dpp.BackBufferHeight = set.m_ResolutionY;

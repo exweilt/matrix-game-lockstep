@@ -178,6 +178,7 @@ public:
     void Map2World(D3DXVECTOR2 &out, const D3DXVECTOR2 &in);
     bool CalcMinimap2World(D3DXVECTOR2 &tgt);
 
+    // Ping VFX
     void AddEvent(float x, float y, DWORD color1, DWORD color2);
 
     void RenderBackground(const std::wstring &name, DWORD uniq);

@@ -631,6 +631,7 @@ void CMatrixMapObject::RNeed(dword need) {
 void CMatrixMapObject::Takt(int cms) {
     DTRACE();
 
+#ifdef NON_MULTIPLAYER
     if (m_BehFlag == BEHF_PORTRET) {
         m_PhotoTime -= cms;
         if (m_PhotoTime < 0) {
@@ -642,6 +643,7 @@ void CMatrixMapObject::Takt(int cms) {
             RChange(MR_Graph);
         }
     }
+#endif
 
     if (m_Graph) {
         if (m_Graph->Takt(cms)) {
@@ -1107,7 +1109,7 @@ void CMatrixMapObject::PauseTakt(int)
 }
 
 static bool FindOnlyPlayerRobots(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintptr_t user) {
-    if (ms->GetSide() == PLAYER_SIDE) {
+    if (ms->GetSide() == g_Network.controllable_side_id) {
         *(bool *)user = true;
         return false;
     }
@@ -1115,7 +1117,7 @@ static bool FindOnlyPlayerRobots(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintp
 }
 
 static bool FindOnlyPlayerRobotsTgt(const D3DXVECTOR3&, CMatrixMapStatic *ms, uintptr_t user) {
-    if (ms->GetSide() == PLAYER_SIDE) {
+    if (ms->GetSide() == g_Network.controllable_side_id) {
         *(CMatrixRobotAI **)user = ms->AsRobot();
         return false;
     }

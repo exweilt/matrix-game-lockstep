@@ -56,24 +56,25 @@
 #define SHADER_PERC 20
 #define SHADER_TIME 500
 
-#include "MatrixCamera.hpp"
-#include "VectorObject.hpp"
-#include "MatrixSide.hpp"
-#include "MatrixMapGroup.hpp"
-#include "MatrixMapStatic.hpp"
-#include "MatrixWater.hpp"
-#include "MatrixMapTexture.hpp"
+#include "DevConsole.hpp"
 #include "Effects/MatrixEffect.hpp"
-#include "StringConstants.hpp"
-#include "MatrixMinimap.hpp"
+#include "Logic/MatrixRoadNetwork.hpp"
+#include "MatrixCamera.hpp"
 #include "MatrixConfig.hpp"
 #include "MatrixCursor.hpp"
 #include "MatrixDebugInfo.hpp"
-#include "Logic/MatrixRoadNetwork.hpp"
-#include "DevConsole.hpp"
-#include "MatrixObjectRobot.hpp"
 #include "MatrixFlyer.hpp"
+#include "MatrixMapGroup.hpp"
+#include "MatrixMapStatic.hpp"
+#include "MatrixMapTexture.hpp"
+#include "MatrixMinimap.hpp"
+#include "MatrixObjectRobot.hpp"
+#include "MatrixSide.hpp"
 #include "MatrixTransition.hpp"
+#include "MatrixWater.hpp"
+#include "Network/Network.hpp"
+#include "StringConstants.hpp"
+#include "VectorObject.hpp"
 
 inline bool CMatrixMapStatic::FitToMask(DWORD mask) {
     if (IsLiveRobot())
@@ -242,7 +243,7 @@ struct SGroupVisibility {
 #define MMFLAG_TERRON_DEAD  SETBIT(26)
 #define MMFLAG_TERRON_ONMAP SETBIT(27)
 
-#define MMFLAG_SPECIAL_BROKEN SETBIT(28)
+#define MMFLAG_SPECIAL_BROKEN SETBIT(28) // Special is a type of object that when broken leads to victory on some maps.
 
 struct SSkyTex {
     CTextureManaged *tex;
@@ -582,6 +583,10 @@ public:
 
     CMatrixSideUnit *GetSideById(int id);
     CMatrixSideUnit *GetPlayerSide(void) { return m_PlayerSide; };
+    [[nodiscard]] CMatrixSideUnit *GetControllableSide() const {
+        // return m_Side + 1;
+        return m_Side + g_Network.controllable_side_id - 1;
+    };
 
     void WaterClear(void);
     void WaterInit(void);

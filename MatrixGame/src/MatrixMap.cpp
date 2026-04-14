@@ -1020,10 +1020,11 @@ void CMatrixMap::LoadSide(CBlockPar &bp) {
             m_Side[side_idx].m_ColorMM = colorMM;
             m_Side[side_idx].m_ColorTexture = NULL;
             m_Side[side_idx].m_Name = name.GetStrPar(0, L",");
+
+            m_Side[side_idx].InitPlayerSide();
             if (id == PLAYER_SIDE)
             {
                 m_PlayerSide = m_Side;
-                m_Side[side_idx].InitPlayerSide();
             }
         }
     }
@@ -1116,6 +1117,13 @@ void CMatrixMap::BeforeDraw(void) {
     //    }
     //}
 
+    m_DI.T(L"Pos under cursor", utils::format(L"x=%d y=%d z=%d",
+                                 static_cast<int>(m_TraceStopPos.x),
+                                 static_cast<int>(m_TraceStopPos.y),
+                                 static_cast<int>(m_TraceStopPos.z))
+                           .c_str(),
+                   1000);
+
     // TAKT_BEGIN();
     m_TraceStopObj =
             Trace(&m_TraceStopPos, m_Camera.GetFrustumCenter(), m_Camera.GetFrustumCenter() + (m_MouseDir * 10000.0f),
@@ -1147,8 +1155,9 @@ void CMatrixMap::BeforeDraw(void) {
             m_DI.T(L"Under cursor", L"Mesh", 1000);
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
             m_DI.T(L"Under cursor",
-                   utils::format(L"Robot %x   S%d T%d G%d",
+                   utils::format(L"Robot %x  ID%d S%d T%d G%d",
                                  reinterpret_cast<uintptr_t>(m_TraceStopObj),
+                                 static_cast<CMatrixRobotAI *>(m_TraceStopObj)->m_NID,
                                  m_TraceStopObj->GetSide(),
                                  static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetTeam(),
                                  static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetGroupLogic())
@@ -1198,7 +1207,8 @@ void CMatrixMap::BeforeDraw(void) {
 
     if (player_side->m_ActiveObject != m_TraceStopObj && player_side->m_ActiveObject &&
         player_side->m_ActiveObject->GetObjectType() == OBJECT_TYPE_FLYER &&
-        Input::isKeyPressed(KA_AUTO) && g_IFaceList->m_InFocus != INTERFACE) {
+        Input::isKeyPressed(KA_AUTO) && g_IFaceList->m_InFocus != INTERFACE)
+    {
         CMatrixFlyer *fl = (CMatrixFlyer *)player_side->m_ActiveObject;
 
         SPlane hp;
@@ -1210,7 +1220,7 @@ void CMatrixMap::BeforeDraw(void) {
             fl->SetTarget(D3DXVECTOR2(m_Camera.GetFrustumCenter().x + m_MouseDir.x * t,
                                       m_Camera.GetFrustumCenter().y + m_MouseDir.y * t));
 
-            CMatrixSideUnit *player_side = GetPlayerSide();
+            // CMatrixSideUnit *player_side = GetPlayerSide();
             // if (player_side->HasFlyer()) player_side->Select(HELICOPTER, NULL);
 
             // D3DXVECTOR3 p = m_Camera.GetFrustumCenter() + vdir * t;
@@ -1344,14 +1354,15 @@ void CMatrixMap::BeforeDraw(void) {
         ++md;
     }
 
-    for (int od = 0; od < m_AD_Obj_cnt; ++od) {
-        m_AD_Obj[od]->Sort(m_Camera.GetViewMatrix());
-        if (m_AD_Obj[od]->GetObjectType() == OBJECT_TYPE_FLYER) {
-            if (((CMatrixFlyer *)m_AD_Obj[od])->CarryingRobot()) {
-                ((CMatrixFlyer *)m_AD_Obj[od])->GetCarryingRobot()->Sort(m_Camera.GetViewMatrix());
-            }
-        }
-    }
+    // ATTENTION: temporary measure
+    // for (int od = 0; od < m_AD_Obj_cnt; ++od) {
+    //     m_AD_Obj[od]->Sort(m_Camera.GetViewMatrix());
+    //     if (m_AD_Obj[od]->GetObjectType() == OBJECT_TYPE_FLYER) {
+    //         if (((CMatrixFlyer *)m_AD_Obj[od])->CarryingRobot()) {
+    //             ((CMatrixFlyer *)m_AD_Obj[od])->GetCarryingRobot()->Sort(m_Camera.GetViewMatrix());
+    //         }
+    //     }
+    // }
 
     if (FLAG(m_Flags, MMFLAG_NEEDRECALCTER)) {
         CMatrixMapStatic::SortEndRecalcTerainColor();
@@ -1561,6 +1572,7 @@ void CMatrixMap::DrawLandscape(bool all) {
             (*md)->Draw();
 
             ///*
+#define DRAW_LANDSCAPE_SETKA 1
 #if DRAW_LANDSCAPE_SETKA == 1
             CHelper::Create(1, 0)->Line(D3DXVECTOR3((*md)->GetPos0().x, (*md)->GetPos0().y, 10.0f),
                                         D3DXVECTOR3((*md)->GetPos0().x, (*md)->GetPos1().y, 10.0f), 0xFFFF0000,
@@ -1638,7 +1650,7 @@ void CMatrixMap::DrawObjects(void) {
 
     ASSERT_DX(g_D3DD->SetRenderState(D3DRS_LIGHTING, FALSE));
 
-    CMatrixSideUnit *player_side = GetPlayerSide();
+    CMatrixSideUnit *player_side = GetControllableSide();
     if (player_side->m_CannonForBuild.m_Cannon) {
         if (player_side->m_CannonForBuild.m_Cannon->IsVisible())
             player_side->m_CannonForBuild.m_Cannon->Draw();
@@ -2439,6 +2451,7 @@ void CMatrixMap::Takt(int step) {
     m_DI.Takt(step);
     DCP();
 
+    // ATTENTION
     for (i = 0; i < m_EffectSpawnersCnt; ++i) {
         m_EffectSpawners[i].Takt(fstep);
     }
@@ -3290,7 +3303,7 @@ void CMatrixMap::EnterDialogMode(const wchar *hint_i) {
     m_DialogModeName = hint_i;
 
     if (0 != wcscmp(hint_i, TEMPLATE_DIALOG_BEGIN)) {
-        g_MatrixMap->GetPlayerSide()->PLDropAllActions();
+        g_MatrixMap->GetControllableSide()->PLDropAllActions();
     }
 
     CBlockPar *bp = g_MatrixData->BlockGet(PAR_TEMPLATES);
@@ -3447,7 +3460,7 @@ bool CMatrixMap::IsTraceNonPlayerObj() {
         (g_MatrixMap->m_TraceStopObj->IsRobot() || g_MatrixMap->m_TraceStopObj->IsBuilding() ||
          g_MatrixMap->m_TraceStopObj->IsCannon() || g_MatrixMap->m_TraceStopObj->GetObjectType() == OBJECT_TYPE_FLYER ||
          g_MatrixMap->m_TraceStopObj->IsSpecial()) &&
-        (g_MatrixMap->m_TraceStopObj->GetSide() != PLAYER_SIDE))
+        (g_MatrixMap->m_TraceStopObj->GetSide() != g_Network.controllable_side_id))
         return true;
 
     return false;

@@ -183,7 +183,7 @@ bool CIFaceButton::OnMouseMove(CPoint mouse) {
 
 bool CIFaceButton::OnMouseRBDown() {
     CPoint mouse = g_MatrixMap->m_Cursor.GetPos();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
     if (ElementCatch(mouse) /*&& ElementAlpha(mouse)*/) {
         if (m_strName == IF_BASE_PILON1) {
             if (g_PopupMenu) {

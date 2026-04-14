@@ -28,6 +28,7 @@ CVectorObjectAnim *LoadObject(const wchar *name, CHeap *heap, bool side, const w
     CVectorObjectAnim *voa = HNew(heap) CVectorObjectAnim();
     CVectorObject *vo = (CVectorObject *)g_Cache->Get(CacheClass::VO, name);
 
+    // ATTENTION
     GSParam gsp = side ? GSP_SIDE : GSP_ORDINAL;
 
     if (tex) {
@@ -858,7 +859,7 @@ void CMatrixMapStatic::Sort(const D3DXMATRIX &sort) {
         }
     }
 
-    WillDraw();
+    //WillDraw();
 }
 
 CMatrixMapStatic *CMatrixMapStatic::GetVisObj(int i) {

@@ -23,12 +23,18 @@ target_include_directories(
     PUBLIC
         .
         src
-        "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>")
+        "$<$<C_COMPILER_ID:MSVC>:${DIRECTX9_INCLUDE_DIRS}>"
+        "${ENET_SOURCE_DIR}/include"
+        #"${XXHASH_DIR}/include"
+)
 
+
+# The -include winsock2.h is needed here because for networking winsock2.h has to be included before "windows.h",
+#   while there are too many entries of #include "windows.h" to do it in place and it is also included by third parties.
 target_compile_options(
     MatrixGameInternal
     PUBLIC
-        ${COMPILE_OPTIONS})
+        -include winsock2.h ${COMPILE_OPTIONS})
 
 target_compile_definitions(
     MatrixGameInternal
@@ -52,30 +58,35 @@ target_link_libraries(
         ${DIRECTX9_LIBRARIES}
         MatrixLib
         "$<$<C_COMPILER_ID:MSVC>:legacy_stdio_definitions>"
+        enet
+        # xxhash
 )
 
 if(MATRIXGAME_CHEATS)
-    set_source_files_properties(
-        src/MatrixFormGame.cpp
-        PROPERTIES
-            COMPILE_DEFINITIONS CHEATS_ON)
+    set_property(
+            SOURCE src/MatrixFormGame.cpp
+            APPEND
+            PROPERTY COMPILE_DEFINITIONS CHEATS_ON
+    )
 endif()
 
 add_matrix_directory(src/Effects)
 add_matrix_directory(src/Interface)
 add_matrix_directory(src/Logic)
 add_matrix_directory(src/Text)
+add_matrix_directory(src/Network)
 
 if(MATRIXGAME_BUILD_DLL)
     add_library(MatrixGame SHARED)
     # remove lib prefix from the DLL name (for GCC build)
     set_target_properties(MatrixGame PROPERTIES PREFIX "")
 else()
-    set_source_files_properties(
+    set_property(
+            SOURCE
             src/MatrixFormGame.cpp
             src/MatrixGame.cpp
-            PROPERTIES
-            COMPILE_DEFINITIONS BUILD_EXE
+            APPEND
+            PROPERTY COMPILE_DEFINITIONS BUILD_EXE
     )
     add_executable(MatrixGame)
 endif()
@@ -92,7 +103,7 @@ target_sources(MatrixGame PRIVATE
     ${MATRIX_RESOURCES}
 )
 
-target_link_libraries(MatrixGame MatrixGameInternal)
+target_link_libraries(MatrixGame MatrixGameInternal ws2_32)
 
 target_link_options(
     MatrixGame

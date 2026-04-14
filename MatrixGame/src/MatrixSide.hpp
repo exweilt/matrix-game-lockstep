@@ -30,6 +30,8 @@
 
 #define FRIENDLY_SEARCH_RADIUS 400
 
+CPoint GetMapPos(CMatrixMapStatic *obj); // TODO: Move it somewhere, it was in .cpp originally
+
 class CMatrixEffectWeapon;
 class CMatrixMapStatic;
 class CConstructor;
@@ -77,7 +79,7 @@ enum ESelType {
     FLYER = 2,
     BUILDING = 3,
     NOTHING = 4,
-    GROUP = 5,
+    SELECTION_GROUP = 5,
     ARCADE = 6,
 
     ESelType_FORCE_DWORD = 0x7FFFFFFF
@@ -90,8 +92,8 @@ struct SRobot {
     SRobot() { m_CrossCatched = false; }
 };
 
-enum ESideStatus {
-    SS_NONE,       // side absent
+enum ESideStatus : u32 {
+    SS_NONE,       // side dead (if side is not present, there there is no object for it!)
     SS_ACTIVE,     // active side
     SS_JUST_DEAD,  // just dead side. switch this status to SS_NONE, after you get it
     SS_JUST_WIN,   // valid only for player side
@@ -540,11 +542,11 @@ public:
     static bool GetObjectUnderCursor(const CPoint &mouse, float *pWorldX, float *pWorldY, int *pMapX, int *pMapY);
     CMatrixMapStatic *GetObjectUnderCursor();
     void OnRButtonDown(const CPoint &mouse);
-    void OnRButtonDouble(const CPoint &mouse);
+    void OnRButtonDouble(const CPoint &mouse); // Unused
     void OnLButtonDown(const CPoint &mouse);
     void OnLButtonDouble(const CPoint &mouse);
-    void OnRButtonUp(const CPoint &mouse);
-    void OnLButtonUp(const CPoint &mouse);
+    void OnRButtonUp(const CPoint &mouse); // Unused
+    void OnLButtonUp(const CPoint &mouse); // Unused
     void OnForward(bool down);
     void OnBackward(bool down);
     void OnLeft(bool down);
@@ -648,6 +650,7 @@ public:
     bool FirePL(int group);
     void RepairPL(int group);
     void WarPL(int group);
+    int GetNextFreeLogicGroup();
     int SelGroupToLogicGroup(void);
     int RobotToLogicGroup(CMatrixRobotAI *robot);
     void PGOrderStop(int no);

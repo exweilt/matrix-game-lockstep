@@ -1,4 +1,67 @@
-# MatrixGame - Space Rangers 2 Planetary Battles Engine
+# MatrixGame Networking
+Forked from https://github.com/vladislavrv/MatrixGame
+<br>
+Status: `~55%` ready (more or less playable with bad performance, occasional desyncs, limited functionality and restricted convenience)
+
+## Architecture 
+Deterministic Lockstep with Server Relay
+
+## Roadmap
+
+- Disable enemy's AIs ✔️
+- Make red/green/blue robots controllable by the player ✔️
+- Harness the Tick() function ✔️
+- Add the state managing entity ✔️
+- Remove the player's ability to control robots, construct etc... ✔️ 
+- Add Actions, the variable for storing the list of actions for the current frame to StateManager and poll it in loop to apply in game as if they were executed by some side ✔️
+- Make player being able to form new Actions adding them to the variable(so it looks like the player can control robots now again) ✔️
+- Add fate control with environment variables `CLIENT1`, `CLIENT2` ✔️
+- Functionality to launch two instances at once and move them to screen corners ✔️
+- Make the Clients freeze at frame 0 waiting for the connection and game to start ✔️
+- Add the Relay Server as separate executable ✔️
+- Add the ENet library ✔️
+- Add Message functionality to allow for Client-Server, Server-Client and Client-Server-Client communication, add message loop handlers to process incoming msgs ✔️
+- Make Server start the game at some point ✔️
+- Send sampled inputs to other clients ✔️
+- When there are inputs present for the frame for all the players process next Tick() ✔️
+- When there is no sampled inputs for the duration of 1 frame assign Empty List of Actions to the var of Inputs for current frame and send it ✔️
+- Make sure at least some basic Determinism is present ✔️
+- Add buffer for inputs delay to address jitter(i.e. replace the variable string the List of Actions for the current frame with some kind of data struct storing the Lists of Actions for number of frames) ✔️
+- Compute checksums of state to detect desyncs ✔️
+- Implement most in game controls: building, attacking etc. (except turrets and manual) ✔️
+- Track gamestates for recent frames via RingBuffer and access those, where desync happened ❌
+- Add desync TRACE macro to track the spot inside the code, where desync happened ❌
+- Ensure solid determinism across different CPU through controlling FPU, fixed points? (can play most games without desync) ❌
+- Make sure game runs smoothly, measure fps in original, bring up fps to 90 and maybe add physics interpolation. ❌
+- Some utilities to debug desyncs quickly when playing across different PC. ❌
+- Add game schema settings to customize game rules. ❌
+- Add GUI for server game creation, for connecting a game (ensure graceful game ending). ❌
+- Add NAT puncturing via a server. ❌
+- Add game replay, and recover desync functionality. ❌
+- Add robot palette config file, to start the game with preset configurations. ❌
+
+## Additional
+
+You would need to install xxHash library somewhere in your system so CMake can find it. 
+Either download it through your system package manager or build it yourself with:
+```bash
+cd ./xxHash_repo/
+cmake -S build/cmake -B cmake_build -A Win32 -DCMAKE_BUILD_TYPE=Release
+cmake --build cmake_build --config Release --parallel
+cmake --install cmake_build --config Release
+```
+
+
+To start the game you need to start the `MatrixGameServer.exe` and 2 instances of `MatrixGame.exe` with correct cmd arguments passed.
+You can run `MatrixGame.exe` to print out possible cmd flags.
+
+
+The rest is from the original repository:
+
+<hr>
+<hr>
+
+## MatrixGame - Space Rangers 2 Planetary Battles Engine
 
 ![image](docs/image.png)
 Original sources: http://snk-games.net/matrixgame.tar.gz<br>

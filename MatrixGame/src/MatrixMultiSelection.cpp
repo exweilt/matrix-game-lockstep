@@ -216,8 +216,9 @@ void CMultiSelection::Update(
     {
         CMatrixMapStatic *o = CMatrixMapStatic::GetVisObj(i);
 
-        if (o->GetSide() != PLAYER_SIDE)
-            continue;
+        // ATTENTION
+        // if (o->GetSide() != PLAYER_SIDE)
+        //     continue;
 
         if ((o->GetObjectType() == OBJECT_TYPE_MAPOBJECT) && ((mask & TRACE_OBJECT) == 0))
             continue;
@@ -282,7 +283,8 @@ void CMultiSelection::End(bool add_to_selection) {
     r.Normalize();
 
     if (!m_SelItems.empty() && add_to_selection) {
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        //CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
         for (auto item : m_SelItems)
         {

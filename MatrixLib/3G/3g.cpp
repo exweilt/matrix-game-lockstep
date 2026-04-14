@@ -11,6 +11,12 @@
 #include "CBlockPar.hpp"
 #include "CException.hpp"
 #include "CReminder.hpp"
+#include "Stopwatch.hpp"
+#include "Types.hpp"
+#include <chrono>
+
+#include "../../MatrixGame/src/Network/Network.hpp"
+
 
 #include <utils.hpp>
 #include <fps_counter.hpp>
@@ -140,6 +146,15 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
     if (g_ScreenY <= 0)
         g_ScreenY = 1;
 
+    // ATTENTION
+#ifdef _DEBUG
+    if (g_Network.isCompactMode)
+    {
+        g_ScreenY = 700;
+        g_ScreenX = 700;
+    }
+#endif
+
     if (cntpar < 1)
         SETFLAG(g_Flags, GFLAG_FULLSCREEN);
     else
@@ -193,11 +208,20 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
         AdjustWindowRectEx(&tr, WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU, false, 0);
 
         lgr.debug("Adjusted window: pos {}x{}, size {}x{}")(tr.left, tr.top, tr.right - tr.left, tr.bottom - tr.top);
+
+        // const bool isClient2 = std::getenv("CLIENT2") != nullptr;
+        long x = 0, y = 0;
+
+        if (g_Network.isCompactMode && g_Network.isClient2)
+        {
+            x = 800;
+        }
+
         g_Wnd =
             CreateWindow(
                 classname.c_str(), utils::from_wstring(captionname).c_str(),
                 WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU,
-                0, 0, tr.right - tr.left, tr.bottom - tr.top, NULL, NULL, g_HInst, NULL);
+                x, y, tr.right - tr.left, tr.bottom - tr.top, NULL, NULL, g_HInst, NULL);
     }
     else
     {
@@ -247,14 +271,15 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
     d3dpp.SwapEffect = D3DSWAPEFFECT_FLIP;
     d3dpp.Windowed = !FLAG(g_Flags, GFLAG_FULLSCREEN);
     d3dpp.EnableAutoDepthStencil = 0;
-    d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+    d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE; // ATTENTION, was: D3DPRESENT_INTERVAL_ONE
 
     auto cd_res =
         g_D3D->CreateDevice(
             D3DADAPTER_DEFAULT,
             D3DDEVTYPE_HAL,
             g_Wnd,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED,
+            // Used to be D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED, consider D3DCREATE_FPU_PRESERVE for determinism
+            D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
             &g_D3DD
         );
@@ -455,6 +480,11 @@ int L3GRun()
 
     while (true)
     {
+        Stopwatch sw_total;
+        Stopwatch sw_event;
+
+        // std::cout << "===== curr: " << g_Network.physics_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
+
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             DispatchMessage(&msg); // Effectively calls L3GWndProc() handler
@@ -464,20 +494,35 @@ int L3GRun()
             break;
         }
 
-        if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
-        {
-            std::this_thread::yield();
-            continue;
-        }
+        // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
+        // {
+        //     std::this_thread::yield();
+        //     continue;
+        // }
+
 
         auto cur_takt = clock::now();
         auto delta_time = (cur_takt - prev_takt);
         prev_takt = cur_takt;
 
+        // Ensure at least 1 ms passed since last iteration
+        // auto delta_duration = std::chrono::duration<f64>(delta_time);
+        // if (delta_duration < std::chrono::milliseconds(1)) {
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(1) - delta_duration);
+        // }
+
+
         if (FLAG(g_Flags, GFLAG_4SPEED))
         {
             delta_time *= 4;
         }
+
+        // int delta = to_milliseconds(delta_time).count();
+        // g_total_ms += delta;
+
+        //Stopwatch sw_net;
+        //g_Network.process_network_frame(0);
+        // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         int delta = std::min(100LL, to_milliseconds(delta_time).count());
 
@@ -489,27 +534,64 @@ int L3GRun()
 
         // delta = smooths / SMOOTH_COUNT;
 
+        // if (g_Network.game_ongoing)
+        {
 #ifdef _DEBUG
-        SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+            SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+#endif
+            lgr.add_ticks(17);
+            g_Network.lgr.add_ticks(17);
+            //SRemindCore::Takt(delta); ATTENTION
+            Stopwatch sw_phys;
+            // if (
+            //     (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
+            {
+
+                g_FormCur->Takt(17);
+                // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
+
+                // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
+#ifdef _DEBUG
+                RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
 
-        lgr.add_ticks(delta);
-        SRemindCore::Takt(delta);
-        g_FormCur->Takt(delta);
-#ifdef _DEBUG
-        RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
-#endif
+                // g_physics_tick += 1;
 
-        // TODO: maybe add back FPS limit?
-        g_FormCur->Draw();
+                // TODO: maybe add back FPS limit?
+                Stopwatch sw_draw;
+                g_FormCur->Draw();
+                // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
+
 #if (defined _DEBUG) && !(defined _RELDEBUG)
-        CHelper::AfterDraw();
+                CHelper::AfterDraw();
 #endif
-        fps++;
+                fps++;
 
-        g_DrawFPS = fps.count();
+                g_Network.graphics_frame += 1;
 
-        g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+                g_DrawFPS = fps.count();
+            }
+
+
+
+            g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+
+            // if (g_Network.last_check + std::chrono::seconds(1) < clock::now())
+            // {
+            //     g_Network.last_check = clock::now();
+            //     g_Network.physics_fps = g_Network.frames_passed_since_last_check;
+            //     g_Network.frames_passed_since_last_check = 0;
+            // }
+        }
+        // g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
+        // g_Network.lgr.debug("====================================");
+
+        // if (g_Network.has_physics_frame_run)
+        // {
+        //     // g_Network.code_logic_frame += 1;
+        //     g_Network.physics_frame += 1;
+        //     g_Network.has_physics_frame_run = false;
+        // }
     }
 
     return 1;
@@ -593,11 +675,11 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         // case WM_ACTIVATE:
         case WM_ACTIVATEAPP:
         {
-            if (FLAG(g_Flags, GFLAG_KEEPALIVE))
-            {
-                // don't minimize or pause the game when keepalive flag is set
-                break;
-            }
+            // if (FLAG(g_Flags, GFLAG_KEEPALIVE))
+            // {
+            //     // don't minimize or pause the game when keepalive flag is set
+            //     break;
+            // }
             if (wParam != 0)
             {
                 SETFLAG(g_Flags, GFLAG_APPACTIVE);
@@ -617,6 +699,13 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             }
             else
             {
+                // Always keep alive (for multiplayer purposes)!
+                if (true || FLAG(g_Flags, GFLAG_KEEPALIVE))
+                {
+                    // don't minimize or pause the game when keepalive flag is set
+                    break;
+                }
+
                 RESETFLAG(g_Flags, GFLAG_APPACTIVE);
                 if (g_FormCur)
                 {

@@ -203,6 +203,9 @@ public:
     CIFaceImage *m_FirstImage, *m_LastImage;
     CInterface *m_PrevInterface, *m_NextInterface;
 
+    /**
+     * @brief Called each frame effectively reconstructs everything.
+     */
     void Init();
     bool Load(CBlockPar &bp, const wchar *name);
 
@@ -375,6 +378,11 @@ public:
                             const std::wstring &name);
     void AddHintReplacements(const std::wstring &element_name);
     bool CheckShowHintLogic(const std::wstring &element_name);
+
+    /**
+     * Docthis
+     * @brief Displays manually controlled robot.
+     */
     void LiveRobot(void);
     void EnterRobot(bool pos = false);
     void BeginBuildTurret(int no);
