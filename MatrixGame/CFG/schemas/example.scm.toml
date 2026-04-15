@@ -1,0 +1,412 @@
+# Space Rangers - Planetary Battles 
+# multiplayer game balance schema
+# format version: v0.1 (30-01-2026)
+# author: exweilt
+
+# Notepad++ or VSCode is recommended for editing
+# Save before editing! :)
+
+[game_settings]
+	disable_turrets = false
+	# allow_manual = false 		# manual robot control is not yet supported
+	use_matrix_module = false
+	use_artillery_turret = false
+	robot_radar_radius = 1000
+	robot_construction_time = 2.0
+	turret_construction_time = 15.0
+	disable_reinforcments = true
+	factory_capture_time = 8.0
+	# rollback, erase?
+	income_period_titanium 		= 7.0
+	income_period_electronics 	= 7.0
+	income_period_energy 		= 7.0
+	income_period_plasma 		= 7.0
+	friendly_fire_modifier		= 1.0
+	robot_capacity_bonus_per_factory = 2 	# can be negative
+	robot_capacity_bonus_per_base = 5		# can be negative
+	starting_bonus_titanium 	= 0			# can be negative
+	starting_bonus_electronics 	= 0			# can be negative
+	starting_bonus_energy 		= 0			# can be negative
+	starting_bonus_plasma 		= 0			# can be negative
+
+[hull]
+	[hull.monostack]
+	hitpoints = 200
+	rotation_speed = 0.6
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.paragon]
+	hitpoints = 500
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.birex]
+	hitpoints = 500
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.diploid]
+	hitpoints = 500
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.trident]
+	hitpoints = 500
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.fullstack]
+	hitpoints = 700
+	rotation_speed = 0.3
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[hull.fullstack]
+	hitpoints = 700
+	rotation_speed = 0.3
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+[chassis]
+	[chassis.pneumatics]
+	hitpoints = 900
+	rotation_speed = 0.03
+	move_speed = 0.5
+	move_slope_correction_up = 2.5
+	move_slope_correction_down = 2.5
+	move_water_correction = 0.5
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[chassis.wheels]
+	hitpoints = 900
+	rotation_speed = 0.03
+	move_speed = 0.5
+	move_slope_correction_up = 2.5
+	move_slope_correction_down = 2.5
+	move_water_correction = 0.5
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+		
+	[chassis.tracks]
+	hitpoints = 900
+	rotation_speed = 0.03
+	move_speed = 0.5
+	move_slope_correction_up = 2.5
+	move_slope_correction_down = 2.5
+	move_water_correction = 0.5
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[chassis.hovercraft]
+	hitpoints = 900
+	rotation_speed = 0.03
+	move_speed = 0.5
+	move_slope_correction_up = 2.5
+	move_slope_correction_down = 2.5
+	move_water_correction = 0.5
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[chassis.antigravs]
+	hitpoints = 900
+	rotation_speed = 0.03
+	move_speed = 0.5
+	move_slope_correction_up = 2.5
+	move_slope_correction_down = 2.5
+	move_water_correction = 0.5
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+[head]
+	[head.dynamo]
+	move_speed = 20
+	cool_down  = -20
+	overhead   = -20
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[head.firewall]
+	aim_protection 		= 50
+	bomb_protection 	= 30
+	shortage_protection = 100
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[head.locator]
+	fire_distance=20
+	radar_distance=50
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[head.blocker]
+	hitpoints=500
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+[turret]
+	[turret.light_cannon]
+	hitpoints = 6000
+	max_bottom_angle = -30
+	max_top_angle 	 = 89
+	radius = 600
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[turret.heavy_cannon]
+	hitpoints = 6000
+	max_bottom_angle = -30
+	max_top_angle 	 = 89
+	radius = 600
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[turret.laser]
+	hitpoints = 6000
+	max_bottom_angle = -30
+	max_top_angle 	 = 89
+	radius = 600
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[turret.rocket_turret]
+	hitpoints = 6000
+	max_bottom_angle = -30
+	max_top_angle 	 = 89
+	radius = 600
+	rotation_speed = 0.9
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+[weapon]
+	[weapon.machinegun] 		#1
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.cannon] 			#2
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.rocket_launcher] 	#3
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.firegun] 			#4
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.grenade_launcher]	#5
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.laser] 				#6
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.bomb] 					#7
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+	
+	[weapon.plasmagun] 					#8
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[weapon.discharger] 				#9
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+	[weapon.repair_tool] 				#10
+	radius = 300
+	cooldown = 100
+	overheat = 400
+	damage_to_building = 200
+	damage_to_turret = 200
+	damage_to_robot = 200
+	damage_to_object = 200
+	cost_titanium 		= 40
+	cost_electronics 	= 0
+	cost_energy 		= 40
+	cost_plasma 		= 0
+
+[other]
+	[other.shorted.damage]	# passive damage of stun effect
+	building 	= 200
+	turret 		= 200
+	robot 		= 200
+	object 		= 200
+	
+	[other.ablaze.damage]	# burning effect
+	building 	= 200
+	turret 		= 200
+	robot 		= 200
+	object 		= 200
+	
+	[other.debris.damage]	# fragmentation
+	building 	= 200
+	turret 		= 200
+	robot 		= 200
+	object 		= 200
+	
+# shorted
+# ablaze
+# debris
+
+
+	[weapon.rocket_launcher] 	#3
+	radius = 300
+	cooldown = 100
+	overheat = 400
+		[damage]
+		building 	= 200
+		turret 		= 200
+		robot 		= 200
+		object 		= 200
+		[cost]
+		titanium 	= 40
+		electronics = 0
+		energy 		= 40
+		plasma 		= 0
+	
+	[weapon.rocket_launcher] 	#3
+	radius = 300
+	cooldown = 100
+	overheat = 400
+		[damage]
+		building 	= 200
+		turret 		= 200
+		robot 		= 200
+		object 		= 200
+		[cost]
+		titanium 	= 40
+		electronics = 0
+		energy 		= 40
+		plasma 		= 0

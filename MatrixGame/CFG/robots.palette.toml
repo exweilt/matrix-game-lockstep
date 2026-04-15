@@ -1,0 +1,40 @@
+# Robots presets (pallete) example config file.
+# For each [[robot_preset]] provide the following fields:
+# chassis = (pneumatics, wheels, tracks, hovercraft, antigravs)
+# hull = (monostack, paragon, birex, diploid, trident, fullstack)
+# head (optional) = (blocker, dynamo, locator, firewall)
+# weapon (optional) = (machinegun, cannon, rocket_launcher, firegun, 
+#          grenade_launcher, laser, bomb, plasmagun, discharger, repair_tool)
+# 
+# The order of weapons is ..., the order doesn't matter for the special slot.
+# if the configuration is illegal it won't be loaded into the game.
+#
+# Examples of concrete usage:
+
+[[robot_preset]] 		# Classic Attacker 
+chassis = "antigravs"
+hull = "fullstack"
+head = "dynamo"
+weapon = "rocket_launcher"
+weapon = "rocket_launcher"
+weapon = "cannon"
+weapon = "discharger"
+weapon = "grenade_launcher"
+
+[[robot_preset]] 		# Classic Support 
+chassis = "antigravs"
+hull = "fullstack"
+head = "dynamo"
+weapon = "repair_tool"
+weapon = "repair_tool"
+weapon = "repair_tool"
+weapon = "repair_tool"
+
+[[robot_preset]] 		# Cheap force 
+chassis = "hovercraft"
+hull = "diploid"
+head = "dynamo"
+weapon = "cannon"
+weapon = "cannon"
+weapon = "cannon"
+weapon = "cannon"
