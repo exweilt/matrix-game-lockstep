@@ -369,7 +369,7 @@ void Network::connect_to_server()
             exit (EXIT_FAILURE);
         }
 
-        if (enet_host_service (host, &event, 3000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+        if (enet_host_service (host, &event, 15000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
         {
             std::cout << "Connected to the server!\n";
             break;
@@ -377,8 +377,9 @@ void Network::connect_to_server()
         else
         {
             std::cout << "Could not connect to the server.\n";
-            Sleep(500);
-            std::cout << "Attempting to reconnect...\n";
+            exit(1);
+            // Sleep(500);
+            // std::cout << "Attempting to reconnect...\n";
             enet_peer_reset(peer);
             continue;
         }

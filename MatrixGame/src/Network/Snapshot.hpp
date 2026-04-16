@@ -10,6 +10,8 @@
 
 #include "BitStream.hpp"
 
+class CMatrixRobotAI;
+enum ERobotUnitKind : unsigned int;
 enum ESideStatus : u32;
 
 struct SideSnapshot
@@ -33,17 +35,29 @@ struct SideSnapshot
 
 struct RobotSnapshot
 {
+    u32 nid;
     f32 x;
     f32 y;
     f32 health;
+    f32 maxhealth;
+    u8 chassis;
+    u8 hull;
+    u8 head;
+    u8 weapon_cnt;
+    u8 weapons[5]{};
+    u8 rotation;
+    u8 hull_rotation;
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(health));
+        ar(CEREAL_NVP(nid), CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(health), CEREAL_NVP(maxhealth),
+            CEREAL_NVP(chassis), CEREAL_NVP(hull), CEREAL_NVP(weapon_cnt), CEREAL_NVP(weapons), CEREAL_NVP(rotation), CEREAL_NVP(hull_rotation));
     }
 
     void serialize_to_bitstream(BitWriter &writer) const;
     static RobotSnapshot deserialize_from_bitstream(BitReader &reader);
+
+    static RobotSnapshot from_robot(CMatrixRobotAI *robot);
 };
 
 enum EBuildingType : u32;

@@ -28,6 +28,14 @@ public:
     void write_u16(u16 num);
     void write_u32(u32 num);
     void write_u64(u64 num);
+    inline void write_f32(float num)
+    {
+        write_u32(std::bit_cast<u32>(num));
+    }
+    // inline void write_f16(float num)
+    // {
+    //     write_u16(std::bit_cast<u16>(num));
+    // }
     void write_vec3(const D3DXVECTOR3 &vec);
     void write_string(const std::string &str);
 
@@ -49,6 +57,11 @@ public:
     u8 read_u8();
     u16 read_u16();
     u32 read_u32();
+    inline f32 read_f32()
+    {
+        return std::bit_cast<f32>(read_u32());
+    }
+    // f32 read_f16();
     u64 read_u64();
     D3DXVECTOR3 read_vec3();
     std::string read_string();
