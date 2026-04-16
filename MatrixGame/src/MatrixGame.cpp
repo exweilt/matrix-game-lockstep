@@ -84,8 +84,10 @@ void print_help()
 {
     std::cout << "Matrix Game Usage:" << std::endl;
     std::cout << "  -a=\"127.0.0.1\"    (specify target IP address)" << std::endl;
-    std::cout << "  -s=\"1\"    (specify playing side: 1-4)" << std::endl;
-    std::cout << "  -m=\"mapname\"    (specify map, optional)" << std::endl;
+    std::cout << "  -t=\"1\"            (specify playing side: 1-4)" << std::endl;
+    std::cout << "  -m=\"mapname\"      (specify map, optional)" << std::endl;
+    std::cout << "  -c                  (compact mode, optional)" << std::endl;
+    std::cout << "  -s                  (launch server)" << std::endl;
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
@@ -102,12 +104,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     std::filesystem::current_path(app_path.parent_path());
 
     wchar *ip_addr       = _wcsdup(get_cmd_flag_value(L"-a", args, numarg));
-    const wchar *playing_side  = get_cmd_flag_value(L"-s", args, numarg);
+    const wchar *playing_side  = get_cmd_flag_value(L"-t", args, numarg);
     const wchar *map           = get_cmd_flag_value(L"-m", args, numarg);
-    const wchar *replaying_commands_filename = get_cmd_flag_value(L"-r", args, numarg);
-    const wchar *replaying_checksums_filename = get_cmd_flag_value(L"-rc", args, numarg);
+    bool is_server             = cmd_flag_exists(L"-s", args, numarg);
 
-    if (ip_addr == nullptr || playing_side == nullptr)
+    if (!is_server && (ip_addr == nullptr || playing_side == nullptr))
     {
         std::cout << "Incorrect usage. Please specify both ip and playing side." << std::endl << std::endl;
         print_help();
@@ -115,9 +116,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     }
 
     // save arguments into network manager
-    g_Network.server_ip = std::string(ip_addr, ip_addr + wcslen(ip_addr));
-    g_Network.isClient2 = wcscmp(playing_side, L"3") == 0;
+    g_Network.server_ip = ip_addr != nullptr ? std::string(ip_addr, ip_addr + wcslen(ip_addr)) : "127.0.0.1";
+    g_Network.isClient2 = cmd_flag_exists(L"--second", args, numarg);
+    g_Network.controllable_side_id = playing_side != nullptr ? std::stoi(std::wstring(playing_side)) : 1;
     g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
+    g_Network.set_network_mode(is_server ? NetworkMode::SERVER : NetworkMode::CLIENT);
 
     // if (replaying_commands_filename != nullptr)
     // {

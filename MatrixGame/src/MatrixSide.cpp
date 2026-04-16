@@ -846,8 +846,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     CMatrixMapStatic *pObject = GetObjectUnderCursor();
     DCP();
 
-    // [[maybe_unused]] int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
-    // [[maybe_unused]] int my = Float2Int(g_MatrixMap->m_TraceStopPos.y / GLOBAL_SCALE_MOVE);
+    [[maybe_unused]] int mx = Float2Int(g_MatrixMap->m_TraceStopPos.x / GLOBAL_SCALE_MOVE);
+    [[maybe_unused]] int my = Float2Int(g_MatrixMap->m_TraceStopPos.y / GLOBAL_SCALE_MOVE);
     D3DXVECTOR3 tpos = g_MatrixMap->m_TraceStopPos;
 
     DCP();
@@ -866,8 +866,10 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     if (pObject == TRACE_STOP_NONE)
         return;
 
-    if (!IS_PREORDERING &&
-        (m_CurrSel == GROUP_SELECTED || m_CurrSel == ROBOT_SELECTED || m_CurrSel == FLYER_SELECTED))
+    if (!IS_PREORDERING
+        //&&
+        // (m_CurrSel == GROUP_SELECTED || m_CurrSel == ROBOT_SELECTED || m_CurrSel == FLYER_SELECTED))
+        )
     {
         if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != m_Id) {
             // Capture
@@ -7091,7 +7093,7 @@ void CMatrixSideUnit::TaktPL(int onlygroup) {
             continue;
         }
         if (m_PlayerGroup[i].m_RobotCnt <= 0)
-
+        {
             continue;
         }
         orderok[i] = true;

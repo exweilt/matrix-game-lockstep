@@ -367,9 +367,13 @@ void CMatrixRobotAI::LogicTakt(int ms) {
     DCP();
 
     // if (!g_MatrixMap->GetPlayerSide()->FindObjectInSelection(this)) {
-    if (!g_MatrixMap->GetControllableSide()->FindObjectInSelection(this)) {
-        UnSelect();
+    for (int i = 1; i <= 4; i++)
+    {
+        if (!g_MatrixMap->GetSideById(i)->FindObjectInSelection(this)) {
+            UnSelect();
+        }
     }
+
 
     m_SyncMul = (float)ms / (float)LOGIC_TAKT_PERIOD;
     MoveSelection();
@@ -5154,8 +5158,10 @@ void CMatrixRobotAI::ReleaseMe(void) {
 
     DCP();
 
-    if (GetSide() == g_Network.controllable_side_id) {
-        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+    // if (GetSide() == g_Network.controllable_side_id) {
+    for (int i = 1; i <= 4; i++)
+    {
+        CMatrixSideUnit *ps = g_MatrixMap->GetSideById(i);
 
         ps->RemoveFromSelection(this);
 

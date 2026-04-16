@@ -515,68 +515,14 @@ void CFormMatrixGame::MouseMove(int x, int y) {
 #endif
 }
 
-void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
-    DTRACE();
-
-    if (status == B_DOWN)
-    {
-        Input::onKeyDown(key);
-    }
-    else if (status == B_UP)
-    {
-        Input::onKeyUp(key);
-    }
-
-    if (status == B_WHEEL) {
-        while (key > 0) {
-            g_MatrixMap->m_Camera.ZoomInStep();
-            --key;
-        }
-        while (key < 0) {
-            g_MatrixMap->m_Camera.ZoomOutStep();
-            ++key;
-        }
-
-        return;
-    }
-
-    DCP();
-
-    if (status == B_UP && key == VK_MBUTTON) {
-        g_MatrixMap->MouseCam(false);
-        return;
-    }
-    if (status == B_DOWN && key == VK_MBUTTON) {
-        g_MatrixMap->MouseCam(true);
-        // SetCursorPos(g_ScreenX/2, g_ScreenY/2);
-
-        return;
-    }
-
-    DCP();
-
-    m_Action = 0;
-
-    /*
-        if(Input::isVKeyPressed(VK_CONTROL) && down && key==VK_RBUTTON){
-            D3DXVECTOR3 vpos,vdir;
-            g_MatrixMap->CalcPickVector(CPoint(x,y), vdir);
-            g_MatrixMap->UnitPickWorld(g_MatrixMap->GetFrustumCenter(),vdir,&m_LastWorldX,&m_LastWorldY);
-            m_Action=1;
-        }
-    */
-    DCP();
-
-    if (status == B_UP && key == VK_LBUTTON) {
-        DCP();
-        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
-        // CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-        if (CMultiSelection::m_GameSelection) {
+void do_selection_logic(CMatrixSideUnit *ps)
+{
+    if (CMultiSelection::m_GameSelection) {
             SCallback cbs;
             cbs.mp = CPoint(-1, -1);
             cbs.calls = 0;
 
-            CMultiSelection::m_GameSelection->End();
+            CMultiSelection::m_GameSelection->End(true, ps->m_Id);
             DCP();
 
             if (1 /*cbs.calls > 0*/) {
@@ -661,7 +607,77 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                 }
             }
         }
-        CMultiSelection::m_GameSelection = NULL;
+}
+
+void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
+    DTRACE();
+
+    if (status == B_DOWN)
+    {
+        Input::onKeyDown(key);
+    }
+    else if (status == B_UP)
+    {
+        Input::onKeyUp(key);
+    }
+
+    if (status == B_WHEEL) {
+        while (key > 0) {
+            g_MatrixMap->m_Camera.ZoomInStep();
+            --key;
+        }
+        while (key < 0) {
+            g_MatrixMap->m_Camera.ZoomOutStep();
+            ++key;
+        }
+
+        return;
+    }
+
+    DCP();
+
+    if (status == B_UP && key == VK_MBUTTON) {
+        g_MatrixMap->MouseCam(false);
+        return;
+    }
+    if (status == B_DOWN && key == VK_MBUTTON) {
+        g_MatrixMap->MouseCam(true);
+        // SetCursorPos(g_ScreenX/2, g_ScreenY/2);
+
+        return;
+    }
+
+    DCP();
+
+    m_Action = 0;
+
+    /*
+        if(Input::isVKeyPressed(VK_CONTROL) && down && key==VK_RBUTTON){
+            D3DXVECTOR3 vpos,vdir;
+            g_MatrixMap->CalcPickVector(CPoint(x,y), vdir);
+            g_MatrixMap->UnitPickWorld(g_MatrixMap->GetFrustumCenter(),vdir,&m_LastWorldX,&m_LastWorldY);
+            m_Action=1;
+        }
+    */
+    DCP();
+
+    if (status == B_UP && key == VK_LBUTTON) {
+        DCP();
+        // CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+        // CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        do_selection_logic(g_MatrixMap->GetSideById(1));
+        do_selection_logic(g_MatrixMap->GetSideById(2));
+        do_selection_logic(g_MatrixMap->GetSideById(3));
+        do_selection_logic(g_MatrixMap->GetSideById(4));
+
+        if (CMultiSelection::m_GameSelection != NULL)
+        {
+            CMultiSelection::m_GameSelection->RemoveSelItems();
+            CMultiSelection::m_GameSelection = NULL;
+        }
+
+
+        std::cout << "";
     }
     DCP();
 
@@ -681,7 +697,11 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         DCP();
         if (status == B_DOWN && key == VK_RBUTTON) {
             DCP();
-            g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(1)->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(2)->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(3)->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(4)->OnRButtonDown(CPoint(x, y));
             // g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
         }
         else if (status == B_DOWN && key == VK_LBUTTON) {
@@ -707,16 +727,27 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                 }
             }
             // g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
-            g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
+            // g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(1)->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(2)->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(3)->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetSideById(4)->OnLButtonDown(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_RBUTTON) {
             DCP();
-            g_MatrixMap->GetPlayerSide()->OnRButtonUp(CPoint(x, y));
+            // g_MatrixMap->GetControllableSide()->OnRButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(1)->OnRButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(2)->OnRButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(3)->OnRButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(4)->OnRButtonUp(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_LBUTTON) {
             DCP();
-            CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-            ps->OnLButtonUp(CPoint(x, y));
+            // g_MatrixMap->GetControllableSide()->OnLButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(1)->OnLButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(2)->OnLButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(3)->OnLButtonUp(CPoint(x, y));
+            g_MatrixMap->GetSideById(4)->OnLButtonUp(CPoint(x, y));
         }
         else if (status == B_DOUBLE && key == VK_LBUTTON) {
             DCP();
@@ -751,7 +782,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_NUMPAD5 && down)
     {
-        // g_Network.game_ongoing = !g_Network.game_ongoing;
+        g_Network.game_ongoing = !g_Network.game_ongoing;
         // if (network::commands_journal.size() > g_physics_frame)
         // {
         //     nw::CommandsFrameRecord* frame = nw::get_current_frame_record();

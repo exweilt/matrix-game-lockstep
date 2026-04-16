@@ -11,6 +11,8 @@
 
 #include <cassert>
 
+#include "Snapshot.hpp"
+
 
 // namespace network
 // {
@@ -20,9 +22,10 @@
 enum class MessageType : u8
 {
     NONE            = 0,
-    COMMAND_BATCH    = 1,
-    READY           = 2,
-    START           = 3,
+    // COMMAND_BATCH    = 1,
+    READY,
+    START,
+    WORLD_SNAPSHOT,
     INFO,
     SAY,
     JOIN,
@@ -33,19 +36,19 @@ enum class MessageType : u8
     STATE_REPORT,
 };
 
-struct MessageCommandBatchParams
+struct MessageWorldSnapshotParams
 {
     u32 target_frame;
-    u8 target_side; // SideID
-    std::vector<Command> commands;
+    WorldSnapshot ws;
+    // std::vector<RobotSnapshot> robots;
 
-    MessageCommandBatchParams(): target_frame(0), target_side(0) {}
-    MessageCommandBatchParams(const u32 frame, const u8 side) : target_frame(frame), target_side(side), commands() {}
-    ~MessageCommandBatchParams() {}
+    MessageWorldSnapshotParams(): target_frame(0), ws() {}
+    MessageWorldSnapshotParams(const u32 frame, WorldSnapshot _ws) : target_frame(frame), ws(_ws) {}
+    ~MessageWorldSnapshotParams() {}
 
 
     void serialize_to_bitstream(BitWriter &writer) const;
-    static MessageCommandBatchParams deserialize_from_bitstream(BitReader &reader);
+    static MessageWorldSnapshotParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageJoinParams
@@ -118,7 +121,7 @@ struct Message
     MessageType type;
     union
     {
-        MessageCommandBatchParams command_batch;
+        MessageWorldSnapshotParams world_snapshot;
         MessageJoinParams join;
         MessageChecksumParams checksum;
         MessageReportParams report;
@@ -127,7 +130,7 @@ struct Message
 
     Message()                               : type(MessageType::NONE) {};
     Message(MessageType type)               : type(type) {}
-    Message(MessageCommandBatchParams cb)   : type(MessageType::COMMAND_BATCH), command_batch(cb) {};
+    Message(MessageWorldSnapshotParams cb)   : type(MessageType::WORLD_SNAPSHOT), world_snapshot(cb) {};
     Message(MessageJoinParams j)            : type(MessageType::JOIN),          join(j)     {};
     Message(MessageChecksumParams ch)       : type(MessageType::CHECKSUM),      checksum(ch)     {};
     Message(MessageReportParams r)         : type(MessageType::STATE_REPORT),      report(r)     {};
@@ -137,8 +140,8 @@ struct Message
     {
         switch (type)
         {
-            case MessageType::COMMAND_BATCH:
-                command_batch.~MessageCommandBatchParams();
+            case MessageType::WORLD_SNAPSHOT:
+                world_snapshot.~MessageWorldSnapshotParams();
                 break;
             case MessageType::JOIN:
                 join.~MessageJoinParams();
@@ -163,7 +166,7 @@ struct Message
         // Write down the message itself
         switch (type)
         {
-            case MessageType::COMMAND_BATCH:    command_batch   .serialize_to_bitstream(writer); break;
+            case MessageType::WORLD_SNAPSHOT:   world_snapshot   .serialize_to_bitstream(writer); break;
             case MessageType::JOIN:             join            .serialize_to_bitstream(writer); break;
             case MessageType::CHECKSUM:         checksum        .serialize_to_bitstream(writer); break;
             case MessageType::START:            break;
@@ -177,8 +180,8 @@ struct Message
     {
         switch (static_cast<MessageType>(reader.read_u8()))
         {
-            case MessageType::COMMAND_BATCH:
-                return MessageCommandBatchParams::  deserialize_from_bitstream(reader);
+            case MessageType::WORLD_SNAPSHOT:
+                return MessageWorldSnapshotParams::  deserialize_from_bitstream(reader);
             case MessageType::JOIN:
                 return MessageJoinParams::          deserialize_from_bitstream(reader);
             case MessageType::START:

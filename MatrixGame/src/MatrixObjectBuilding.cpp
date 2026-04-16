@@ -1329,7 +1329,11 @@ void CMatrixBuilding::ReleaseMe(void) {
         if (ps->m_ActiveObject == this) {
             ps->PLDropAllActions();
         }
-        ps->RemoveFromSelection(this);
+        // ps->RemoveFromSelection(this);
+        g_MatrixMap->GetSideById(1)->RemoveFromSelection(this);
+        g_MatrixMap->GetSideById(2)->RemoveFromSelection(this);
+        g_MatrixMap->GetSideById(3)->RemoveFromSelection(this);
+        g_MatrixMap->GetSideById(4)->RemoveFromSelection(this);
     }
 
     // for(int c = 1; c <= g_MatrixMap->m_SideCnt; c++){

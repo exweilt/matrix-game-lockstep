@@ -2988,9 +2988,10 @@ void CMatrixMapLogic::Takt(int step) {
 
     // Next physics frame
     if (
+        g_Network.is_authority() && g_Network.game_ongoing
         // g_Network.physics_frame <= 1000 &&
-        g_Network.game_ongoing &&
-        (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3))
+        // g_Network.game_ongoing &&
+        // (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3))
             // || g_Network.next_frame_requested)
         )
     {
@@ -3001,7 +3002,7 @@ void CMatrixMapLogic::Takt(int step) {
         // g_Network.next_frame_requested = false;
 
         // Execute the commands sides have submitted
-        g_Network.consume_input_frame(g_Network.physics_frame);
+        // g_Network.consume_input_frame(g_Network.physics_frame);
         DCP();
 
         // Do the main logic of the simulation
@@ -3013,29 +3014,30 @@ void CMatrixMapLogic::Takt(int step) {
         CMatrixMap::Takt(step);  // graphic takts after logic takt
 
         // register the new frame
-        // g_Network.physics_frame += 1;
+        g_Network.physics_frame += 1;
         m_Time += step;
         g_Network.frames_passed_since_last_check += 1; // to calc physics fps
-        g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
+        // g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
 
         DCP();
 
         // Save the World Snapshot for the new frame, so we can access it later, if desync happened.
-        g_Network.history_game_states.put(g_Network.physics_frame + 1, capture_world_snapshot());
+        // g_Network.history_game_states.put(g_Network.physics_frame + 1, capture_world_snapshot());
 
         // send the checksum to the server
-        u64 checksum = g_Network.history_game_states.get(g_Network.physics_frame + 1).hash();
-        Message msg = MessageChecksumParams{g_Network.physics_frame + 1, checksum};
-        g_Network.send_message(msg);
+        // u64 checksum = g_Network.history_game_states.get(g_Network.physics_frame + 1).hash();
+        // Message msg = MessageChecksumParams{g_Network.physics_frame + 1, checksum};
+        // g_Network.send_message(msg);
         DCP();
 
-        g_Network.has_physics_frame_run = true;
-    }
-    else
-    {
-        std::cout << "";
-    }
+        // g_Network.has_physics_frame_run = true;
 
+        constexpr int physics_frames_per_net_snapshot = 6;
+        if (g_Network.physics_frame % physics_frames_per_net_snapshot)
+        {
+            g_Network.broadcast_world_snapshot();
+        }
+    }
 
     DCP();
 

@@ -8,7 +8,10 @@
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
 
+#include "BitStream.hpp"
+
 enum ESideStatus : u32;
+
 struct SideSnapshot
 {
     u8 side;
@@ -23,6 +26,9 @@ struct SideSnapshot
         ar(CEREAL_NVP(side), CEREAL_NVP(status), CEREAL_NVP(titanium), CEREAL_NVP(electronics),
             CEREAL_NVP(energy), CEREAL_NVP(plasma));
     }
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static SideSnapshot deserialize_from_bitstream(BitReader &reader);
 };
 
 struct RobotSnapshot
@@ -35,6 +41,9 @@ struct RobotSnapshot
     void serialize(Archive& ar) {
         ar(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(health));
     }
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static RobotSnapshot deserialize_from_bitstream(BitReader &reader);
 };
 
 enum EBuildingType : u32;
@@ -50,24 +59,46 @@ struct BuildingSnapshot
     }
 };
 
-
 // Stores the
 struct WorldSnapshot
 {
     u32 frame;
     std::map<u8, SideSnapshot>        sides;
     std::map<u32, RobotSnapshot>      robots;
-    std::map<u32, BuildingSnapshot>   buildings;
 
     std::string to_json_string();
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots), CEREAL_NVP(buildings));
+        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots));
     }
 
-    u64 hash();
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static WorldSnapshot deserialize_from_bitstream(BitReader &reader);
 };
 
 WorldSnapshot capture_world_snapshot();
+
+
+
+
+// // Stores the
+// struct WorldSnapshot
+// {
+//     u32 frame;
+//     std::map<u8, SideSnapshot>        sides;
+//     std::map<u32, RobotSnapshot>      robots;
+//     std::map<u32, BuildingSnapshot>   buildings;
+//
+//     std::string to_json_string();
+//
+//     template <class Archive>
+//     void serialize(Archive& ar) {
+//         ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots), CEREAL_NVP(buildings));
+//     }
+//
+//     // u64 hash();
+// };
+
+// WorldSnapshot capture_world_snapshot();
 

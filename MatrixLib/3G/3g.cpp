@@ -480,9 +480,8 @@ int L3GRun()
 
     while (true)
     {
-        Stopwatch sw_total;
-        Stopwatch sw_event;
-
+        // Stopwatch sw_total;
+        // Stopwatch sw_event;
         // std::cout << "===== curr: " << g_Network.physics_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
 
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -506,10 +505,10 @@ int L3GRun()
         prev_takt = cur_takt;
 
         // Ensure at least 1 ms passed since last iteration
-        // auto delta_duration = std::chrono::duration<f64>(delta_time);
-        // if (delta_duration < std::chrono::milliseconds(1)) {
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(1) - delta_duration);
-        // }
+        auto delta_duration = std::chrono::duration<f64>(delta_time);
+        if (delta_duration < std::chrono::milliseconds(16)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta_duration);
+        }
 
 
         if (FLAG(g_Flags, GFLAG_4SPEED))
@@ -521,7 +520,7 @@ int L3GRun()
         // g_total_ms += delta;
 
         //Stopwatch sw_net;
-        //g_Network.process_network_frame(0);
+        g_Network.process_network_frame(0);
         // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
         int delta = std::min(100LL, to_milliseconds(delta_time).count());
@@ -539,10 +538,11 @@ int L3GRun()
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
-            lgr.add_ticks(17);
-            g_Network.lgr.add_ticks(17);
+            // lgr.add_ticks(17);
+            // g_Network.lgr.add_ticks(17);
+
             //SRemindCore::Takt(delta); ATTENTION
-            Stopwatch sw_phys;
+            // Stopwatch sw_phys;
             // if (
             //     (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
             {
@@ -558,7 +558,7 @@ int L3GRun()
                 // g_physics_tick += 1;
 
                 // TODO: maybe add back FPS limit?
-                Stopwatch sw_draw;
+                // Stopwatch sw_draw;
                 g_FormCur->Draw();
                 // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
 

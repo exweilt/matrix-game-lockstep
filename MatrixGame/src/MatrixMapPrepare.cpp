@@ -390,7 +390,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
 
     CMatrixMapStatic *ms;
 
-    if (step == RS_SIDEAI) {
+    if (g_Network.is_authority() && step == RS_SIDEAI) {
         m_MaintenancePRC = 100;
         ic = propkey->FindAsWStr(DATA_MAINTENANCETIME);
         if (ic >= 0) {
@@ -441,7 +441,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return 0;
     }
 
-    if (step == RS_RESOURCES) {
+    if (g_Network.is_authority() && step == RS_RESOURCES) {
         ic = propkey->FindAsWStr(DATA_SIDERESINFO);
         if (ic >= 0) {
             auto sideresinfo = propval->GetAsParamParser(ic);
@@ -599,7 +599,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (step == RS_BUILDINGS) {
+    if (g_Network.is_authority() && step == RS_BUILDINGS) {
         m_GroundZBaseMiddle = 0;
         m_GroundZBaseMax = 0;
 
@@ -664,7 +664,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (step == RS_ROBOTS) {
+    if (g_Network.is_authority() && step == RS_ROBOTS) {
         // loading robots
         int n = 0;
 
@@ -732,7 +732,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (step == RS_CANNONS) {
+    if (g_Network.is_authority() && step == RS_CANNONS) {
         return 0; // ATTENTION: temporary measure, no cannons
         // loading cannons
         CDataBuf *c0 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_X, ST_FLOAT);
@@ -857,7 +857,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (step == RS_EFFECTS) {
+    if (g_Network.is_authority() && step == RS_EFFECTS) {
         // loading effects
 
         CDataBuf *efx = stor.GetBuf(DATA_EFFECTS, DATA_EFFECTS_X, ST_FLOAT);

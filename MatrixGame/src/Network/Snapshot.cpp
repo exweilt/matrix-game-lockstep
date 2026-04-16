@@ -20,26 +20,45 @@ std::string WorldSnapshot::to_json_string()
     return ss.str();
 }
 
-u64 WorldSnapshot::hash()
+void WorldSnapshot::serialize_to_bitstream(BitWriter &writer) const
 {
-#ifdef PROFILING
-    Stopwatch stopwatch;
-#endif
-    // std::ostringstream ss(std::ios::binary);
-    // cereal::BinaryOutputArchive archive(os);
-    // archive(data);
+    writer.write_u32(this->frame);
 
-    std::ostringstream ss(std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(ss);
-    oarchive(cereal::make_nvp("world_snapshot", *this));
-
-    u64 hash = XXH64(ss.str().c_str(), ss.str().length(), 0);
-
-#ifdef PROFILING
-    std::cout << "=== Hash world elapsed time: " << stopwatch.elapsed_ms() << "\n";
-#endif
-    return hash;
+    // for (const auto& pair : this->sides) {
+    //     std::cout << pair.first << " is " << pair.second << " years old.\n";
+    // }
+    //
+    // for (const auto& pair : ages) {
+    //     std::cout << pair.first << " is " << pair.second << " years old.\n";
+    // }
+    // writer.write_u64(this->checksum);
 }
+
+WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
+{
+    return WorldSnapshot();
+}
+
+// u64 WorldSnapshot::hash()
+// {
+// #ifdef PROFILING
+//     Stopwatch stopwatch;
+// #endif
+//     // std::ostringstream ss(std::ios::binary);
+//     // cereal::BinaryOutputArchive archive(os);
+//     // archive(data);
+//
+//     std::ostringstream ss(std::ios::binary);
+//     cereal::BinaryOutputArchive oarchive(ss);
+//     oarchive(cereal::make_nvp("world_snapshot", *this));
+//
+//     u64 hash = XXH64(ss.str().c_str(), ss.str().length(), 0);
+//
+// #ifdef PROFILING
+//     std::cout << "=== Hash world elapsed time: " << stopwatch.elapsed_ms() << "\n";
+// #endif
+//     return hash;
+// }
 
 WorldSnapshot capture_world_snapshot()
 {
@@ -71,12 +90,12 @@ Stopwatch cws_stopwatch;
     {
         if (obj->IsBuilding())
         {
-            CMatrixBuilding *building = obj->AsBuilding();
-            result.buildings.emplace(building->m_NID, BuildingSnapshot{
-                building->m_Kind,
-                static_cast<u8>(building->m_Side),
-                building->GetHitPoint()
-            });
+            // CMatrixBuilding *building = obj->AsBuilding();
+            // result.buildings.emplace(building->m_NID, BuildingSnapshot{
+            //     building->m_Kind,
+            //     static_cast<u8>(building->m_Side),
+            //     building->GetHitPoint()
+            // });
         }
         else if (obj->IsLiveRobot())
         {

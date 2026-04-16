@@ -77,7 +77,13 @@ struct CommandsFrameRecord
 
 // extern std::list<CommandsFrameRecord> commands_journal;
 
-
+enum class NetworkMode : u8
+{
+    NONE = 0,
+    SERVER = 1,
+    CLIENT = 2,
+    SINGLEPLAYER = 3
+};
 
 class Network
 {
@@ -85,14 +91,16 @@ public:
     Network()  = default;
     ~Network() = default;
 
-    ENetHost* client_host;
+    void broadcast_world_snapshot();
 
+    ENetHost* host;
+
+    NetworkMode network_mode = NetworkMode::NONE;
     u8 controllable_side_id     = static_cast<u8>(SideID::RED); // SideID
     u32 graphics_frame        = 0; // current rendering frame
     u32 physics_frame         = 0; // current physics frame
     u32 input_frame           = 0; // new inputs are sampled for this physics frame
     u32 total_ms              = 0;
-    // bool isClient2              = std::getenv("CLIENT2") != nullptr;
     bool isClient2              = false;
     std::string server_ip;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
@@ -156,6 +164,21 @@ public:
 
     void add_input_for_current_input_frame(const Command &command);
 
+    bool is_client() const
+    {
+        return network_mode == NetworkMode::CLIENT;
+    }
+
+    bool is_authority() const
+    {
+        return network_mode == NetworkMode::SERVER;
+    }
+
+    void set_network_mode(NetworkMode new_network_mode)
+    {
+        network_mode = new_network_mode;
+    }
+
 private:
     // double linked list of all commands for all frames
     // Access through public methods
@@ -164,8 +187,10 @@ private:
 
     void process_incoming_message(const Message &msg);
     void init_client_host();
+    void init_server_host();
     void deinit_client_host();
     void connect_to_server();
+    void process_server_network_frame();
     void initialize_replay_mode_with_files(std::wstring commands_filename);
     void initialize_replay_mode_with_files(std::wstring commands_filename, std::wstring checksums_filename);
 };

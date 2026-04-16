@@ -7,7 +7,7 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/memory.hpp>
-#include <xxhash.h>
+// #include <xxhash.h>
 
 #include "MatrixRobot.hpp"
 #include "Network.hpp"

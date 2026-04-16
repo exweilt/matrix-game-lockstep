@@ -275,7 +275,7 @@ void CMultiSelection::Update(
     }
 }
 
-void CMultiSelection::End(bool add_to_selection) {
+void CMultiSelection::End(bool add_to_selection, u32 side_id) {
     SETFLAG(m_Flags, MS_FLAG_DIP);
     m_TimeBeforeDip = g_MatrixMap->GetTime();
 
@@ -284,7 +284,7 @@ void CMultiSelection::End(bool add_to_selection) {
 
     if (!m_SelItems.empty() && add_to_selection) {
         //CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-        CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetSideById(side_id);
 
         for (auto item : m_SelItems)
         {
@@ -292,7 +292,7 @@ void CMultiSelection::End(bool add_to_selection) {
         }
     }
 
-    RemoveSelItems();
+    //RemoveSelItems();
 }
 
 bool CMultiSelection::FindItem(const CMatrixMapStatic *o)

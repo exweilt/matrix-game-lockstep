@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include "Types.hpp"
+
 class CMatrixMapStatic;
 
 typedef void (*SELECT_ENUM)(CMatrixMapStatic *ms, uintptr_t param);
@@ -61,6 +63,9 @@ class CMultiSelection : public CMain {
     void DrawPass2(void);
     void DrawPassEnd(void);
 
+
+
+public:
     void RemoveSelItems() {
         RESETFLAG(m_Flags, MS_FLAG_BUILDINGS);
         RESETFLAG(m_Flags, MS_FLAG_ROBOTS);
@@ -68,7 +73,6 @@ class CMultiSelection : public CMain {
         m_SelItems.clear();
     }
 
-public:
     static CMultiSelection *m_GameSelection;
 
     static void StaticInit(void) {
@@ -127,7 +131,7 @@ public:
 
     void Update(const Base::CPoint &pos) { m_RB = pos; }
     void Update(const Base::CPoint &pos, DWORD mask, SELECT_ENUM callback, DWORD param);
-    void End(bool add_to_selection = true);
+    void End(bool add_to_selection = true, u32 side_id=1);
 
     static void AddTime(int ms) { m_Time += ms; }
 

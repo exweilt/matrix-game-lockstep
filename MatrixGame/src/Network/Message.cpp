@@ -10,35 +10,44 @@
 //
 // }
 
-void MessageCommandBatchParams::serialize_to_bitstream(BitWriter &writer) const
-{
-    writer.write_u32(this->target_frame);            // target_frame
-    writer.write_u8(this->target_side);                     // target_side
-    writer.write_u32(this->commands.size()); // number of commands
+// void MessageCommandBatchParams::serialize_to_bitstream(BitWriter &writer) const
+// {
+//     writer.write_u32(this->target_frame);            // target_frame
+//     writer.write_u8(this->target_side);                     // target_side
+//     writer.write_u32(this->commands.size()); // number of commands
+//
+//     // the array of commands
+//     for (i32 i = 0; i < this->commands.size(); i++)
+//     {
+//         this->commands[i].serialize_to_bitstream(writer);
+//     }
+// }
+//
+// MessageCommandBatchParams MessageCommandBatchParams::deserialize_from_bitstream(BitReader &reader)
+// {
+//     MessageCommandBatchParams result;
+//
+//     result.target_frame = reader.read_u32();
+//     result.target_side  = reader.read_u8();
+//
+//     u32 command_count = reader.read_u32();
+//
+//     result.commands.resize(command_count);
+//     for (u32 i = 0; i < command_count; i++)
+//     {
+//         result.commands[i] = Command::deserialize_from_bitstream(reader);
+//     }
+//
+//     return result; // :)
+// }
 
-    // the array of commands
-    for (i32 i = 0; i < this->commands.size(); i++)
-    {
-        this->commands[i].serialize_to_bitstream(writer);
-    }
+void MessageWorldSnapshotParams::serialize_to_bitstream(BitWriter &writer) const
+{
 }
 
-MessageCommandBatchParams MessageCommandBatchParams::deserialize_from_bitstream(BitReader &reader)
+MessageWorldSnapshotParams MessageWorldSnapshotParams::deserialize_from_bitstream(BitReader &reader)
 {
-    MessageCommandBatchParams result;
-
-    result.target_frame = reader.read_u32();
-    result.target_side  = reader.read_u8();
-
-    u32 command_count = reader.read_u32();
-
-    result.commands.resize(command_count);
-    for (u32 i = 0; i < command_count; i++)
-    {
-        result.commands[i] = Command::deserialize_from_bitstream(reader);
-    }
-
-    return result; // :)
+    return MessageWorldSnapshotParams();
 }
 
 void MessageJoinParams::serialize_to_bitstream(BitWriter &writer) const

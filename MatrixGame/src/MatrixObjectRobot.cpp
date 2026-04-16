@@ -1279,9 +1279,13 @@ bool CMatrixRobot::Carry(CMatrixFlyer *cargo, bool quick_connect) {
 }
 
 void CMatrixRobot::ClearSelection(void) {
-    if (g_MatrixMap->GetControllableSide()->m_CurrSel == ROBOT_SELECTED && g_MatrixMap->GetControllableSide()->m_ActiveObject == this)
+    for (int i = 1; i <= 4; i++)
     {
-        g_MatrixMap->GetControllableSide()->Select(NOTHING, NULL);
+        if (g_MatrixMap->GetSideById(i)->m_CurrSel == ROBOT_SELECTED && g_MatrixMap->GetSideById(i)->m_ActiveObject == this)
+        {
+            // g_MatrixMap->GetControllableSide()->Select(NOTHING, NULL);
+            g_MatrixMap->GetSideById(i)->Select(NOTHING, NULL);
+        }
     }
 }
 
