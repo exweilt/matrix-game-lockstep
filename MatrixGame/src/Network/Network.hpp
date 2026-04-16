@@ -22,6 +22,8 @@ constexpr u32 INPUT_BUFFER_SIZE = 15; // Size of input buffering
 constexpr u32 PHYSICS_FRAME_RATE = 10;
 static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
 constexpr u32 PHYSICS_FRAME_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_FRAME_RATE) + 1;
+constexpr u32 INTERPOLATION_BUFFER_SIZE = 10;
+
 
 enum class SideID : u8
 {
@@ -92,6 +94,8 @@ public:
     ~Network() = default;
 
     void broadcast_world_snapshot();
+    void process_playback();
+    void populate_robot(RobotSnapshot &rs);
 
     ENetHost* host;
 
@@ -109,6 +113,9 @@ public:
     bool desync_happened = false;
     bool has_physics_frame_run = false;
     u32 code_logic_frame = 1;
+
+    std::map<u32, CMatrixRobotAI*> robots;
+
     // bool next_frame_requested   = false; // should simulate next physics frame
 
     bool isCompactMode;
@@ -116,7 +123,9 @@ public:
     // Used for robots, turrets, factories and bases.
     u32 next_nid              = 0;
 
-    RingBuffer<WorldSnapshot, INPUT_BUFFER_SIZE> history_game_states;
+    RingBuffer<WorldSnapshot, INTERPOLATION_BUFFER_SIZE> interpolation_buffer;
+
+    // RingBuffer<WorldSnapshot, INPUT_BUFFER_SIZE> history_game_states;
 
     // std::vector<Command> current_input{}; // list of all actions for
 
@@ -185,6 +194,7 @@ private:
     // TODO: consider changing to std::map?
     std::list<CommandsFrameRecord> commands_journal;
 
+    void handle_new_world_snapshot(WorldSnapshot ws);
     void process_incoming_message(const Message &msg);
     void init_client_host();
     void init_server_host();

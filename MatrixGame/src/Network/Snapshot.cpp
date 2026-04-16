@@ -45,6 +45,7 @@ void RobotSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_u8(head);
     writer.write_u8(rotation);
     writer.write_u8(hull_rotation);
+    writer.write_u8(side);
     writer.write_u8(weapon_cnt);
 
     for (int i = 0; i < weapon_cnt; i++)
@@ -65,6 +66,7 @@ RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.head = reader.read_u8();
     result.rotation = reader.read_u8();
     result.hull_rotation = reader.read_u8();
+    result.side = reader.read_u8();
     result.weapon_cnt = reader.read_u8();
 
     for (int i = 0; i < result.weapon_cnt; i++)
@@ -85,6 +87,7 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     // result.weapons = {0};
     result.rotation = 0;
     result.hull_rotation = 0;
+    result.side = robot->GetSide();
 
     result.weapon_cnt = 0;
     for (int i = 0; i < robot->m_UnitCnt; i++)

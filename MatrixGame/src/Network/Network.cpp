@@ -14,6 +14,8 @@
 #include "stupid_logger.hpp"
 
 #include <enet/enet.h>
+#include <algorithm>
+#include "Interface/CConstructor.h"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
@@ -89,10 +91,21 @@ void Network::approve_final_input(u32 target_frame)
     // // current_input.clear();
 }
 
+void Network::handle_new_world_snapshot(WorldSnapshot ws)
+{
+    if (ws.frame <= interpolation_buffer.back().frame)
+    {
+        std::cout << "Snapshot for frame: " << ws.frame << " is outdated. Dropping it." << std::endl;
+        return;
+    }
+    interpolation_buffer.push(ws);
+}
+
 void Network::process_incoming_message(const Message &msg)
 {
     if (msg.type == MessageType::WORLD_SNAPSHOT)
     {
+        handle_new_world_snapshot(msg.world_snapshot.ws);
         // std::cout << "Got Captured world snapshot: " << msg.world_snapshot.ws.to_json_string() << std::endl;
         // std::cout << "Got command batch for " << msg.command_batch.target_frame << std::endl;
         // get_frame_record(msg.command_batch.target_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
@@ -123,6 +136,76 @@ void Network::broadcast_world_snapshot()
         MessageWorldSnapshotParams {ws }
     };
     g_Network.send_message(msg);
+}
+
+void Network::process_playback()
+{
+    static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
+    std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
+    f64 delta = std::chrono::duration<f64>(curr_time - tick_start_time).count();
+
+    WorldSnapshot ws_from, ws_to;
+    if (g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to))
+    {
+        f32 k = std::min(1.0f, static_cast<float>(delta) / 0.1f);
+        for (auto& [id, rs] : ws_from.robots) {
+            g_MatrixMap->m_DI.T(L"From physics frame", utils::format(L"%d", ws_from.frame).c_str(), 1000);
+            g_MatrixMap->m_DI.T(L"k", utils::format(L"%f", k).c_str(), 1000);
+            if (!g_Network.robots.contains(id))
+            {
+                g_Network.populate_robot(rs);
+            }
+            if (ws_to.robots.contains(id))
+            {
+                CMatrixRobotAI *r = g_Network.robots.at(id);
+                RobotSnapshot rs_from = ws_from.robots.at(id);
+                RobotSnapshot rs_to = ws_to.robots.at(id);
+                r->m_PosX = LERPFLOAT(k, rs_from.x, rs_to.x);
+                r->m_PosY = LERPFLOAT(k, rs_from.y, rs_to.y);
+                r->RChange(MR_Matrix);
+                r->RNeed(MR_Matrix);
+                r->JoinToGroup();
+            }
+        }
+        if (k >= 1.0f)
+        {
+            g_Network.interpolation_buffer.pop_front();
+            tick_start_time = std::chrono::steady_clock::now();
+        }
+    }
+    else
+    {
+        tick_start_time = std::chrono::steady_clock::now();
+    }
+}
+
+void Network::populate_robot(RobotSnapshot& rs)
+{
+    // g_Network.
+    // D3DXVECTOR3 pos = g_MatrixMap->m_TraceStopPos;
+
+    SSpecialBot bot{};
+
+    bot.m_Chassis.m_nKind = static_cast<ERobotUnitKind>(rs.chassis);
+    bot.m_Armor.m_Unit.m_nKind = static_cast<ERobotUnitKind>(rs.hull);
+    bot.m_Head.m_nKind = static_cast<ERobotUnitKind>(rs.head);
+
+    for (int i = 0; i < rs.weapon_cnt; i++)
+        bot.m_Weapon[i].m_Unit.m_nKind =  static_cast<ERobotUnitKind>(rs.weapons[i]);
+
+    // bot.m_Weapon[0].m_Unit.m_nKind = RUK_WEAPON_LASER;
+
+    D3DXVECTOR3 pos = D3DXVECTOR3(rs.x, rs.y, 0);
+    CMatrixRobotAI *r = bot.GetRobot(pos, rs.side);
+    r->m_NID = rs.nid;
+
+    // g_MatrixMap->AddObject(r, true);
+
+    r->JoinToGroup();
+    r->CreateTextures();
+    r->InitMaxHitpoint(10000.0);
+
+    robots.emplace(rs.nid, r);
 }
 
 void Network::initialize_replay_mode_with_files(std::wstring commands_filename)

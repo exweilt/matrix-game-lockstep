@@ -3038,7 +3038,10 @@ void CMatrixMapLogic::Takt(int step) {
             g_Network.broadcast_world_snapshot();
         }
     }
-
+    else if (g_Network.is_client())
+    {
+        g_Network.process_playback();
+    }
     DCP();
 
     m_Camera.Takt(float(step));
