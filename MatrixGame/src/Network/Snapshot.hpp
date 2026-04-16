@@ -45,8 +45,8 @@ struct RobotSnapshot
     u8 head;
     u8 weapon_cnt;
     u8 weapons[5]{};
-    u8 rotation;
-    u8 hull_rotation;
+    f32 rotation;
+    f32 hull_rotation;
     u8 side;
 
     template <class Archive>
@@ -94,7 +94,9 @@ struct WorldSnapshot
 
 WorldSnapshot capture_world_snapshot();
 
+uint8_t pack_rotation(float radians);
 
+f32 unpack_rotation(uint8_t quantized);
 
 
 // // Stores the

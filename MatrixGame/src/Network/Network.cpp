@@ -162,6 +162,8 @@ void Network::process_playback()
                 RobotSnapshot rs_to = ws_to.robots.at(id);
                 r->m_PosX = LERPFLOAT(k, rs_from.x, rs_to.x);
                 r->m_PosY = LERPFLOAT(k, rs_from.y, rs_to.y);
+                r->SetRotationZ(rs.rotation);
+                r->SetHullRotationZ(rs.hull_rotation);
                 r->RChange(MR_Matrix);
                 r->RNeed(MR_Matrix);
                 r->JoinToGroup();

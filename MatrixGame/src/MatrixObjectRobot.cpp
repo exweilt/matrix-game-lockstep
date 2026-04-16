@@ -45,7 +45,7 @@ CMatrixRobot::CMatrixRobot() : CMatrixMapStatic(), m_Animation(ANIMATION_OFF), m
     m_Forward = D3DXVECTOR3(0, 0, 0);
     m_HullForward = D3DXVECTOR3(0, 0, 0);
 
-    m_HullRotAngle = 0;
+    // m_HullRotAngle = 0;
 
     m_Speed = 0;
     m_RotSpeed = 0;
@@ -1745,4 +1745,20 @@ bool CMatrixRobot::InRect(const CRect &rect) const {
 inline void CMatrixRobot::SetRotationZ(float roll_angle) {
     this->m_Forward.x = -sin(roll_angle);
     this->m_Forward.y = cos(roll_angle);
+}
+
+float CMatrixRobot::GetRotationZ()
+{
+    return atan2f(-m_Forward.x, m_Forward.y);
+}
+
+void CMatrixRobot::SetHullRotationZ(float roll)
+{
+    this->m_HullForward.x = -sin(roll);
+    this->m_HullForward.y = cos(roll);
+}
+
+float CMatrixRobot::GetHullRotationZ()
+{
+    return atan2f(-m_HullForward.x, m_HullForward.y);
 }

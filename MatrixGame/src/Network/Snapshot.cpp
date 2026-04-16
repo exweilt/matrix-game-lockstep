@@ -43,8 +43,8 @@ void RobotSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_u8(chassis);
     writer.write_u8(hull);
     writer.write_u8(head);
-    writer.write_u8(rotation);
-    writer.write_u8(hull_rotation);
+    writer.write_u8(pack_rotation(rotation));
+    writer.write_u8(pack_rotation(hull_rotation));
     writer.write_u8(side);
     writer.write_u8(weapon_cnt);
 
@@ -64,8 +64,8 @@ RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.chassis = reader.read_u8();
     result.hull = reader.read_u8();
     result.head = reader.read_u8();
-    result.rotation = reader.read_u8();
-    result.hull_rotation = reader.read_u8();
+    result.rotation = unpack_rotation(reader.read_u8());
+    result.hull_rotation = unpack_rotation(reader.read_u8());
     result.side = reader.read_u8();
     result.weapon_cnt = reader.read_u8();
 
@@ -74,6 +74,21 @@ RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
 
     return result;
 }
+
+uint8_t pack_rotation(float radians) {
+    float shifted = radians + M_PI;
+
+    float scaled = shifted * (256.0f / (2.0f * M_PI));
+
+    return static_cast<uint8_t>(scaled);
+}
+
+f32 unpack_rotation(uint8_t quantized) {
+    float radians = static_cast<float>(quantized) * (2.0f * M_PI / 256.0f);
+    return radians - M_PI;
+}
+
+
 
 RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
 {
@@ -85,8 +100,8 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     result.health = robot->GetHitPoint();
     result.maxhealth = robot->GetMaxHitPoint();
     // result.weapons = {0};
-    result.rotation = 0;
-    result.hull_rotation = 0;
+    result.rotation = robot->GetRotationZ();
+    result.hull_rotation = robot->GetHullRotationZ();
     result.side = robot->GetSide();
 
     result.weapon_cnt = 0;

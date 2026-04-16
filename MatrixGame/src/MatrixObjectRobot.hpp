@@ -201,8 +201,8 @@ public:
 
     // temporary
     int m_TimeWithBase;
-    float m_HullRotAngle;
-    float m_BotRotAngle;
+    // float m_HullRotAngle;
+    // float m_BotRotAngle;
     D3DXVECTOR3 m_Forward;
     D3DXVECTOR3 m_HullForward;
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,6 +321,10 @@ public:
 
     // Set Robot's rotation around local Z-axis(points up and a.k.a. roll) to some value in radians.
     void SetRotationZ(float roll) override;
+    float GetRotationZ();
+
+    void SetHullRotationZ(float roll);
+    float GetHullRotationZ();
 };
 
 inline bool CMatrixMapStatic::IsLiveRobot(void) const {
