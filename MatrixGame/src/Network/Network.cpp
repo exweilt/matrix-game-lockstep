@@ -393,17 +393,18 @@ void Network::connect_to_server()
     enet_address_set_host (& address, server_ip.c_str());
     address.port = 1234;
 
+    /* Initiate the connection, allocating the two channels 0 and 1. */
+    peer = enet_host_connect (host, &address, 2, 0);
+    if (peer == NULL)
+    {
+        fprintf (stderr, "No available peers for initiating an ENet connection.\n");
+        exit (EXIT_FAILURE);
+    }
+
     while (true)
     {
-        /* Initiate the connection, allocating the two channels 0 and 1. */
-        peer = enet_host_connect (host, &address, 2, 0);
-        if (peer == NULL)
-        {
-            fprintf (stderr, "No available peers for initiating an ENet connection.\n");
-            exit (EXIT_FAILURE);
-        }
 
-        if (enet_host_service (host, &event, 15000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+        if (enet_host_service (host, &event, 1000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
         {
             std::cout << "Connected to the server!\n";
             break;
@@ -411,10 +412,10 @@ void Network::connect_to_server()
         else
         {
             std::cout << "Could not connect to the server.\n";
-            exit(1);
-            // Sleep(500);
-            // std::cout << "Attempting to reconnect...\n";
-            enet_peer_reset(peer);
+            // exit(1);
+            std::cout << "Attempting to reconnect...\n";
+            Sleep(1000);
+            // enet_peer_reset(peer);
             continue;
         }
     }
