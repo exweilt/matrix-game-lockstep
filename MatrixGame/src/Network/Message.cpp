@@ -43,11 +43,12 @@
 
 void MessageWorldSnapshotParams::serialize_to_bitstream(BitWriter &writer) const
 {
+    ws.serialize_to_bitstream(writer);
 }
 
 MessageWorldSnapshotParams MessageWorldSnapshotParams::deserialize_from_bitstream(BitReader &reader)
 {
-    return MessageWorldSnapshotParams();
+    return MessageWorldSnapshotParams( WorldSnapshot::deserialize_from_bitstream(reader) );
 }
 
 void MessageJoinParams::serialize_to_bitstream(BitWriter &writer) const

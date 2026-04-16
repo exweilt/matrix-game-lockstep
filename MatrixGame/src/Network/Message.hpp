@@ -38,12 +38,12 @@ enum class MessageType : u8
 
 struct MessageWorldSnapshotParams
 {
-    u32 target_frame;
+    // u32 target_frame;
     WorldSnapshot ws;
     // std::vector<RobotSnapshot> robots;
 
-    MessageWorldSnapshotParams(): target_frame(0), ws() {}
-    MessageWorldSnapshotParams(const u32 frame, WorldSnapshot _ws) : target_frame(frame), ws(_ws) {}
+    MessageWorldSnapshotParams(): ws() {}
+    MessageWorldSnapshotParams(WorldSnapshot _ws) : ws(_ws) {}
     ~MessageWorldSnapshotParams() {}
 
 

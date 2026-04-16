@@ -80,7 +80,7 @@ struct WorldSnapshot
     std::map<u8, SideSnapshot>        sides;
     std::map<u32, RobotSnapshot>      robots;
 
-    std::string to_json_string();
+    std::string to_json_string() const;
 
     template <class Archive>
     void serialize(Archive& ar) {

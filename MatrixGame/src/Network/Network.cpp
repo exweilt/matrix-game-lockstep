@@ -26,20 +26,46 @@ Network g_Network{};
 //
 // std::list<network::CommandsFrameRecord> commands_journal;
 
+// void Network::send_message(Message &msg)
+//
+// {
+//
+//     BitWriter writer;
+//
+//     msg.serialize_to_bitstream(writer);
+//
+//
+//     ENetPacket* packet = enet_packet_create(
+//
+//     writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+//
+//     );
+//
+//
+//     enet_peer_send(host->peers, 0, packet);
+//
+//
+//     enet_host_flush (host);
+//
+//     // enet_packet_destroy(packet);
+//
+// }
 
 void Network::send_message(Message &msg)
 {
     BitWriter writer;
     msg.serialize_to_bitstream(writer);
 
+    // Create the packet
     ENetPacket* packet = enet_packet_create(
         writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
     );
 
-    enet_peer_send(host->peers, 0, packet);
+    // Broadcast to all connected peers on Channel 0
+    enet_host_broadcast(host, 0, packet);
 
-    enet_host_flush (host);
-    // enet_packet_destroy(packet);
+    // Send the data immediately
+    enet_host_flush(host);
 }
 
 void Network::approve_final_input(u32 target_frame)
@@ -67,6 +93,7 @@ void Network::process_incoming_message(const Message &msg)
 {
     if (msg.type == MessageType::WORLD_SNAPSHOT)
     {
+        // std::cout << "Got Captured world snapshot: " << msg.world_snapshot.ws.to_json_string() << std::endl;
         // std::cout << "Got command batch for " << msg.command_batch.target_frame << std::endl;
         // get_frame_record(msg.command_batch.target_frame)->set_side_inputs(msg.command_batch.target_side, msg.command_batch.commands);
     }
@@ -89,7 +116,13 @@ void Network::process_incoming_message(const Message &msg)
 void Network::broadcast_world_snapshot()
 {
     WorldSnapshot ws = capture_world_snapshot();
-    std::cout << "Captured world snapshot: " << ws.to_json_string() << std::endl;
+    // std::cout << "Captured world snapshot: " << ws.to_json_string() << std::endl;
+
+    Message msg
+    {
+        MessageWorldSnapshotParams {ws }
+    };
+    g_Network.send_message(msg);
 }
 
 void Network::initialize_replay_mode_with_files(std::wstring commands_filename)
@@ -144,9 +177,10 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
                     //         event.channelID);
 
                 {
-                    // BitReader reader = BitReader(event.packet->data);
-                    // Message msg{Message::deserialize_from_bitstream(reader)};
-                    // process_incoming_message(msg);
+                    // std::cout << "new data " << std::endl;
+                    BitReader reader = BitReader(event.packet->data);
+                    Message msg{Message::deserialize_from_bitstream(reader)};
+                    process_incoming_message(msg);
                     //
                     // /* Clean up the packet now that we're done using it. */
                     enet_packet_destroy(event.packet);

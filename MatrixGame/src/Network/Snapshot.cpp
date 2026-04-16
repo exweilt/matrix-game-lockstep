@@ -9,6 +9,30 @@
 
 // #define PROFILING
 
+void SideSnapshot::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u8(side);
+    writer.write_u32(status);
+    writer.write_u32(titanium);
+    writer.write_u32(electronics);
+    writer.write_u32(energy);
+    writer.write_u32(plasma);
+}
+
+SideSnapshot SideSnapshot::deserialize_from_bitstream(BitReader &reader)
+{
+    SideSnapshot result{};
+
+    result.side = reader.read_u8();
+    result.status = static_cast<ESideStatus>(reader.read_u32());
+    result.titanium = reader.read_u32();
+    result.electronics = reader.read_u32();
+    result.energy = reader.read_u32();
+    result.plasma = reader.read_u32();
+
+    return result;
+}
+
 void RobotSnapshot::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(nid);
@@ -86,7 +110,7 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     return result;
 }
 
-std::string WorldSnapshot::to_json_string()
+std::string WorldSnapshot::to_json_string() const
 {
     std::ostringstream ss;
 
@@ -101,19 +125,38 @@ void WorldSnapshot::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(this->frame);
 
-    // for (const auto& pair : this->sides) {
-    //     std::cout << pair.first << " is " << pair.second << " years old.\n";
-    // }
-    //
-    // for (const auto& pair : ages) {
-    //     std::cout << pair.first << " is " << pair.second << " years old.\n";
-    // }
-    // writer.write_u64(this->checksum);
+    writer.write_u32(sides.size());
+    for (const auto& [sideId, side_snapshot] : sides) {
+        side_snapshot.serialize_to_bitstream(writer);
+    }
+
+    writer.write_u32(robots.size());
+    for (const auto& [Id, rob_snapshot] : robots) {
+        rob_snapshot.serialize_to_bitstream(writer);
+    }
 }
 
 WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
 {
-    return WorldSnapshot();
+    WorldSnapshot result{};
+
+    result.frame = reader.read_u32();
+
+    int sides_count = reader.read_u32();
+    for (int i = 0; i < sides_count; i++)
+    {
+        SideSnapshot ss = SideSnapshot::deserialize_from_bitstream(reader);
+        result.sides.emplace(ss.side, ss);
+    }
+
+    int rob_count = reader.read_u32();
+    for (int i = 0; i < rob_count; i++)
+    {
+        RobotSnapshot rs = RobotSnapshot::deserialize_from_bitstream(reader);
+        result.robots.emplace(rs.nid, rs);
+    }
+
+    return result;
 }
 
 // u64 WorldSnapshot::hash()
