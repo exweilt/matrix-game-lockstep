@@ -3009,13 +3009,9 @@ void CMatrixMapLogic::Takt(int step) {
         physics_process(step);
         DCP();
 
-        // Other logic?!
-        g_IFaceList->LogicTakt(step); // ATTENTION
-        CMatrixMap::Takt(step);  // graphic takts after logic takt
 
         // register the new frame
         g_Network.physics_frame += 1;
-        m_Time += step;
         g_Network.frames_passed_since_last_check += 1; // to calc physics fps
         // g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
 
@@ -3043,6 +3039,11 @@ void CMatrixMapLogic::Takt(int step) {
         g_Network.process_playback();
     }
     DCP();
+
+    // Other logic?!
+    m_Time += step;
+    g_IFaceList->LogicTakt(step); // ATTENTION
+    CMatrixMap::Takt(step);  // graphic takts after logic takt
 
     m_Camera.Takt(float(step));
 

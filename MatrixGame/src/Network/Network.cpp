@@ -164,7 +164,9 @@ void Network::process_playback()
                 r->m_PosY = LERPFLOAT(k, rs_from.y, rs_to.y);
                 r->SetRotationZ(rs.rotation);
                 r->SetHullRotationZ(rs.hull_rotation);
-                r->RChange(MR_Matrix);
+
+                // TODO: optimize this?
+                r->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
                 r->RNeed(MR_Matrix);
                 r->JoinToGroup();
             }
