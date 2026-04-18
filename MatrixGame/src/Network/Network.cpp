@@ -175,6 +175,8 @@ void Network::process_playback([[maybe_unused]]int ms)
                 r->m_PosY = LERPFLOAT(k, rs_from.y, rs_to.y);
                 r->SetRotationZ(rs.rotation);
                 r->SetHullRotationZ(rs.hull_rotation);
+                r->InitMaxHitpoint(rs.maxhealth * 10);
+                r->SetHitPoint(rs.health * 10);
 
                 // TODO: optimize this?
                 r->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);

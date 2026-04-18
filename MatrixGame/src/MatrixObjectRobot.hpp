@@ -234,6 +234,8 @@ public:
     void ShowHitpoint(void) { m_ShowHitpointTime = HITPOINT_SHOW_TIME; }
     float GetHitPoint(void) const { return m_HitPoint / 10; }
     float GetMaxHitPoint() { return m_HitPointMax / 10; }
+    void SetHitPoint(float newHp) { m_HitPoint = newHp; }
+
     void InitMaxHitpoint(float hp) {
         m_HitPoint = hp;
         m_HitPointMax = hp;
