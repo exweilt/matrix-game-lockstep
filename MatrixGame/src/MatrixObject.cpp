@@ -1124,7 +1124,7 @@ static bool FindOnlyPlayerRobotsTgt(const D3DXVECTOR3&, CMatrixMapStatic *ms, ui
     return true;
 }
 
-void CMatrixMapObject::LogicTakt(int ms) {
+bool CMatrixMapObject::LogicTakt(int ms) {
     DTRACE();
 
     if (m_BehFlag == BEHF_TERRON) {
@@ -1222,7 +1222,7 @@ void CMatrixMapObject::LogicTakt(int ms) {
                 m_Graph->SetAnimByName(L"Main");
             }
         }
-        return;
+        return false;
     }
     else if (m_BehFlag == BEHF_BREAK) {
         if (m_PB)
@@ -1357,7 +1357,7 @@ void CMatrixMapObject::LogicTakt(int ms) {
                 m_PrevStateRobotsInRadius = 0;
             }
         }
-        return;
+        return false;
     }
     else if (m_BehFlag == BEHF_SENS) {
         if (m_PrevStateRobotsInRadius < 0) {
@@ -1396,7 +1396,7 @@ void CMatrixMapObject::LogicTakt(int ms) {
                 }
             }
         }
-        return;
+        return false;
     }
 
     if (IsAblaze()) {
@@ -1435,7 +1435,7 @@ void CMatrixMapObject::LogicTakt(int ms) {
                 }
 
                 if (Damage(WEAPON_ABLAZE, pos, dir, 0, NULL))
-                    return;  // it is no mater who ablaze this object
+                    return false;  // it is no mater who ablaze this object
             }
         }
 
@@ -1465,6 +1465,8 @@ void CMatrixMapObject::LogicTakt(int ms) {
         // if (InLT()) DCNT("lt_out");
         DelLT();
     }
+
+    return false;
 }
 
 bool CMatrixMapObject::InRect(const CRect &rect) const {

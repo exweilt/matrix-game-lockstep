@@ -297,7 +297,7 @@ public:
 
     virtual void Takt(int cms);
 
-    virtual void LogicTakt(int cms);
+    virtual bool LogicTakt(int cms);
     void PauseTakt(int cms);
 
     float GetFloorZ(void);

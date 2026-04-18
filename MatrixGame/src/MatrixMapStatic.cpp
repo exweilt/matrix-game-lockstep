@@ -81,7 +81,7 @@ CMatrixMapStatic::~CMatrixMapStatic() {
     m_Core->Release();
 }
 
-void CMatrixMapStatic::StaticTakt(int ms) {
+bool CMatrixMapStatic::StaticTakt(int ms) {
     DTRACE();
 
     if (IsAblaze()) {
@@ -110,9 +110,11 @@ void CMatrixMapStatic::StaticTakt(int ms) {
 
     DCP();
 
-    LogicTakt(ms);
 
     DCP();
+
+    return LogicTakt(ms);
+
 }
 
 void CMatrixMapStatic::RecalcTerainColor(void) {

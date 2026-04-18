@@ -315,9 +315,10 @@ private:
     static size_t nextUID;
 public:
     const size_t UID{++nextUID};
+    bool is_processed_by_network; // dirty flag: only for client
+
 ///////////////////////////////////////////////////////////////////////
 
-public:
     DWORD m_SoundChassis;
 
     float m_RadarRadius;
@@ -428,11 +429,11 @@ public:
     }
 
     void OBBToAABBCollision(int nHeight, int nWidth);
-    D3DXVECTOR3 LineToAABBIntersection(const D3DXVECTOR2 &s, const D3DXVECTOR2 &e, const D3DXVECTOR2 &vLu,
-                                       const D3DXVECTOR2 &vLd, const D3DXVECTOR2 &vRu, const D3DXVECTOR2 &vRd,
-                                       bool revers_x, bool revers_y);
-    D3DXVECTOR3 CornerLineToAABBIntersection(const D3DXVECTOR2 &s, const D3DXVECTOR2 &e, const D3DXVECTOR2 &vLu,
-                                             const D3DXVECTOR2 &vLd, const D3DXVECTOR2 &vRu, const D3DXVECTOR2 &vRd);
+    // D3DXVECTOR3 LineToAABBIntersection(const D3DXVECTOR2 &s, const D3DXVECTOR2 &e, const D3DXVECTOR2 &vLu,
+    //                                    const D3DXVECTOR2 &vLd, const D3DXVECTOR2 &vRu, const D3DXVECTOR2 &vRd,
+    //                                    bool revers_x, bool revers_y);
+    // D3DXVECTOR3 CornerLineToAABBIntersection(const D3DXVECTOR2 &s, const D3DXVECTOR2 &e, const D3DXVECTOR2 &vLu,
+    //                                          const D3DXVECTOR2 &vLd, const D3DXVECTOR2 &vRu, const D3DXVECTOR2 &vRd);
     D3DXVECTOR3 SphereRobotToAABBObstacleCollision(D3DXVECTOR3 &corr, const D3DXVECTOR3 &vel);
     // D3DXVECTOR3 SphereToAABBIntersection(const D3DXVECTOR2 &pos,float r, const D3DXVECTOR2 &vLu,const D3DXVECTOR2
     // &vLd,const D3DXVECTOR2 &vRu,const D3DXVECTOR2 &vRd, bool revers_x, bool revers_y);
@@ -524,9 +525,11 @@ public:
     void GetLost(const D3DXVECTOR3 &v);
 
     void RobotSpawn(CMatrixBuilding *pBase);  // spawn робота
-    void DIPTakt(float ms);                   // death in progress takt
+    bool DIPTakt(float ms);                   // death in progress takt
 
-    virtual void LogicTakt(int cms);
+    // virtual void LogicTakt(int cms);
+    virtual bool LogicTakt(int cms);
+
     void PauseTakt(int cms);
 
 #ifdef _DEBUG

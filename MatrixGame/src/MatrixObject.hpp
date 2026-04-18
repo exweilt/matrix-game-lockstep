@@ -121,7 +121,7 @@ public:
     virtual void RNeed(dword need);
 
     virtual void Takt(int cms);
-    virtual void LogicTakt(int);
+    virtual bool LogicTakt(int);
     void PauseTakt(int cms);
 
     void ApplyAnimState(int anims);

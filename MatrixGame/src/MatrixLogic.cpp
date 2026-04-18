@@ -3036,7 +3036,7 @@ void CMatrixMapLogic::Takt(int step) {
     }
     else if (g_Network.is_client())
     {
-        g_Network.process_playback();
+        g_Network.process_playback(step);
     }
     DCP();
 

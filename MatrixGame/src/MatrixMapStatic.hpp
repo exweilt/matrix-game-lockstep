@@ -473,12 +473,13 @@ public:
     inline void RChange(dword zn) { m_RChange |= zn; }
     inline void RNoNeed(dword zn) { m_RChange &= (~zn); }
 
-    void StaticTakt(int ms);
+    bool StaticTakt(int ms);
 
     virtual void RNeed(dword need) = 0;  // Запрашиваем нужные ресурсы объекта
 
     virtual void Takt(int cms) = 0; // not logic
-    virtual void LogicTakt(int cms) = 0;
+    // virtual void LogicTakt(int cms) = 0;
+    virtual bool LogicTakt(int cms) = 0;
 
     virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const = 0;
 

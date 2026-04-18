@@ -188,7 +188,7 @@ public:
     virtual void RNeed(dword need);
 
     virtual void Takt(int cms);
-    virtual void LogicTakt(int cms);
+    virtual bool LogicTakt(int cms);
     void PauseTakt(int cms);
 
     virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const;

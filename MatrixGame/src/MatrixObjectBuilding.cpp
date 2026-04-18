@@ -513,7 +513,7 @@ void CMatrixBuilding::PauseTakt(int cms) {
     }
 }
 
-void CMatrixBuilding::LogicTakt(int cms) {
+bool CMatrixBuilding::LogicTakt(int cms) {
     DTRACE();
 
     m_PB.Modify(100000.0f, 0);
@@ -751,7 +751,7 @@ void CMatrixBuilding::LogicTakt(int cms) {
             }
 
             g_MatrixMap->StaticDelete(this);
-            return;
+            return true;
         }
         m_HitPoint = -10000000;
     }
@@ -795,7 +795,7 @@ void CMatrixBuilding::LogicTakt(int cms) {
             }
         }
 
-        return;
+        return false;
     }
 
     if (m_Kind == BUILDING_BASE) {
@@ -868,6 +868,7 @@ void CMatrixBuilding::LogicTakt(int cms) {
     //{
     //    m_AmbientSound = CSound::Play(m_AmbientSound, snd, GetGeoCenter());
     //}
+    return false;
 }
 
 bool CMatrixBuilding::Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const {

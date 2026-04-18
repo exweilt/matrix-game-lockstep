@@ -821,13 +821,13 @@ void CMatrixCannon::PauseTakt(int takt) {
     }
 }
 
-void CMatrixCannon::LogicTakt(int takt) {
+bool CMatrixCannon::LogicTakt(int takt) {
     DTRACE();
     SetPBOutOfScreen();
 
     if (m_CurrState == CANNON_DIP) {
         DIPTakt(float(takt));
-        return;
+        return false;
     }
 
     if (m_MiniMapFlashTime > 0) {
@@ -872,7 +872,7 @@ void CMatrixCannon::LogicTakt(int takt) {
         //}
 
         m_ShowHitpointTime = 1;
-        return;
+        return false;
     }
 
     if (IsAblaze()) {
@@ -900,7 +900,7 @@ void CMatrixCannon::LogicTakt(int takt) {
 
             for (int i = 0; i < OBJECT_ROBOT_ABLAZE_PERIOD_EFFECT; i += OBJECT_ROBOT_ABLAZE_PERIOD)
                 if (Damage(WEAPON_ABLAZE, pos, dir, m_LastDelayDamageSide, NULL))
-                    return;
+                    return false;
         }
     }
     if (IsShorted()) {
@@ -942,9 +942,9 @@ void CMatrixCannon::LogicTakt(int takt) {
                 CMatrixEffect::CreateShorted(d1, d2, FRND(400) + 100);
             }
             if (Damage(WEAPON_SHORTED, pos, dir, m_LastDelayDamageSide, NULL))
-                return;
+                return false;
         }
-        return;
+        return false;
     }
 
     // cannon logic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1020,7 +1020,7 @@ void CMatrixCannon::LogicTakt(int takt) {
                 }
                 EndFireAnimation();
                 m_NullTargetTime = 0;
-                return;
+                return false;
             }
         }
         else {
@@ -1055,7 +1055,7 @@ void CMatrixCannon::LogicTakt(int takt) {
         if (firewas)
             BeginFireAnimation();
 
-        return;
+        return false;
     }
     else {
         // цель есть!!!
@@ -1256,6 +1256,7 @@ void CMatrixCannon::LogicTakt(int takt) {
         m_TimeFromFire = CANNON_TIME_FROM_FIRE;
     }
 
+    return false;
     //    CHelper::Create(1,0)->Line(D3DXVECTOR3(m_GeoCenter.x, m_GeoCenter.y, 20),
     //                            D3DXVECTOR3(m_GeoCenter.x, m_GeoCenter.y, 20) + 100 *
     //                            D3DXVECTOR3(cos(m_Unit[1].m_Angle), sin(m_Unit[1].m_Angle), 0));

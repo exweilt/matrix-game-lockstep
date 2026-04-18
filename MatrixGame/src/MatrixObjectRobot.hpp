@@ -298,7 +298,7 @@ public:
     virtual void RNeed(dword need);
 
     virtual void Takt(int cms);
-    virtual void LogicTakt(int cms) = 0;
+    virtual bool LogicTakt(int cms) = 0;
 
     virtual bool Pick(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const;
     bool PickFull(const D3DXVECTOR3 &orig, const D3DXVECTOR3 &dir, float *outt) const;

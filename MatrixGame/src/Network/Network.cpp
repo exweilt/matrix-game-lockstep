@@ -15,6 +15,7 @@
 
 #include <enet/enet.h>
 #include <algorithm>
+#include <map>
 #include "Interface/CConstructor.h"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
@@ -138,23 +139,33 @@ void Network::broadcast_world_snapshot()
     g_Network.send_message(msg);
 }
 
-void Network::process_playback()
+void Network::delete_robot(CMatrixRobotAI *robot)
+{
+    robot->Damage(WEAPON_INSTANT_DEATH, D3DXVECTOR3(0, 0, 0), D3DXVECTOR3(0, 0, 0), 0, NULL);
+    // robots.erase(robot->m_NID);
+}
+
+void Network::process_playback([[maybe_unused]]int ms)
 {
     static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
     std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
-    f64 delta = std::chrono::duration<f64>(curr_time - tick_start_time).count();
+    static std::chrono::time_point<std::chrono::steady_clock> prev_time = curr_time;
+
+    f64 tick_delta = std::chrono::duration<f64>(curr_time - tick_start_time).count();
 
     WorldSnapshot ws_from, ws_to;
     if (g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to))
     {
-        f32 k = std::min(1.0f, static_cast<float>(delta) / 0.1f);
+        f32 k = std::min(1.0f, static_cast<float>(tick_delta) / 0.1f);
+        g_MatrixMap->m_DI.T(L"From physics frame", utils::format(L"%d", ws_from.frame).c_str(), 1000);
+        g_MatrixMap->m_DI.T(L"k", utils::format(L"%f", k).c_str(), 1000);
         for (auto& [id, rs] : ws_from.robots) {
-            g_MatrixMap->m_DI.T(L"From physics frame", utils::format(L"%d", ws_from.frame).c_str(), 1000);
-            g_MatrixMap->m_DI.T(L"k", utils::format(L"%f", k).c_str(), 1000);
             if (!g_Network.robots.contains(id))
             {
                 g_Network.populate_robot(rs);
             }
+            robots.at(id)->is_processed_by_network = true;
+
             if (ws_to.robots.contains(id))
             {
                 CMatrixRobotAI *r = g_Network.robots.at(id);
@@ -171,6 +182,38 @@ void Network::process_playback()
                 r->JoinToGroup();
             }
         }
+
+        // kill unneeded
+        // for (auto& [id, robot] : robots)
+        // {
+        //     if (!robot->is_processed_by_network)
+        //     {
+        //         std::cout << "Robot " << id << " is missing from the snapshot, removing it." << std::endl;
+        //         std::cout << "snapshot: " << ws_from.to_json_string() << std::endl;
+        //         delete_robot(robot);
+        //     }
+        //     else
+        //     {
+        //         robot->is_processed_by_network = false;
+        //     }
+        // }
+
+        int frame_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - tick_start_time).count();
+        std::erase_if(robots, [this, frame_delta_ms](auto& pair) {
+            auto id = pair.first;
+            auto robot = pair.second;
+
+            if (!robot->is_processed_by_network)
+            {
+                std::cout << "Robot " << id << " is missing from the snapshot, removing it.\n";
+                delete_robot(robot);
+            }
+            robot->is_processed_by_network = false;
+
+
+            return static_cast<CMatrixMapStatic *>(robot)->StaticTakt(frame_delta_ms);
+        });
+
         if (k >= 1.0f)
         {
             g_Network.interpolation_buffer.pop_front();
@@ -181,6 +224,7 @@ void Network::process_playback()
     {
         tick_start_time = std::chrono::steady_clock::now();
     }
+    prev_time = curr_time;
 }
 
 void Network::populate_robot(RobotSnapshot& rs)

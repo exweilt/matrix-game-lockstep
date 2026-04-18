@@ -1222,7 +1222,7 @@ bool CMatrixFlyer::LogicTaktOrder(SFlyerTaktData &td) {
     return false;
 }
 
-void CMatrixFlyer::LogicTakt(int takt) {
+bool CMatrixFlyer::LogicTakt(int takt) {
     DTRACE();
 
     if (!g_MatrixMap->GetPlayerSide()->FindObjectInSelection(this)) {
@@ -1276,7 +1276,7 @@ void CMatrixFlyer::LogicTakt(int takt) {
     //}
 
     if (LogicTaktOrder(td))
-        return;
+        return false;
 
     if (m_EngineUnit >= 0) {
         float ea = m_Units[m_EngineUnit].m_Engine.m_Angle;
@@ -1405,6 +1405,8 @@ void CMatrixFlyer::LogicTakt(int takt) {
     RESETFLAG(m_Flags, FLYER_ACTION_ROT_RIGHT);
 
     RChange(MR_Matrix | MR_ShadowStencil);
+
+    return false;
 }
 
 void CMatrixFlyer::FireBegin(void) {

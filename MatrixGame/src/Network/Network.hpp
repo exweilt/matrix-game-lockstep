@@ -94,7 +94,10 @@ public:
     ~Network() = default;
 
     void broadcast_world_snapshot();
-    void process_playback();
+
+    void delete_robot(CMatrixRobotAI * robot);
+
+    void process_playback(int ms);
     void populate_robot(RobotSnapshot &rs);
 
     ENetHost* host;
