@@ -957,7 +957,8 @@ void CMatrixRobot::BeforeDraw(void) {
                (g_Config.m_ShowStencilShadows ? MR_ShadowStencil : 0);
     RNeed(MR_Matrix | MR_Graph | sh);
 
-    if (m_ShowHitpointTime > 0 && m_HitPoint > 0 && m_CurrState != ROBOT_DIP) {
+    // if (m_ShowHitpointTime > 0 && m_HitPoint > 0 && m_CurrState != ROBOT_DIP) {  // ATTENTION:
+    if (m_HitPoint > 0 && m_CurrState != ROBOT_DIP) {
         D3DXVECTOR3 pos(*(D3DXVECTOR3 *)&m_Core->m_Matrix._41);
         pos.z += 20;
 

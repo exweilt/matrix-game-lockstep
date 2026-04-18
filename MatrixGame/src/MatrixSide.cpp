@@ -901,20 +901,35 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
-            PGOrderMoveTo(SelGroupToLogicGroup(),
-                          CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
-
-            // // Issue Net Order for each robot in selection
-            // std::vector<u32> robots_nid{};
-            // for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
-            // {
-            //     if (go->m_Object->IsLiveRobot())
-            //     {
-            //         robots_nid.push_back(go->m_Object->m_NID);
-            //     }
-            // }
-            // NetOrderMoveTo(robots_nid, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0});
-
+            if (g_Network.is_authority())
+            {
+                PGOrderMoveTo(SelGroupToLogicGroup(),
+                    CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+            }
+            else
+            {
+                std::vector<u32> robots_nid{};
+                for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+                {
+                    if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
+                    {
+                        robots_nid.push_back(go->m_Object->m_NID);
+                    }
+                }
+                if (robots_nid.size() > 0)
+                {
+                    NetOrderMoveTo(robots_nid, {g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, 0}, m_Id);
+                    // CMatrixEffect::CreateMoveto(D3DXVECTOR3(g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y, g_MatrixMap->GetZLand(g_MatrixMap->m_TraceStopPos.x, g_MatrixMap->m_TraceStopPos.y)));
+                    // CPoint tp = PLPlacePos(robot);
+                    // if (tp.x >= 0) {
+                    //     D3DXVECTOR3 v;
+                    //     v.x = GLOBAL_SCALE_MOVE * tp.x + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                    //     v.y = GLOBAL_SCALE_MOVE * tp.y + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                    //     v.z = g_MatrixMap->GetZ(v.x, v.y);
+                    //     CMatrixEffect::CreateMoveto(v);
+                    // }
+                }
+            }
 
 #ifdef NON_MULTIPLAYER
             CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
@@ -1118,7 +1133,7 @@ void CMatrixSideUnit::Select(ESelType type, CMatrixMapStatic *pObject) {
             m_CurrSel = ROBOT_SELECTED;
         }
         SetCurSelNum(0);
-        g_IFaceList->CreateWeaponDynamicStatics();
+        g_IFaceList->CreateWeaponDynamicStatics(this);
 
         ShowOrderState();
     }
@@ -1466,7 +1481,7 @@ void CMatrixSideUnit::SetArcadedObject(CMatrixMapStatic *o) {
         Select(ARCADE, o);
         m_Arcaded->AsRobot()->SelectArcade();
         if (g_IFaceList)
-            g_IFaceList->CreateWeaponDynamicStatics();
+            g_IFaceList->CreateWeaponDynamicStatics(this);
         m_Arcaded->AsRobot()->BreakAllOrders();
     }
 }
@@ -6935,6 +6950,9 @@ void CMatrixSideUnit::TaktPL(int onlygroup) {
     CMatrixRobotAI *robot{nullptr}, *robot2{nullptr};
     bool orderok[MAX_LOGIC_GROUP];
 
+    if (g_Network.is_client())
+        return;
+
     // Запускаем логику раз в 100 тактов
     if (m_LastTaktHL != 0 && (g_MatrixMap->GetTime() - m_LastTaktHL) < 100)
         return;
@@ -9585,24 +9603,47 @@ void CMatrixSideUnit::PGRemoveAllPassive(int no, CMatrixMapStatic *skip) {
 #define IsPassive(obj) \
     (((obj)->GetObjectType() == OBJECT_TYPE_BUILDING) || ((obj)->IsLive() && (obj)->GetSide() == m_Id))
 
-    CMatrixMapStatic *obj;
-    obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot() && obj->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no) {
-            CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
-            CInfo *env = robot->GetEnv();
+    if (g_Network.is_authority())
+    {
+        CMatrixMapStatic *obj;
+        obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot() && obj->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no) {
+                CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
+                CInfo *env = robot->GetEnv();
 
-            if (env->m_Target && env->m_Target != skip && IsPassive(env->m_Target))
-                env->m_Target = NULL;
-            CEnemy *enemie = env->m_FirstEnemy;
-            while (enemie) {
-                CEnemy *e2 = enemie;
-                enemie = enemie->m_NextEnemy;
-                if (e2->GetEnemy() != skip && IsPassive(e2->GetEnemy()))
-                    env->RemoveFromList(e2);
+                if (env->m_Target && env->m_Target != skip && IsPassive(env->m_Target))
+                    env->m_Target = NULL;
+                CEnemy *enemie = env->m_FirstEnemy;
+                while (enemie) {
+                    CEnemy *e2 = enemie;
+                    enemie = enemie->m_NextEnemy;
+                    if (e2->GetEnemy() != skip && IsPassive(e2->GetEnemy()))
+                        env->RemoveFromList(e2);
+                }
+            }
+            obj = obj->GetNextLogic();
+        }
+    }
+    else
+    {
+        for (auto& [id, robot] : g_Network.robots)
+        {
+            if (robot->IsLive() && robot->GetSide() == m_Id && robot->GetGroupLogic() == no)
+            {
+                CInfo *env = robot->GetEnv();
+
+                if (env->m_Target && env->m_Target != skip && IsPassive(env->m_Target))
+                    env->m_Target = NULL;
+                CEnemy *enemie = env->m_FirstEnemy;
+                while (enemie) {
+                    CEnemy *e2 = enemie;
+                    enemie = enemie->m_NextEnemy;
+                    if (e2->GetEnemy() != skip && IsPassive(e2->GetEnemy()))
+                        env->RemoveFromList(e2);
+                }
             }
         }
-        obj = obj->GetNextLogic();
     }
 #undef IsPassive
 }
@@ -9695,30 +9736,60 @@ void CMatrixSideUnit::PGShowPlace(int no) {
 
     CMatrixEffect::DeleteAllMoveto();
 
-    obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
-            CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
+    if (g_Network.is_authority())
+    {
+        obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
+                CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
 
-            CMatrixBuilding *cf = robot->GetCaptureFactory();
-            if (cf) {
-                D3DXVECTOR2 v;
-                v = GetWorldPos(cf);
-                CMatrixEffect::CreateMoveto(D3DXVECTOR3(v.x, v.y, g_MatrixMap->GetZ(v.x, v.y) + 2.0f));
+                CMatrixBuilding *cf = robot->GetCaptureFactory();
+                if (cf) {
+                    D3DXVECTOR2 v;
+                    v = GetWorldPos(cf);
+                    CMatrixEffect::CreateMoveto(D3DXVECTOR3(v.x, v.y, g_MatrixMap->GetZ(v.x, v.y) + 2.0f));
+                }
+                else {
+                    CPoint tp = PLPlacePos(robot);
+                    if (tp.x >= 0) {
+                        D3DXVECTOR3 v;
+                        v.x = GLOBAL_SCALE_MOVE * tp.x + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                        v.y = GLOBAL_SCALE_MOVE * tp.y + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                        v.z = g_MatrixMap->GetZ(v.x, v.y);
+                        CMatrixEffect::CreateMoveto(v);
+                    }
+                }
             }
-            else {
-                CPoint tp = PLPlacePos(robot);
-                if (tp.x >= 0) {
-                    D3DXVECTOR3 v;
-                    v.x = GLOBAL_SCALE_MOVE * tp.x + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
-                    v.y = GLOBAL_SCALE_MOVE * tp.y + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
-                    v.z = g_MatrixMap->GetZ(v.x, v.y);
-                    CMatrixEffect::CreateMoveto(v);
+            obj = obj->GetNextLogic();
+        }
+    }
+    else
+    {
+        for (auto& [id, robot] : g_Network.robots)
+        {
+            if (robot->IsLive() && robot->GetSide() == m_Id && robot->GetGroupLogic() == no)
+            {
+                CMatrixBuilding *cf = robot->GetCaptureFactory();
+                if (cf) {
+                    D3DXVECTOR2 v;
+                    v = GetWorldPos(cf);
+                    CMatrixEffect::CreateMoveto(D3DXVECTOR3(v.x, v.y, g_MatrixMap->GetZ(v.x, v.y) + 2.0f));
+                }
+                else {
+                    CPoint tp = PLPlacePos(robot);
+                    if (tp.x >= 0) {
+                        D3DXVECTOR3 v;
+                        v.x = GLOBAL_SCALE_MOVE * tp.x + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                        v.y = GLOBAL_SCALE_MOVE * tp.y + GLOBAL_SCALE_MOVE * ROBOT_MOVECELLS_PER_SIZE / 2;
+                        v.z = g_MatrixMap->GetZ(v.x, v.y);
+                        CMatrixEffect::CreateMoveto(v);
+                    }
                 }
             }
         }
-        obj = obj->GetNextLogic();
+
     }
+
     m_PlayerGroup[no].SetShowPlace(false);
 }
 
@@ -9864,11 +9935,48 @@ void CMatrixSideUnit::PGAssignPlacePlayer(int no, const CPoint &center) {
     int other_size[200];
     CPoint other_des[200];
 
-    CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot()) {
-            CMatrixRobotAI *r = (CMatrixRobotAI *)obj;
-            if (r->GetSide() != m_Id || r->GetGroupLogic() != no) {
+    if (g_Network.is_authority())
+    {
+        CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot()) {
+                CMatrixRobotAI *r = (CMatrixRobotAI *)obj;
+                if (r->GetSide() != m_Id || r->GetGroupLogic() != no) {
+                    if (r->GetEnv()->m_Place >= 0) {
+                        ASSERT(other_cnt < 200);
+
+                        other_size[other_cnt] = 4;
+                        other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(r->GetEnv()->m_Place)->m_Pos;
+                        other_cnt++;
+                    }
+                    else if (r->GetEnv()->m_PlaceAdd.x >= 0) {
+                        ASSERT(other_cnt < 200);
+
+                        other_size[other_cnt] = 4;
+                        other_des[other_cnt] = r->GetEnv()->m_PlaceAdd;
+                        other_cnt++;
+                    }
+                }
+            }
+            else if (obj->IsLiveCannon()) {
+                ASSERT(other_cnt < 200);
+
+                other_size[other_cnt] = 4;
+                other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(obj->AsCannon()->m_Place)->m_Pos;
+                other_cnt++;
+            }
+            obj = obj->GetNextLogic();
+        }
+
+        obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot() && obj->GetSide() == m_Id && GetGroupLogic(obj) == no) {
+                CMatrixRobotAI *r = (CMatrixRobotAI *)obj;
+                int mx = center.x;
+                int my = center.y;
+                g_MatrixMap->PlaceFindNear(r->m_Unit[0].u1.s1.m_Kind - 1, 4, mx, my, other_cnt, other_size, other_des);
+                PGSetPlace(r, CPoint(mx, my));
+
                 if (r->GetEnv()->m_Place >= 0) {
                     ASSERT(other_cnt < 200);
 
@@ -9883,46 +9991,73 @@ void CMatrixSideUnit::PGAssignPlacePlayer(int no, const CPoint &center) {
                     other_des[other_cnt] = r->GetEnv()->m_PlaceAdd;
                     other_cnt++;
                 }
-            }
-        }
-        else if (obj->IsLiveCannon()) {
-            ASSERT(other_cnt < 200);
 
-            other_size[other_cnt] = 4;
-            other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(obj->AsCannon()->m_Place)->m_Pos;
-            other_cnt++;
+                //            obj->AsRobot()->MoveTo(mx, my);
+                //            obj->AsRobot()->GetEnv()->m_Place=-1;
+            }
+            obj = obj->GetNextLogic();
         }
-        obj = obj->GetNextLogic();
     }
+    else
+    {
+        for (auto& [id, r] : g_Network.robots)
+        {
+            if (r->IsLive()) {
+                if (r->GetSide() != m_Id || r->GetGroupLogic() != no) {
+                    if (r->GetEnv()->m_Place >= 0) {
+                        ASSERT(other_cnt < 200);
 
-    obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot() && obj->GetSide() == m_Id && GetGroupLogic(obj) == no) {
-            CMatrixRobotAI *r = (CMatrixRobotAI *)obj;
-            int mx = center.x;
-            int my = center.y;
-            g_MatrixMap->PlaceFindNear(r->m_Unit[0].u1.s1.m_Kind - 1, 4, mx, my, other_cnt, other_size, other_des);
-            PGSetPlace(r, CPoint(mx, my));
+                        other_size[other_cnt] = 4;
+                        other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(r->GetEnv()->m_Place)->m_Pos;
+                        other_cnt++;
+                    }
+                    else if (r->GetEnv()->m_PlaceAdd.x >= 0) {
+                        ASSERT(other_cnt < 200);
 
-            if (r->GetEnv()->m_Place >= 0) {
-                ASSERT(other_cnt < 200);
-
-                other_size[other_cnt] = 4;
-                other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(r->GetEnv()->m_Place)->m_Pos;
-                other_cnt++;
+                        other_size[other_cnt] = 4;
+                        other_des[other_cnt] = r->GetEnv()->m_PlaceAdd;
+                        other_cnt++;
+                    }
+                }
             }
-            else if (r->GetEnv()->m_PlaceAdd.x >= 0) {
-                ASSERT(other_cnt < 200);
+            // else if (obj->IsLiveCannon()) {
+            //     ASSERT(other_cnt < 200);
+            //
+            //     other_size[other_cnt] = 4;
+            //     other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(obj->AsCannon()->m_Place)->m_Pos;
+            //     other_cnt++;
+            // }
 
-                other_size[other_cnt] = 4;
-                other_des[other_cnt] = r->GetEnv()->m_PlaceAdd;
-                other_cnt++;
+
+
+
+
+            if (r->IsLive() && r->GetSide() == m_Id && r->GetGroupLogic() == no) {
+                int mx = center.x;
+                int my = center.y;
+                g_MatrixMap->PlaceFindNear(r->m_Unit[0].u1.s1.m_Kind - 1, 4, mx, my, other_cnt, other_size, other_des);
+                PGSetPlace(r, CPoint(mx, my));
+
+                if (r->GetEnv()->m_Place >= 0) {
+                    ASSERT(other_cnt < 200);
+
+                    other_size[other_cnt] = 4;
+                    other_des[other_cnt] = g_MatrixMap->m_RN.GetPlace(r->GetEnv()->m_Place)->m_Pos;
+                    other_cnt++;
+                }
+                else if (r->GetEnv()->m_PlaceAdd.x >= 0) {
+                    ASSERT(other_cnt < 200);
+
+                    other_size[other_cnt] = 4;
+                    other_des[other_cnt] = r->GetEnv()->m_PlaceAdd;
+                    other_cnt++;
+                }
+
+                //            obj->AsRobot()->MoveTo(mx, my);
+                //            obj->AsRobot()->GetEnv()->m_Place=-1;
             }
 
-            //            obj->AsRobot()->MoveTo(mx, my);
-            //            obj->AsRobot()->GetEnv()->m_Place=-1;
         }
-        obj = obj->GetNextLogic();
     }
 }
 

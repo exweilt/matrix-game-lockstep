@@ -33,49 +33,49 @@ enum class SideID : u8
     GREEN = 4,
 };
 
-struct CommandsFrameRecord
-{
-    u32 frame; // The commands record for this physics frame (tick).
-
-    /**
-     * @brief Vectors of commands for each side (0 is yellow) for this frame.
-     *
-     * If s[i] == nullptr then the commands are not present for that side and frame.
-     */
-    std::unique_ptr< std::vector<Command> > commands [4];
-
-    CommandsFrameRecord(const u32 f = 0) : frame(f) {}
-
-    bool is_side_input_ready(const u32 side_id) const
-    {
-        return commands[side_id - 1].get() != nullptr;
-    }
-
-    std::vector<Command>* get_side_inputs(const u32 side_id) const
-    {
-        return commands[side_id - 1].get();
-    }
-
-    void set_side_inputs(const u32 side_id, const std::vector<Command>& side_inputs)
-    {
-        commands[side_id - 1] = std::make_unique<std::vector<Command>>(side_inputs);
-    }
-
-    void set_side_inputs(const u32 side_id)
-    {
-        commands[side_id - 1] = std::make_unique<std::vector<Command>>();
-    }
-
-    template <class Archive>
-    void serialize(Archive& ar) {
-        ar(
-            CEREAL_NVP(frame)
-        );
-        for (int i = 0; i < 4; i++) {
-            ar( cereal::make_nvp("commands_" + std::to_string(i + 1), commands[i]) );
-        }
-    }
-};
+// struct CommandsFrameRecord
+// {
+//     u32 frame; // The commands record for this physics frame (tick).
+//
+//     /**
+//      * @brief Vectors of commands for each side (0 is yellow) for this frame.
+//      *
+//      * If s[i] == nullptr then the commands are not present for that side and frame.
+//      */
+//     std::unique_ptr< std::vector<Command> > commands [4];
+//
+//     CommandsFrameRecord(const u32 f = 0) : frame(f) {}
+//
+//     bool is_side_input_ready(const u32 side_id) const
+//     {
+//         return commands[side_id - 1].get() != nullptr;
+//     }
+//
+//     std::vector<Command>* get_side_inputs(const u32 side_id) const
+//     {
+//         return commands[side_id - 1].get();
+//     }
+//
+//     void set_side_inputs(const u32 side_id, const std::vector<Command>& side_inputs)
+//     {
+//         commands[side_id - 1] = std::make_unique<std::vector<Command>>(side_inputs);
+//     }
+//
+//     void set_side_inputs(const u32 side_id)
+//     {
+//         commands[side_id - 1] = std::make_unique<std::vector<Command>>();
+//     }
+//
+//     template <class Archive>
+//     void serialize(Archive& ar) {
+//         ar(
+//             CEREAL_NVP(frame)
+//         );
+//         for (int i = 0; i < 4; i++) {
+//             ar( cereal::make_nvp("commands_" + std::to_string(i + 1), commands[i]) );
+//         }
+//     }
+// };
 
 // extern std::list<CommandsFrameRecord> commands_journal;
 
@@ -139,31 +139,31 @@ public:
     void process_network_frame(u32 delta_ms);
     void approve_final_input(u32 target_frame);
 
-    /**
-     * @brief Access the record for frame n. If it doesn't exist yet, it is created and returned.
-     */
-    inline CommandsFrameRecord* get_frame_record(const u32 frame)
-    {
-        // Create missing elements if needed
-        if (frame >= commands_journal.size())
-        {
-            for (u32 f = commands_journal.size(); f <= frame; f++)
-            {
-                commands_journal.push_back(CommandsFrameRecord(f));
-            }
-            commands_journal.resize(frame + 1);
-        }
-        // Retrieve
-        auto it = commands_journal.rbegin();
-        std::advance(it, commands_journal.size() - frame - 1);
-        assert((*it).frame == frame);
-        return &*it;
-    }
-
-    inline CommandsFrameRecord* get_current_frame_record()
-    {
-        return get_frame_record(physics_frame);
-    }
+    // /**
+    //  * @brief Access the record for frame n. If it doesn't exist yet, it is created and returned.
+    //  */
+    // inline CommandsFrameRecord* get_frame_record(const u32 frame)
+    // {
+    //     // Create missing elements if needed
+    //     if (frame >= commands_journal.size())
+    //     {
+    //         for (u32 f = commands_journal.size(); f <= frame; f++)
+    //         {
+    //             commands_journal.push_back(CommandsFrameRecord(f));
+    //         }
+    //         commands_journal.resize(frame + 1);
+    //     }
+    //     // Retrieve
+    //     auto it = commands_journal.rbegin();
+    //     std::advance(it, commands_journal.size() - frame - 1);
+    //     assert((*it).frame == frame);
+    //     return &*it;
+    // }
+    //
+    // inline CommandsFrameRecord* get_current_frame_record()
+    // {
+    //     return get_frame_record(physics_frame);
+    // }
     void static_init_networking();
     void consume_input_frame(const u32 frame);
     void send_message(Message &msg);
@@ -174,7 +174,7 @@ public:
 
     logger_type lgr{isClient2 ? "client2.log" : "client3.log"};
 
-    void add_input_for_current_input_frame(const Command &command);
+    // void add_input_for_current_input_frame(const Command &command);
 
     bool is_client() const
     {
@@ -195,7 +195,7 @@ private:
     // double linked list of all commands for all frames
     // Access through public methods
     // TODO: consider changing to std::map?
-    std::list<CommandsFrameRecord> commands_journal;
+    // std::list<CommandsFrameRecord> commands_journal;
 
     void handle_new_world_snapshot(WorldSnapshot ws);
     void process_incoming_message(const Message &msg);
@@ -213,6 +213,7 @@ void NetOrderMoveTo(u32 entity_nid, const D3DXVECTOR3& destination);
 
 // Places an order to move robot
 void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination);
+void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination, int local_side_id);
 
 // Places an order to attack robot
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);

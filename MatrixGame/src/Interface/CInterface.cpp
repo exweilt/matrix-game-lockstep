@@ -3595,10 +3595,10 @@ void CIFaceList::LogicTakt(int ms) {
     }
 }
 
-void CIFaceList::CreateWeaponDynamicStatics() {
+void CIFaceList::CreateWeaponDynamicStatics(CMatrixSideUnit *player_side) {
     DTRACE();
     DeleteWeaponDynamicStatics();
-    CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
+    // CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
 
     if (!FLAG(m_IfListFlags, SINGLE_MODE) && !player_side->IsArcadeMode())
         return;

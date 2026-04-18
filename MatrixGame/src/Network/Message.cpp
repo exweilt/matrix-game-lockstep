@@ -2,6 +2,11 @@
 
 #include <cstring>
 
+#include "Math3D.hpp"
+#include "MatrixMap.hpp"
+#include "MatrixRobot.hpp"
+#include "MatrixSide.hpp"
+
 // namespace network
 // {
 
@@ -112,6 +117,89 @@ void MessageDesyncParams::serialize_to_bitstream(BitWriter &writer) const
 MessageDesyncParams MessageDesyncParams::deserialize_from_bitstream(BitReader &reader)
 {
     return MessageDesyncParams { reader.read_u32() };
+}
+
+MessageCommandMoveParams::MessageCommandMoveParams(const u32 r_nid, const D3DXVECTOR3 &dest)
+{
+    this->number_of_robots = 1;
+    this->robot_nid[0] = r_nid;
+    this->target_pos = dest;
+}
+
+// bundles robots together, slow. TODO: optimize
+// dangerous, changes the world!
+i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_of_robots)
+{
+    // TODO: add asserts
+    int no = side->GetNextFreeLogicGroup();
+
+    side->m_PlayerGroup[no].Order(mpo_Stop);
+    side->m_PlayerGroup[no].m_Obj = NULL;
+    side->m_PlayerGroup[no].SetWar(false);
+    side->m_PlayerGroup[no].m_RoadPath->Clear();
+
+    for (i32 i = 0; i < number_of_robots; i++)
+    {
+        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
+        // assert(obj->IsLiveRobot()); // bad
+        if (obj->IsLiveRobot())
+        {
+            obj->AsRobot()->SetGroupLogic(no);
+            side->m_PlayerGroup[no].m_RobotCnt++;
+        }
+    }
+
+    return no;
+}
+
+void MessageCommandMoveParams::execute_for_side(u32 side_id)
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+
+    int mx = Float2Int(target_pos.x / GLOBAL_SCALE_MOVE);
+    int my = Float2Int(target_pos.y / GLOBAL_SCALE_MOVE);
+    side->PGOrderMoveTo(no, CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+}
+
+void MessageCommandMoveParams::execute()
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(g_MatrixMap->find_static_with_nid(robot_nid[0])->AsRobot()->GetSide());
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+
+    int mx = Float2Int(target_pos.x / GLOBAL_SCALE_MOVE);
+    int my = Float2Int(target_pos.y / GLOBAL_SCALE_MOVE);
+    side->PGOrderMoveTo(no, CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
+}
+
+void MessageCommandMoveParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8( this->number_of_robots );
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_vec3(this->target_pos);
+}
+
+MessageCommandMoveParams MessageCommandMoveParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandMoveParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32)); //
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.target_pos = reader.read_vec3();
+
+    return result;
 }
 
 // } // namespace network

@@ -3698,6 +3698,11 @@ void CMatrixMapLogic::DumpLogic() {
 
 CMatrixMapStatic * CMatrixMapLogic::find_static_with_nid(u32 nid)
 {
+    if (g_Network.robots.contains(nid))
+    {
+        return g_Network.robots.at(nid);
+    }
+
     CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
     while (ms)
     {

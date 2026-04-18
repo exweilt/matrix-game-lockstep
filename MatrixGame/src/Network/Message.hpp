@@ -13,6 +13,7 @@
 
 #include "Snapshot.hpp"
 
+constexpr int MAX_ROBOTS_PER_COMMAND = 16;
 
 // namespace network
 // {
@@ -26,6 +27,7 @@ enum class MessageType : u8
     READY,
     START,
     WORLD_SNAPSHOT,
+    COMMAND_MOVE,
     INFO,
     SAY,
     JOIN,
@@ -61,6 +63,39 @@ struct MessageJoinParams
 
     void serialize_to_bitstream(BitWriter &writer) const;
     static MessageJoinParams deserialize_from_bitstream(BitReader &reader);
+};
+
+struct MessageCommandMoveParams
+{
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
+    D3DXVECTOR3 target_pos;
+
+    MessageCommandMoveParams() : number_of_robots(0), robot_nid(0) {};
+    MessageCommandMoveParams(const u32 r_nid, const D3DXVECTOR3 &dest);
+    MessageCommandMoveParams(std::vector<u32> robots_nid, const D3DXVECTOR3 &dest)
+    {
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_pos = dest;
+    };
+
+    // u32 get_serialized_size() const
+    // {
+    //     return sizeof(number_of_robots) + sizeof(robot_nid) + sizeof(target_pos);
+    // }
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandMoveParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
+    void execute();
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
+    }
 };
 
 struct MessageChecksumParams
@@ -126,6 +161,7 @@ struct Message
         MessageChecksumParams checksum;
         MessageReportParams report;
         MessageDesyncParams desync;
+        MessageCommandMoveParams command_move;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -135,6 +171,7 @@ struct Message
     Message(MessageChecksumParams ch)       : type(MessageType::CHECKSUM),      checksum(ch)     {};
     Message(MessageReportParams r)         : type(MessageType::STATE_REPORT),      report(r)     {};
     Message(MessageDesyncParams d)         : type(MessageType::DESYNC),      desync(d)     {};
+    Message(MessageCommandMoveParams m)         : type(MessageType::COMMAND_MOVE),      command_move(m)     {};
 
     ~Message()
     {
@@ -142,6 +179,9 @@ struct Message
         {
             case MessageType::WORLD_SNAPSHOT:
                 world_snapshot.~MessageWorldSnapshotParams();
+                break;
+            case MessageType::COMMAND_MOVE:
+                command_move.~MessageCommandMoveParams();
                 break;
             case MessageType::JOIN:
                 join.~MessageJoinParams();
@@ -167,6 +207,7 @@ struct Message
         switch (type)
         {
             case MessageType::WORLD_SNAPSHOT:   world_snapshot   .serialize_to_bitstream(writer); break;
+            case MessageType::COMMAND_MOVE:     command_move     .serialize_to_bitstream(writer); break;
             case MessageType::JOIN:             join            .serialize_to_bitstream(writer); break;
             case MessageType::CHECKSUM:         checksum        .serialize_to_bitstream(writer); break;
             case MessageType::START:            break;
@@ -182,6 +223,8 @@ struct Message
         {
             case MessageType::WORLD_SNAPSHOT:
                 return MessageWorldSnapshotParams::  deserialize_from_bitstream(reader);
+            case MessageType::COMMAND_MOVE:
+                return MessageCommandMoveParams     ::  deserialize_from_bitstream(reader);
             case MessageType::JOIN:
                 return MessageJoinParams::          deserialize_from_bitstream(reader);
             case MessageType::START:

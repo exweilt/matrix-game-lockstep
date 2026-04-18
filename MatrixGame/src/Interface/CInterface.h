@@ -322,7 +322,7 @@ public:
     float GetMainX() { return m_MainX; }
     float GetMainY() { return m_MainY; }
 
-    void CreateWeaponDynamicStatics();
+    void CreateWeaponDynamicStatics(CMatrixSideUnit *player_side);
     void DeleteWeaponDynamicStatics();
 
     void CreateGroupSelection(CInterface *iface);

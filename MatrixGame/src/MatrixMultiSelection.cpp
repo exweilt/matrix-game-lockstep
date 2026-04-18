@@ -229,6 +229,9 @@ void CMultiSelection::Update(
                 continue;
             if (o->AsRobot()->IsCrazy())
                 continue;
+
+            if (g_Network.is_client() && o->AsRobot()->GetSide() != g_MatrixMap->GetControllableSide()->m_Id)
+                continue;
         }
         if (o->IsBuilding()) {
             if (!o->IsLiveBuilding())

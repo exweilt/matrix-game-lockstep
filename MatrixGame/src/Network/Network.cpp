@@ -399,8 +399,16 @@ void Network::process_server_network_frame()
             //     std::terminate();
             // }
 
-            // BitReader reader = BitReader(event.packet->data);
-            // Message m { Message::deserialize_from_bitstream(reader) };
+            BitReader reader = BitReader(event.packet->data);
+            Message m { Message::deserialize_from_bitstream(reader) };
+
+            if (m.type == MessageType::COMMAND_MOVE)
+            {
+                if (m.command_move.number_of_robots > 0)
+                {
+                    m.command_move.execute();
+                }
+            }
             //
             // if (g_server_state == ServerState::BROADCASTING)
             // {
@@ -604,86 +612,94 @@ void Network::static_init_networking()
     }
 }
 
-void Network::consume_input_frame(const u32 frame)
-{
-    CommandsFrameRecord* record = get_frame_record(frame);
+// void Network::consume_input_frame(const u32 frame)
+// {
+//     CommandsFrameRecord* record = get_frame_record(frame);
+//
+//     for (u32 side_id = 1; side_id < 5; side_id++)
+//     {
+//         if (record->is_side_input_ready(side_id))
+//         {
+//             std::vector<Command>* commands = record->get_side_inputs(side_id);
+//             for (u32 i = 0; i < commands->size(); ++i)
+//             {
+//                 (*commands)[i].execute_for_side(side_id);
+//             }
+//         }
+//     }
+// }
 
-    for (u32 side_id = 1; side_id < 5; side_id++)
-    {
-        if (record->is_side_input_ready(side_id))
-        {
-            std::vector<Command>* commands = record->get_side_inputs(side_id);
-            for (u32 i = 0; i < commands->size(); ++i)
-            {
-                (*commands)[i].execute_for_side(side_id);
-            }
-        }
-    }
-}
-
-void Network::save_commands_journal_to_file()
-{
-    std::ofstream fs(isClient2 ? "Client2_commands.json" : "Client1_commands.json");
-    cereal::JSONOutputArchive oarchive(fs);
-    oarchive(cereal::make_nvp("commands_journal", commands_journal));
-}
-
-std::string Network::commands_journal_to_json_string()
-{
-    std::ostringstream ss;
-
-    {
-        cereal::JSONOutputArchive oarchive(ss);
-        oarchive(cereal::make_nvp("commands_journal", commands_journal));
-    }
-
-    return ss.str();
-}
-
-void Network::add_input_for_current_input_frame(const Command &command)
-{
-    // if there is no vector for inputs yet - create it
-    if (!this->get_frame_record(this->input_frame)->is_side_input_ready(this->controllable_side_id))
-    {
-        this->get_frame_record(this->input_frame)->set_side_inputs(this->controllable_side_id);
-    }
-
-    // Add command to the vector
-    this->get_frame_record(this->input_frame)->get_side_inputs(this->controllable_side_id)->push_back(command);
-}
+// void Network::save_commands_journal_to_file()
+// {
+//     std::ofstream fs(isClient2 ? "Client2_commands.json" : "Client1_commands.json");
+//     cereal::JSONOutputArchive oarchive(fs);
+//     oarchive(cereal::make_nvp("commands_journal", commands_journal));
+// }
+//
+// std::string Network::commands_journal_to_json_string()
+// {
+//     std::ostringstream ss;
+//
+//     {
+//         cereal::JSONOutputArchive oarchive(ss);
+//         oarchive(cereal::make_nvp("commands_journal", commands_journal));
+//     }
+//
+//     return ss.str();
+// }
+//
+// void Network::add_input_for_current_input_frame(const Command &command)
+// {
+//     // if there is no vector for inputs yet - create it
+//     if (!this->get_frame_record(this->input_frame)->is_side_input_ready(this->controllable_side_id))
+//     {
+//         this->get_frame_record(this->input_frame)->set_side_inputs(this->controllable_side_id);
+//     }
+//
+//     // Add command to the vector
+//     this->get_frame_record(this->input_frame)->get_side_inputs(this->controllable_side_id)->push_back(command);
+// }
 
 void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination)
 {
-    Command command { CommandMoveParams{entities_nid, destination} };
-    g_Network.add_input_for_current_input_frame(command);
+    Message command { MessageCommandMoveParams {entities_nid, destination} };
+    g_Network.send_message(command);
 }
 
-void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)
+void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& destination, int local_side_id)
 {
-    Command command { CommandCaptureParams{entities_nid, target_nid} };
-    g_Network.add_input_for_current_input_frame(command);
+    Message command { MessageCommandMoveParams {entities_nid, destination} };
+    g_Network.send_message(command);
+
+    command.command_move.execute_for_side(local_side_id);
 }
 
-void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
-{
-    Command command { CommandAttackParams{entities_nid, target_nid} };
-    g_Network.add_input_for_current_input_frame(command);
-}
-
-void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
-                        const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base)
-{
-    DTRACE();
-    assert(weapons.size() == MAX_WEAPON_CNT);
-    // ERobotUnitKind *weapons_data = weapons.data();
-    Command command { CommandBuildParams {chassis, hull, head, weapons, robot_count, base} };
-    // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
-    // {
-    //     command.build.weapons[i] = weapons[i];
-    // }
-    DCP();
-    g_Network.add_input_for_current_input_frame(command);
-}
+// void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)
+// {
+//     Command command { CommandCaptureParams{entities_nid, target_nid} };
+//     g_Network.add_input_for_current_input_frame(command);
+// }
+//
+// void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
+// {
+//     Command command { CommandAttackParams{entities_nid, target_nid} };
+//     g_Network.add_input_for_current_input_frame(command);
+// }
+//
+// void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
+//                         const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base)
+// {
+//     DTRACE();
+//     assert(weapons.size() == MAX_WEAPON_CNT);
+//     // ERobotUnitKind *weapons_data = weapons.data();
+//     Command command { CommandBuildParams {chassis, hull, head, weapons, robot_count, base} };
+//     // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+//     // {
+//     //     command.build.weapons[i] = weapons[i];
+//     // }
+//     DCP();
+//     g_Network.add_input_for_current_input_frame(command);
+// }
 
 
 // }
