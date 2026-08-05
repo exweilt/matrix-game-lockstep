@@ -599,7 +599,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (g_Network.is_authority() && step == RS_BUILDINGS) {
+    if (step == RS_BUILDINGS) {
         m_GroundZBaseMiddle = 0;
         m_GroundZBaseMax = 0;
 

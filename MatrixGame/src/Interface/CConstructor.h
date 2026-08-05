@@ -105,8 +105,9 @@ class CConstructor : public CMain {
     int m_Side, m_ShadowType, m_ShadowSize, m_nUnitCnt, m_ViewWidthX, m_ViewHeightY;
     float m_ViewPosX, m_ViewPosY;
     int m_nPos;
+public:
     CMatrixRobotAI *m_Robot, *m_Build;
-
+private:
     SUnit m_Unit[MR_MAXUNIT];
 
     SUnit m_Head;

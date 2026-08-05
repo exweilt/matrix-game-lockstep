@@ -28,6 +28,7 @@ enum class MessageType : u8
     START,
     WORLD_SNAPSHOT,
     COMMAND_MOVE,
+    COMMAND_BUILD,
     INFO,
     SAY,
     JOIN,
@@ -114,6 +115,48 @@ struct MessageCommandMoveParams
     }
 };
 
+struct MessageCommandBuildParams
+{
+    ERobotUnitKind chassis;
+    ERobotUnitKind hull;
+    ERobotUnitKind head;
+    ERobotUnitKind weapons[5];
+    u8 robot_count; // 0-...
+    u32 target_base_nid; // Base NID to build at.
+
+    MessageCommandBuildParams() : chassis(), hull(), head(), weapons{}, robot_count(0), target_base_nid(0) {};
+    // CommandBuildParams(ERobotUnitKind ch, ERobotUnitKind hu, ERobotUnitKind he, ERobotUnitKind *wp, u8 cnt, u32 base)
+    //     : chassis(ch), hull(hu), head(he), robot_count(cnt), target_base_nid(base)
+    // {
+    //     for (u32 i = 0; i < MAX_WEAPON_CNT; i++)
+    //     {
+    //         this->weapons[i] = wp[i];
+    //     }
+    // };
+
+#define MAX_WEAPON_CNT   5
+    MessageCommandBuildParams(ERobotUnitKind ch, ERobotUnitKind hu, ERobotUnitKind he, const std::vector<ERobotUnitKind> &wp, u8 cnt, u32 base)
+    : chassis(ch), hull(hu), head(he), robot_count(cnt), target_base_nid(base)
+    {
+        for (u32 i = 0; i < MAX_WEAPON_CNT; i++)
+        {
+            this->weapons[i] = wp[i];
+        }
+    };
+#undef MAX_WEAPON_CNT
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandBuildParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side();
+    // void execute();
+
+    // template <class Archive>
+    // void serialize(Archive& ar) {
+    //     ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
+    // }
+};
+
 struct MessageChecksumParams
 {
     u32 target_frame;
@@ -178,6 +221,7 @@ struct Message
         MessageReportParams report;
         MessageDesyncParams desync;
         MessageCommandMoveParams command_move;
+        MessageCommandBuildParams command_build;
         MessageEventsParams events;
     };
 
@@ -189,6 +233,7 @@ struct Message
     Message(MessageReportParams r)         : type(MessageType::STATE_REPORT),      report(r)     {};
     Message(MessageDesyncParams d)         : type(MessageType::DESYNC),      desync(d)     {};
     Message(MessageCommandMoveParams m)         : type(MessageType::COMMAND_MOVE),      command_move(m)     {};
+    Message(MessageCommandBuildParams m)         : type(MessageType::COMMAND_BUILD),      command_build(m)     {};
     Message(MessageEventsParams e)         : type(MessageType::EVENTS),      events(e)     {};
 
     ~Message()
@@ -200,6 +245,9 @@ struct Message
                 break;
             case MessageType::COMMAND_MOVE:
                 command_move.~MessageCommandMoveParams();
+                break;
+            case MessageType::COMMAND_BUILD:
+                command_build.~MessageCommandBuildParams();
                 break;
             case MessageType::JOIN:
                 join.~MessageJoinParams();
@@ -229,6 +277,7 @@ struct Message
         {
             case MessageType::WORLD_SNAPSHOT:   world_snapshot   .serialize_to_bitstream(writer); break;
             case MessageType::COMMAND_MOVE:     command_move     .serialize_to_bitstream(writer); break;
+            case MessageType::COMMAND_BUILD:     command_build     .serialize_to_bitstream(writer); break;
             case MessageType::JOIN:             join            .serialize_to_bitstream(writer); break;
             case MessageType::CHECKSUM:         checksum        .serialize_to_bitstream(writer); break;
             case MessageType::START:            break;
@@ -247,6 +296,8 @@ struct Message
                 return MessageWorldSnapshotParams::  deserialize_from_bitstream(reader);
             case MessageType::COMMAND_MOVE:
                 return MessageCommandMoveParams     ::  deserialize_from_bitstream(reader);
+            case MessageType::COMMAND_BUILD:
+                return MessageCommandBuildParams     ::  deserialize_from_bitstream(reader);
             case MessageType::JOIN:
                 return MessageJoinParams::          deserialize_from_bitstream(reader);
             case MessageType::START:

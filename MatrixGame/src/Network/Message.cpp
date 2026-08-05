@@ -6,6 +6,7 @@
 #include "MatrixMap.hpp"
 #include "MatrixRobot.hpp"
 #include "MatrixSide.hpp"
+#include "Interface/CConstructor.h"
 
 // namespace network
 // {
@@ -95,6 +96,96 @@ MessageJoinParams MessageJoinParams::deserialize_from_bitstream(BitReader &reade
         host_player_side, username
     };
 }
+
+void MessageCommandBuildParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u8(chassis);
+    writer.write_u8(hull);
+    writer.write_u8(head);
+
+    for (int i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        writer.write_u8(weapons[i]);
+    }
+
+    writer.write_u8(robot_count);
+    writer.write_u32(target_base_nid);
+}
+
+MessageCommandBuildParams MessageCommandBuildParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandBuildParams result;
+
+     result.chassis  = static_cast<ERobotUnitKind>(reader.read_u8());
+     result.hull     = static_cast<ERobotUnitKind>(reader.read_u8());
+     result.head     = static_cast<ERobotUnitKind>(reader.read_u8());
+
+     for (int i = 0; i < MAX_WEAPON_CNT; i++)
+     {
+         result.weapons[i] = static_cast<ERobotUnitKind>(reader.read_u8());
+     }
+
+     result.robot_count = reader.read_u8();
+     result.target_base_nid = reader.read_u32();
+
+     return result;
+}
+
+void MessageCommandBuildParams::execute_for_side()
+{
+    DTRACE();
+    CMatrixMapStatic *base_static = g_MatrixMap->find_static_with_nid(target_base_nid);
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(base_static->GetSide());
+    if (base_static == nullptr || !base_static->IsBase())
+        return; // some scheisse
+
+    CMatrixBuilding *base = base_static->AsBuilding();
+
+    // if (base->m_Side != side_id)
+    //     return;
+
+    DCP();
+
+    side->m_Constructor->SetBase(base);
+    DCP();
+    side->m_Constructor->OperateUnit(MRT_CHASSIS, chassis);
+    side->m_Constructor->OperateUnit(MRT_ARMOR, hull);
+    side->m_Constructor->OperateUnit(MRT_HEAD, head);
+
+    DCP();
+
+    for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+    {
+        side->m_Constructor->OperateUnit(MRT_WEAPON, weapons[i]);
+    }
+
+    // side->m_Constructor->m_Build->m_Side = side->m_Id;
+
+    DCP();
+    for (i32 i = 0; i < robot_count; i++)
+    {
+        side->m_Constructor->StackRobot(nullptr);
+    }
+
+    DCP();
+    int res[MAX_RESOURCES];
+    side->m_Constructor->GetConstructionPrice(res);
+    side->AddResourceAmount(TITAN, -res[TITAN] * robot_count);
+    side->AddResourceAmount(ENERGY, -res[ENERGY] * robot_count);
+    side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * robot_count);
+    side->AddResourceAmount(PLASMA, -res[PLASMA] * robot_count);
+
+    //
+    // if (player_side && player_side->m_ConstructPanel) {
+    //     player_side->m_ConstructPanel->ResetGroupNClose();
+    // }
+    // g_IFaceList->m_RCountControl->Reset();
+    // g_IFaceList->m_RCountControl->CheckUp();
+}
+
+// void MessageCommandBuildParams::execute()
+// {
+// }
 
 void MessageChecksumParams::serialize_to_bitstream(BitWriter &writer) const
 {

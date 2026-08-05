@@ -221,7 +221,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
     DTRACE();
     DCP();
-    if (m_Base->m_Side != g_Network.controllable_side_id) {
+    if (!g_Network.is_authority() && m_Base->m_Side != g_Network.controllable_side_id) {
         return;
     }
     CMatrixSideUnit *player_side = g_MatrixMap->GetControllableSide();
@@ -230,38 +230,69 @@ void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
     g_ConfigHistory->AddConfig(&player_side->m_ConstructPanel->m_Configs[cfg_num]);
 
-    // // order n robots
-    // i32 robot_count = g_IFaceList->m_RCountControl->GetCounter();
-    // // for (int i = 0; i < robot_count; i++) {
-    // //     StackRobot(pObj);
-    // // }
-    // DCP();
-    // std::vector<ERobotUnitKind> weapons{};
-    // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
-    // {
-    //     weapons.emplace_back(m_Weapon[i].m_Unit.m_nKind);
-    // }
-    // DCP();
-    // NetOrderConstruct(m_Chassis.m_nKind, m_Armor.m_Unit.m_nKind, m_Head.m_nKind, weapons, robot_count, m_Base->m_NID);
-    // DCP();
+    if (g_Network.is_authority())
+    {
+        // // order n robots
+        // i32 robot_count = g_IFaceList->m_RCountControl->GetCounter();
+        // // for (int i = 0; i < robot_count; i++) {
+        // //     StackRobot(pObj);
+        // // }
+        // DCP();
+        // std::vector<ERobotUnitKind> weapons{};
+        // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
+        // {
+        //     weapons.emplace_back(m_Weapon[i].m_Unit.m_nKind);
+        // }
+        // DCP();
+        // NetOrderConstruct(m_Chassis.m_nKind, m_Armor.m_Unit.m_nKind, m_Head.m_nKind, weapons, robot_count, m_Base->m_NID);
+        // DCP();
 
-    for (int i = 0; i < g_IFaceList->m_RCountControl->GetCounter(); i++) {
-        StackRobot(pObj);
+        // m_Robot->m_Side = m_Base->m_Side;
+
+        for (int i = 0; i < g_IFaceList->m_RCountControl->GetCounter(); i++) {
+            StackRobot(pObj);
+        }
+
+        int res[MAX_RESOURCES];
+        GetConstructionPrice(res);
+        player_side->AddResourceAmount(TITAN, -res[TITAN] * g_IFaceList->m_RCountControl->GetCounter());
+        player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * g_IFaceList->m_RCountControl->GetCounter());
+        player_side->AddResourceAmount(ENERGY, -res[ENERGY] * g_IFaceList->m_RCountControl->GetCounter());
+        player_side->AddResourceAmount(PLASMA, -res[PLASMA] * g_IFaceList->m_RCountControl->GetCounter());
+
+        if (player_side && player_side->m_ConstructPanel) {
+            player_side->m_ConstructPanel->ResetGroupNClose();
+        }
+        g_IFaceList->m_RCountControl->Reset();
+        g_IFaceList->m_RCountControl->CheckUp();
+        DCP();
     }
+    else
+    {
+        MessageCommandBuildParams build{};
 
-    int res[MAX_RESOURCES];
-    GetConstructionPrice(res);
-    player_side->AddResourceAmount(TITAN, -res[TITAN] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(ENERGY, -res[ENERGY] * g_IFaceList->m_RCountControl->GetCounter());
-    player_side->AddResourceAmount(PLASMA, -res[PLASMA] * g_IFaceList->m_RCountControl->GetCounter());
+        int weapon_idx = 0;
+        for (int i = 0; i < m_Robot->m_UnitCnt; i++) {
+            if (m_Robot->m_Unit[i].m_Type == MRT_CHASSIS) {
+                build.chassis = m_Robot->m_Unit[i].u1.s1.m_Kind;
+            }
+            else if (m_Robot->m_Unit[i].m_Type == MRT_ARMOR) {
+                build.hull = m_Robot->m_Unit[i].u1.s1.m_Kind;
+            }
+            else if (m_Robot->m_Unit[i].m_Type == MRT_WEAPON) {
+                build.weapons[weapon_idx++] = m_Robot->m_Unit[i].u1.s1.m_Kind;
+            }
+            else if (m_Robot->m_Unit[i].m_Type == MRT_HEAD) {
+                build.head = m_Robot->m_Unit[i].u1.s1.m_Kind;
+            }
+        }
 
-    if (player_side && player_side->m_ConstructPanel) {
-        player_side->m_ConstructPanel->ResetGroupNClose();
+        build.robot_count = g_IFaceList->m_RCountControl->GetCounter();
+        build.target_base_nid = m_Base->m_NID;
+
+        Message msg = Message { build };
+        g_Network.send_message( msg );
     }
-    g_IFaceList->m_RCountControl->Reset();
-    g_IFaceList->m_RCountControl->CheckUp();
-    DCP();
 }
 void CConstructor::BeforeRender(void) {
     // static float za = 0;

@@ -511,6 +511,11 @@ void Network::process_server_network_frame()
                     m.command_move.execute();
                 }
             }
+            else if (m.type == MessageType::COMMAND_BUILD)
+            {
+                m.command_build.execute_for_side();
+            }
+
             //
             // if (g_server_state == ServerState::BROADCASTING)
             // {
