@@ -3032,6 +3032,7 @@ void CMatrixMapLogic::Takt(int step) {
         if (g_Network.physics_frame % physics_frames_per_net_snapshot)
         {
             g_Network.broadcast_world_snapshot();
+            g_Network.broadcast_events();
         }
     }
     else if (g_Network.is_client())

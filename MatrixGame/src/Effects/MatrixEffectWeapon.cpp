@@ -22,6 +22,7 @@
 
 void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &pos, uintptr_t user, DWORD flags) {
     DTRACE();
+    // return;
 
     CMatrixEffectWeapon *w = (CMatrixEffectWeapon *)user;
 
@@ -43,7 +44,8 @@ void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &p
             odead = hiti->Damage(w->m_Type, pos, dir, w->GetSideStorage(), w->GetOwner());
         }
         else {
-            odead = hiti->Damage(w->m_Type, pos, w->m_Dir, w->GetSideStorage(), w->GetOwner());
+            // if (g_Network.is_authority())
+                odead = hiti->Damage(w->m_Type, pos, w->m_Dir, w->GetSideStorage(), w->GetOwner());
         }
         if (!odead) {
             if (hiti->IsRobot()) {
@@ -267,6 +269,14 @@ void CMatrixEffectWeapon::Modify(const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir,
 void CMatrixEffectWeapon::Fire(void) {
     DTRACE();
 
+    if (g_Network.is_authority())
+    {
+        CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
+        EventFire e = EventFire(robot->m_NID, m_Target, GetWeaponType(), g_Network.physics_frame, 1.0);
+        g_Network.add_event_to_current_tick(e);
+        // std::cout << "Registering shot from " << robot->m_NID << " at " << g_Network.physics_frame << std::endl;
+    }
+
     ++m_FireCount;
 
     if (m_SoundType != S_NONE) {
@@ -350,6 +360,7 @@ void CMatrixEffectWeapon::Fire(void) {
         case WEAPON_HOMING_MISSILE:
         case WEAPON_CANNON3: {
             DCP();
+            // return;
             SMOProps mo;
             mo.startpos = m_Pos;
             mo.target = m_Pos + m_Dir * 1500;
@@ -361,12 +372,19 @@ void CMatrixEffectWeapon::Fire(void) {
             mo.side = m_SideStorage;
             // mo.attacker = m_Owner;
             // if (mo.attacker) mo.attacker->RefInc();
+            CHelper::Create(1000,0)->Line(mo.startpos, mo.target);
 
             mo.shleif = (SEffectHandler *)HAlloc(sizeof(SEffectHandler), m_Heap);
             mo.shleif->effect = NULL;
             CMatrixEffect::CreateShleif(mo.shleif);
             m_Ref++;
             CMatrixEffect::CreateMovingObject(NULL, mo, TRACE_ALL, m_Skip, WeaponHit, (uintptr_t)this);
+
+            if (g_Network.is_authority())
+            {
+                // EventShotFired event = EventShotFired(m_Owner->m_Object->AsRobot()->m_NID, m_Type, );
+                // g_Network.add_event_for_current_tick();
+            }
 
             break;
         }
@@ -463,6 +481,7 @@ void CMatrixEffectWeapon::Fire(void) {
         case WEAPON_GUN:
         case WEAPON_CANNON1: {
             DCP();
+
             SMOProps mo;
             mo.common.gun.maxdist = m_WeaponDist * m_WeaponCoefficient;
             mo.startpos = m_Pos;
@@ -697,6 +716,22 @@ void CMatrixEffectWeapon::Fire(void) {
         default:
             CMatrixEffect::CreateExplosion(m_Pos, ExplosionRobotBoom, true);
     }
+}
+
+void CMatrixEffectWeapon::FireBegin(const D3DXVECTOR3 &speed, CMatrixMapStatic *skip)
+{
+    if (!g_Network.is_authority() || IsFire())
+        return;
+    m_Speed = speed;
+    SETFLAG(m_Flags, WEAPFLAGS_FIRE);
+    RESETFLAG(m_Flags, WEAPFLAGS_FIREWAS);
+    RESETFLAG(m_Flags, WEAPFLAGS_HITWAS);
+    m_Skip = skip;
+
+    // D3DXVECTOR3 fire_pos = D3DXVECTOR3(f1, f2, f3);
+
+    if (g_Network.is_authority())
+        CHelper::Create(1000,0)->Line(m_Pos, m_Pos+m_Dir*100);
 }
 
 void CMatrixEffectWeapon::FireEnd(void) {

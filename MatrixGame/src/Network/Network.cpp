@@ -125,6 +125,57 @@ void Network::process_incoming_message(const Message &msg)
         g_Network.desync_happened_at_frame = msg.desync.target_frame;  // log this
         g_Network.desync_happened = true;
     }
+    else if (msg.type == MessageType::EVENTS)
+    {
+        if (msg.events.events.size() == 0) return;
+
+        // std::cout << "Processing events: " << msg.events.events.size() << std::endl;
+
+        std::set<u32> robot_fired{};
+
+        for (EventFire event_fire : msg.events.events)
+        {
+            if (robot_fired.contains(event_fire.nid))
+                continue;
+
+            if (robots.contains(event_fire.nid))
+            {
+                robot_fired.insert(event_fire.nid);
+                CMatrixRobotAI *robot = robots.at(event_fire.nid);
+
+
+                // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event_fire.frame << std::endl;
+                // Trigger all rocket launchers
+                for (int i = 0; i < robot->m_WeaponsCnt; i++)
+                {
+                    // static bool shot = false;
+                    if (robot->m_Weapons[i].GetWeaponType() == WEAPON_HOMING_MISSILE && robot->m_Weapons[i].m_Weapon)
+                    {
+                        // shot = true;
+
+                        D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
+                        D3DXVECTOR3 vPos;
+                        D3DXVec3TransformCoord(&vPos, &vPos, &m);
+                        robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
+
+                        D3DXVECTOR3 dir = event_fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+                        D3DXVec3Normalize(&dir, &dir);
+                        robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+
+                        robot->m_Weapons[i].m_Weapon->m_Skip = robot;
+                        robot->m_Weapons[i].m_Weapon->Fire();
+                        // std::cout << "Rocket launched. " << std::endl;
+                    }
+                }
+            }
+        }
+
+
+        // for (int i = 0; i < msg.events.events.size(); i++)
+        // {
+        //     play_fire_event(msg.events.events[i]);
+        // }
+    }
 }
 
 void Network::broadcast_world_snapshot()
@@ -137,6 +188,28 @@ void Network::broadcast_world_snapshot()
         MessageWorldSnapshotParams {ws }
     };
     g_Network.send_message(msg);
+}
+
+void Network::broadcast_events()
+{
+    Message msg
+    {
+        MessageEventsParams { this_tick_event_pool }
+    };
+    std::cout << "Broadcasting events: " << msg.events.events.size() << std::endl;
+    g_Network.send_message(msg);
+
+    // if (msg.events.events.size() > 0)
+    // {
+    //     BitWriter writer;
+    //     msg.serialize_to_bitstream(writer);
+    //
+    //     BitReader reader{writer.get_buffer()};
+    //     Message readed = Message::deserialize_from_bitstream(reader);
+    //     std::cout << "!!!:"  << std::endl;
+    // }
+
+    clear_events_for_current_tick();
 }
 
 void Network::delete_robot(CMatrixRobotAI *robot)
@@ -256,6 +329,21 @@ void Network::populate_robot(RobotSnapshot& rs)
     r->InitMaxHitpoint(10000.0);
 
     robots.emplace(rs.nid, r);
+}
+
+void Network::add_event_to_current_tick(EventFire e)
+{
+    this_tick_event_pool.push_back(e);
+}
+
+void Network::clear_events_for_current_tick()
+{
+    this_tick_event_pool.clear();
+}
+
+void Network::play_fire_event(const EventFire &event)
+{
+
 }
 
 void Network::initialize_replay_mode_with_files(std::wstring commands_filename)

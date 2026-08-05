@@ -56,6 +56,29 @@ MessageWorldSnapshotParams MessageWorldSnapshotParams::deserialize_from_bitstrea
     return MessageWorldSnapshotParams( WorldSnapshot::deserialize_from_bitstream(reader) );
 }
 
+void MessageEventsParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(events.size());
+
+    for (int i = 0; i < events.size(); i++)
+    {
+        events[i].serialize_to_bitstream(writer);
+    }
+}
+
+MessageEventsParams MessageEventsParams::deserialize_from_bitstream(BitReader &reader)
+{
+    std::vector<EventFire> events{};
+    events.reserve(reader.read_u32());
+
+    for (int i = 0; i < events.capacity(); i++)
+    {
+        events.push_back(EventFire::deserialize_from_bitstream(reader));
+    }
+
+    return MessageEventsParams( events );
+}
+
 void MessageJoinParams::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u8(this->player_side);

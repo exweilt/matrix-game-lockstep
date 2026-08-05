@@ -88,6 +88,25 @@ f32 unpack_rotation(uint8_t quantized) {
     return radians - M_PI;
 }
 
+void EventFire::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(nid);
+    writer.write_vec3(target_pos);
+    writer.write_u32(frame);
+    writer.write_u8(weapons);
+    writer.write_u8(precise_time);
+}
+
+EventFire EventFire::deserialize_from_bitstream(BitReader &reader)
+{
+    EventFire result{};
+    result.nid = reader.read_u32();
+    result.target_pos = reader.read_vec3();
+    result.frame = reader.read_u32();
+    result.weapons = reader.read_u8();
+    result.precise_time = reader.read_u8();
+    return result;
+}
 
 
 RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)

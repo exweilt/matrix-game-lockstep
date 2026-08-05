@@ -252,9 +252,11 @@ class CMatrixEffectWeapon : public CMatrixEffect {
     FIRE_END_HANDLER m_Handler;
     int m_Ref;
 
+public:
     D3DXVECTOR3 m_Pos;
     D3DXVECTOR3 m_Dir;
     D3DXVECTOR3 m_Speed;
+    D3DXVECTOR3 m_Target; // net helper
 
     float m_Time;
     float m_CoolDown;
@@ -275,9 +277,9 @@ class CMatrixEffectWeapon : public CMatrixEffect {
     CMatrixEffectWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user, FIRE_END_HANDLER handler,
                         EWeapon type, int cooldown);
     virtual ~CMatrixEffectWeapon();
-    void Fire(void);
 
 public:
+    void Fire(void);
     D3DXVECTOR3 GetPos() { return m_Pos; }
     void SetDefaultCoefficient() { m_WeaponCoefficient = DEFBOT_WEAPON_COEFF; }
     void SetArcadeCoefficient() { m_WeaponCoefficient = ARCADEBOT_WEAPON_COEFF; }
@@ -318,16 +320,7 @@ public:
     void ModifyCoolDown(float addk) { m_CoolDown += m_CoolDown * addk; }
     void ModifyDist(float addk) { m_WeaponDist += m_WeaponDist * addk; }
 
-    void FireBegin(const D3DXVECTOR3 &speed, CMatrixMapStatic *skip) {
-        if (IsFire())
-            return;
-        m_Speed = speed;
-        SETFLAG(m_Flags, WEAPFLAGS_FIRE);
-        RESETFLAG(m_Flags, WEAPFLAGS_FIREWAS);
-        RESETFLAG(m_Flags, WEAPFLAGS_HITWAS);
-        m_Skip = skip;
-        // CHelper::Create(10000,0)->Line(m_Pos, m_Pos+m_Dir*100);
-    }
+    void FireBegin(const D3DXVECTOR3 &speed, CMatrixMapStatic *skip);
     void FireEnd(void);
 
     static void SoundHit(EWeapon w, const D3DXVECTOR3 &pos);

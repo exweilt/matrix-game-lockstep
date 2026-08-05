@@ -110,10 +110,9 @@ bool CMatrixMapObject::Damage(
         if (weap == WEAPON_ABLAZE) {
             CSound::AddSound(S_WEAPON_HIT_ABLAZE, GetGeoCenter(), SL_ALL, SEF_SKIP);
         }
-        else
-
-                if (weap == WEAPON_BIGBOOM || weap == WEAPON_HOMING_MISSILE || weap == WEAPON_BOMB ||
+        else if (weap == WEAPON_BIGBOOM || weap == WEAPON_HOMING_MISSILE || weap == WEAPON_BOMB ||
                     weap == WEAPON_PLASMA || weap == WEAPON_FLAMETHROWER) {
+
             if (!IsAblaze()) {
                 MarkAblaze();
             }

@@ -98,6 +98,21 @@ uint8_t pack_rotation(float radians);
 
 f32 unpack_rotation(uint8_t quantized);
 
+struct EventFire
+{
+    u32 nid;
+    D3DXVECTOR3 target_pos;
+    u32 frame;
+    u8 weapons;
+    u8 precise_time; // exact moment between 2 frames event happened.
+
+    EventFire(): nid(0), frame(0), weapons(0), precise_time(0) {}
+
+    EventFire(u32 n, D3DXVECTOR3 d, u8 w, u32 f, u8 p) : nid(n), target_pos(d), weapons(w), frame(f), precise_time(p) {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static EventFire deserialize_from_bitstream(BitReader &reader);
+};
 
 // // Stores the
 // struct WorldSnapshot

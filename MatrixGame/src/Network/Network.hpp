@@ -94,11 +94,15 @@ public:
     ~Network() = default;
 
     void broadcast_world_snapshot();
+    void broadcast_events();
 
     void delete_robot(CMatrixRobotAI * robot);
 
     void process_playback(int ms);
     void populate_robot(RobotSnapshot &rs);
+    void add_event_to_current_tick(EventFire e);
+    void clear_events_for_current_tick();
+    void play_fire_event(const EventFire &event);
 
     ENetHost* host;
 
@@ -116,6 +120,7 @@ public:
     bool desync_happened = false;
     bool has_physics_frame_run = false;
     u32 code_logic_frame = 1;
+    std::vector<EventFire> this_tick_event_pool;
 
     std::map<u32, CMatrixRobotAI*> robots;
 

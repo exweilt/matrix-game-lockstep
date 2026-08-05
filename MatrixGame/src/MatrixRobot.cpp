@@ -1004,7 +1004,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     //}
 
 
-    if (g_Network.is_authority())
+    if (1 || g_Network.is_authority())
     {
         int cnt = 0;
         while (cnt < m_OrdersInPool) {
@@ -1017,7 +1017,9 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                 case ROT_MOVE_TO:
                 case ROT_MOVE_TO_BACK: {
                     DCP();
-                    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+                    if (g_Network.is_authority())
+                    {
+                        if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
                         if (isKeyPressed(KA_UNIT_FORWARD) || isKeyPressed(KA_UNIT_FORWARD_ALT))
                         {
                             D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
@@ -1111,34 +1113,44 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                         StopMoving();
 
                     break;
+                    }
+                    break;
                 }
                 case ROT_MOVE_RETURN: {
                     DCP();
-                    if (!FindOrderLikeThat(ROT_MOVE_TO)) {
-                        m_OrdersList[0].GetParams(&f1, &f2, NULL, NULL);
-                        if (g_MatrixMap->PlaceIsEmpty(m_Unit[0].u1.s1.m_Kind - 1, 4, Float2Int(f1), Float2Int(f2), this)) {
-                            RemoveOrderFromTop();
-                            MoveTo(Float2Int(f1), Float2Int(f2));
-                            continue;
+                    if (g_Network.is_authority())
+                    {
+                        if (!FindOrderLikeThat(ROT_MOVE_TO)) {
+                            m_OrdersList[0].GetParams(&f1, &f2, NULL, NULL);
+                            if (g_MatrixMap->PlaceIsEmpty(m_Unit[0].u1.s1.m_Kind - 1, 4, Float2Int(f1), Float2Int(f2), this)) {
+                                RemoveOrderFromTop();
+                                MoveTo(Float2Int(f1), Float2Int(f2));
+                                continue;
+                            }
                         }
                     }
+
                     break;
                 }
                 case ROT_STOP_MOVE: {
                     DCP();
-                    if (0 /*this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject()*/) {
-                        LowLevelDecelerate(ms, true, true);
-                        if (m_Speed <= ZERO_VELOCITY) {
+                    if (g_Network.is_authority())
+                    {
+                        if (0 /*this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject()*/) {
+                            LowLevelDecelerate(ms, true, true);
+                            if (m_Speed <= ZERO_VELOCITY) {
+                                LowLevelStop();
+                                RemoveOrderFromTop();
+                            }
+                        }
+                        else {
                             LowLevelStop();
                             RemoveOrderFromTop();
                         }
+                        SETFLAG(m_ObjectState, ROBOT_FLAG_COLLISION);
+                        RChange(MR_Matrix | MR_ShadowProjTex | MR_ShadowStencil);
                     }
-                    else {
-                        LowLevelStop();
-                        RemoveOrderFromTop();
-                    }
-                    SETFLAG(m_ObjectState, ROBOT_FLAG_COLLISION);
-                    RChange(MR_Matrix | MR_ShadowProjTex | MR_ShadowStencil);
+
                     continue;
                 }
                 case ROT_FIRE: {
@@ -1148,34 +1160,44 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
                     m_OrdersList[0].GetParams(&f1, &f2, &f3, &type);
 
-                    if (g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this) {
-                        m_WeaponDir.x = g_MatrixMap->m_TraceStopPos.x;
-                        m_WeaponDir.y = g_MatrixMap->m_TraceStopPos.y;
-                        // if(IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj))
-                        //             m_WeaponDir.z = g_MatrixMap->m_TraceStopObj->GetGeoCenter().z;
-                        // else
-                        m_WeaponDir.z = g_MatrixMap->m_TraceStopPos.z;
-                    }
-                    else {
-                        /*
-                                            D3DXVECTOR2 napr = D3DXVECTOR2(f1, f2) - D3DXVECTOR2(m_PosX, m_PosY);
-                                            D3DXVECTOR2 naprN;
-                                            D3DXVec2Normalize(&naprN, &napr);
+                    if (g_Network.is_authority())
+                    {
+                        if (g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this) {
+                            m_WeaponDir.x = g_MatrixMap->m_TraceStopPos.x;
+                            m_WeaponDir.y = g_MatrixMap->m_TraceStopPos.y;
+                            // if(IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj))
+                            //             m_WeaponDir.z = g_MatrixMap->m_TraceStopObj->GetGeoCenter().z;
+                            // else
+                            m_WeaponDir.z = g_MatrixMap->m_TraceStopPos.z;
+                        }
+                        else {
+                            /*
+                                                D3DXVECTOR2 napr = D3DXVECTOR2(f1, f2) - D3DXVECTOR2(m_PosX, m_PosY);
+                                                D3DXVECTOR2 naprN;
+                                                D3DXVec2Normalize(&naprN, &napr);
 
-                                            float Cos = m_Forward.x*naprN.x + m_Forward.y*naprN.y;
-                                            float needAngle = float(acos(Cos));
+                                                float Cos = m_Forward.x*naprN.x + m_Forward.y*naprN.y;
+                                                float needAngle = float(acos(Cos));
 
-                                            if(fabs(needAngle) <= MAX_HULL_ANGLE)
-                                                RotateHull(D3DXVECTOR3(f1, f2, 0));
-                                            else
-                                                RotateRobot(D3DXVECTOR3(f1, f2, 0));
-                        */
-                        m_WeaponDir.x = f1;
-                        m_WeaponDir.y = f2;
-                        m_WeaponDir.z = f3;
+                                                if(fabs(needAngle) <= MAX_HULL_ANGLE)
+                                                    RotateHull(D3DXVECTOR3(f1, f2, 0));
+                                                else
+                                                    RotateRobot(D3DXVECTOR3(f1, f2, 0));
+                            */
+                            m_WeaponDir.x = f1;
+                            m_WeaponDir.y = f2;
+                            m_WeaponDir.z = f3;
+                        }
                     }
-                    for (int nC = 0; nC < m_WeaponsCnt; ++nC) {
+
+                    for (int nC = 0; nC < m_WeaponsCnt; ++nC)
+                    {
                         if (m_Weapons[nC].IsEffectPresent()) {
+                            if (g_Network.is_authority() && m_Weapons[nC].m_Weapon)
+                            {
+                                m_Weapons[nC].m_Weapon->m_Target = m_WeaponDir;
+                            }
+
                             if (m_Weapons[nC].GetWeaponType() == WEAPON_REPAIR) {
                                 if (type == 2)
                                     m_Weapons[nC].FireBegin(m_Velocity * (1.0f / LOGIC_TAKT_PERIOD), this);
@@ -1183,16 +1205,21 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                                     m_Weapons[nC].FireEnd();
                             }
                             else if (m_Weapons[nC].GetWeaponType() == WEAPON_BOMB) {
-                                if (type == 0)
-                                    m_Weapons[nC].FireBegin(D3DXVECTOR3(f1, f2, f3), this);
-                                else
-                                    m_Weapons[nC].FireEnd();
+                                // if (type == 0)
+                                //     m_Weapons[nC].FireBegin(D3DXVECTOR3(f1, f2, f3), this);
+                                // else
+                                //     m_Weapons[nC].FireEnd();
                             }
                             else {
-                                if (type == 0)
-                                    m_Weapons[nC].FireBegin(m_Velocity * (1.0f / LOGIC_TAKT_PERIOD), this);
-                                else
-                                    m_Weapons[nC].FireEnd();
+                                if (g_Network.is_authority() && m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE)
+                                {
+                                    if (type == 0)
+                                    {
+                                        m_Weapons[nC].FireBegin(m_Velocity * (1.0f / LOGIC_TAKT_PERIOD), this);
+                                    }
+                                    // else
+                                    //     m_Weapons[nC].FireEnd();
+                                }
                             }
                         }
                     }
@@ -1205,6 +1232,8 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                 }
                 case ROT_CAPTURE_FACTORY: {
                     DCP();
+                    if (!g_Network.is_authority())
+                        continue;
 
                     factory = (CMatrixBuilding *)m_OrdersList[0].GetStatic();
                     if (factory == NULL)
@@ -1335,8 +1364,8 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
                 case ROT_STOP_CAPTURE: {
                     DCP();
-
-                    RemoveOrderFromTop();
+                    if (g_Network.is_authority())
+                        RemoveOrderFromTop();
                     continue;
                 }
             }
@@ -1372,7 +1401,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
     // Weapons
 
-    if (g_Network.is_authority()){
+    if (1 || g_Network.is_authority()){
         for (int nC = 0; nC < m_WeaponsCnt; ++nC) {
             if (m_Weapons[nC].IsEffectPresent() &&
                 (m_Weapons[nC].m_On || g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this)) {
@@ -1890,19 +1919,19 @@ bool CMatrixRobotAI::Damage(
         return false;
     }
 
-#if (defined _DEBUG) && !(defined _RELDEBUG)
-    if (attaker != NULL) {
-        CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
-        while (ms) {
-            if (ms == attaker)
-                break;
-            ms = ms->GetNextLogic();
-        }
-        if (!ms)
-            debugbreak();
-    }
+// #if (defined _DEBUG) && !(defined _RELDEBUG)
+//     if (attaker != NULL) {
+//         CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+//         while (ms) {
+//             if (ms == attaker)
+//                 break;
+//             ms = ms->GetNextLogic();
+//         }
+//         if (!ms)
+//             debugbreak();
+//     }
+// #endif
 
-#endif
     if (!friendly_fire && attaker != NULL && attaker->IsLiveCannon() && attaker->AsCannon()->GetSide() != GetSide()) {
         if (!GetEnv()->SearchEnemy(attaker))
             GetEnv()->AddToList(attaker);
@@ -1923,7 +1952,9 @@ bool CMatrixRobotAI::Damage(
                                                      : g_Config.m_RobotDamages[idx].damage);
         if (weap == WEAPON_BIGBOOM)
             damage -= damage * m_BombProtect;
-        m_HitPoint -= damage;
+
+        if (g_Network.is_authority())
+            m_HitPoint -= damage;
 
         if (m_HitPoint >= 0) {
             m_PB.Modify(m_HitPoint * m_MaxHitPointInversed);
@@ -4874,6 +4905,12 @@ void CMatrixRobotAI::StopMoving(void) {
 
 void CMatrixRobotAI::Fire(const D3DXVECTOR3 &fire_pos, int type) {
     DTRACE();
+
+    // if (g_Network.is_authority())
+    // {
+    //     EventFire e = EventFire(m_NID, fire_pos, type);
+    //     g_Network.add_event_to_current_tick(e);
+    // }
 
     RemoveOrder(ROT_FIRE);
     SOrder *order = AllocPlaceForOrderOnTop();

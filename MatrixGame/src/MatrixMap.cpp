@@ -1163,6 +1163,11 @@ void CMatrixMap::BeforeDraw(void) {
                                  static_cast<CMatrixRobotAI *>(m_TraceStopObj)->GetGroupLogic())
                            .c_str(),
                    1000);
+            // std::cout << "cX " << m_TraceStopObj->m_Core->m_GeoCenter.x << ", "
+            //           << "cY " << m_TraceStopObj->m_Core->m_GeoCenter.y << ", "
+            //           << "cZ " << m_TraceStopObj->m_Core->m_GeoCenter.z << ", "
+            //           << "X " << m_TraceStopObj->AsRobot()->m_PosX << ", "
+            //           << "Y " << m_TraceStopObj->AsRobot()->m_PosY << ", "<< std::endl;
         }
         else if (m_TraceStopObj->GetObjectType() == OBJECT_TYPE_CANNON)
             m_DI.T(L"Under cursor", L"Cannon", 1000);

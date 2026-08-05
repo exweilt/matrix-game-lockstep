@@ -36,6 +36,22 @@ enum class MessageType : u8
     DESYNC, //happened
     CHECKSUM,
     STATE_REPORT,
+    EVENTS,
+};
+
+struct MessageEventsParams
+{
+    // u32 target_frame;
+    std::vector<EventFire> events;
+    // std::vector<RobotSnapshot> robots;
+
+    MessageEventsParams(): events() {}
+    MessageEventsParams(const std::vector<EventFire> &e) : events(e) {}
+    ~MessageEventsParams() {}
+
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageEventsParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageWorldSnapshotParams
@@ -162,6 +178,7 @@ struct Message
         MessageReportParams report;
         MessageDesyncParams desync;
         MessageCommandMoveParams command_move;
+        MessageEventsParams events;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -172,6 +189,7 @@ struct Message
     Message(MessageReportParams r)         : type(MessageType::STATE_REPORT),      report(r)     {};
     Message(MessageDesyncParams d)         : type(MessageType::DESYNC),      desync(d)     {};
     Message(MessageCommandMoveParams m)         : type(MessageType::COMMAND_MOVE),      command_move(m)     {};
+    Message(MessageEventsParams e)         : type(MessageType::EVENTS),      events(e)     {};
 
     ~Message()
     {
@@ -195,6 +213,9 @@ struct Message
             case MessageType::DESYNC:
                 desync.~MessageDesyncParams();
                 break;
+            case MessageType::EVENTS:
+                events.~MessageEventsParams();
+                break;
             default:;
         }
     }
@@ -213,6 +234,7 @@ struct Message
             case MessageType::START:            break;
             case MessageType::DESYNC:           desync          .serialize_to_bitstream(writer); break;
             case MessageType::STATE_REPORT:     report          .serialize_to_bitstream(writer); break;
+            case MessageType::EVENTS:           events          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
     }
@@ -235,6 +257,8 @@ struct Message
                 return MessageReportParams::        deserialize_from_bitstream(reader);
             case MessageType::CHECKSUM:
                 return MessageChecksumParams::      deserialize_from_bitstream(reader);
+            case MessageType::EVENTS:
+                return MessageEventsParams::        deserialize_from_bitstream(reader);
             default:
                 assert(false);
         }

@@ -292,6 +292,7 @@ class CMatrixRobotAI : public CMatrixRobot
     float m_RepairDist;
     float m_SyncMul;
     int m_CtrlGroup;
+public:
     SBotWeapon m_Weapons[MAX_WEAPON_CNT];  // установленное оружие
     int m_WeaponsCnt;
 

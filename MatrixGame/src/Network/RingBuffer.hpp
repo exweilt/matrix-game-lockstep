@@ -22,7 +22,7 @@ public:
 
         if (count == N) {
             tail = (tail + 1) % N;
-            std::cout << "Out of space in ring buffer." << std::endl;
+            // std::cout << "Out of space in ring buffer." << std::endl;
         } else {
             count++;
         }
