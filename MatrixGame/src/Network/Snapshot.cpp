@@ -46,10 +46,17 @@ void RobotSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_u8(pack_rotation(rotation));
     writer.write_u8(pack_rotation(hull_rotation));
     writer.write_u8(side);
+    writer.write_u8(animation);
     writer.write_u8(weapon_cnt);
 
     for (int i = 0; i < weapon_cnt; i++)
         writer.write_u8(weapons[i]);
+
+    // writer.write_u8(is_firing);
+    // if (is_firing)
+    // {
+    //     writer.write_vec3(target);
+    // }
 }
 
 RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
@@ -67,10 +74,17 @@ RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.rotation = unpack_rotation(reader.read_u8());
     result.hull_rotation = unpack_rotation(reader.read_u8());
     result.side = reader.read_u8();
+    result.animation = reader.read_u8();
     result.weapon_cnt = reader.read_u8();
 
     for (int i = 0; i < result.weapon_cnt; i++)
         result.weapons[i] = reader.read_u8();
+
+    // result.is_firing = reader.read_u8();
+    // if (result.is_firing)
+    // {
+    //     result.target = reader.read_vec3();
+    // }
 
     return result;
 }
@@ -122,6 +136,7 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     result.rotation = robot->GetRotationZ();
     result.hull_rotation = robot->GetHullRotationZ();
     result.side = robot->GetSide();
+    result.animation = robot->GetAnimation();
 
     result.weapon_cnt = 0;
     for (int i = 0; i < robot->m_UnitCnt; i++)
@@ -143,6 +158,9 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
             result.weapons[result.weapon_cnt++] = robot->m_Unit[i].u1.s1.m_Kind;
         }
     }
+
+    // result.target = robot->m_WeaponDir;
+    // result.is_firing = false;
 
     return result;
 }

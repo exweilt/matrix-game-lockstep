@@ -266,9 +266,9 @@ public:
 
     void SwitchAnimation(EAnimation a);
 
-#ifdef _DEBUG
+// #ifdef _DEBUG
     EAnimation GetAnimation() { return m_Animation; }
-#endif
+// #endif
 
     bool Carry(CMatrixFlyer *cargo, bool quick_connect = false);  // NULL to off
     void ClearSelection(void);

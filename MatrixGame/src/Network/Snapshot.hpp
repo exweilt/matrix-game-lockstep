@@ -47,7 +47,10 @@ struct RobotSnapshot
     u8 weapons[5]{};
     f32 rotation;
     f32 hull_rotation;
+    u8 animation;
     u8 side;
+    // D3DXVECTOR3 target;
+    // bool is_firing;
 
     template <class Archive>
     void serialize(Archive& ar) {

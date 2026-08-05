@@ -901,6 +901,8 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
+            if (GetCurGroup() == nullptr) return;
+
             if (g_Network.is_authority())
             {
                 PGOrderMoveTo(SelGroupToLogicGroup(),

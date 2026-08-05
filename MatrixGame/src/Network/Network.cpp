@@ -251,6 +251,12 @@ void Network::process_playback([[maybe_unused]]int ms)
                 r->InitMaxHitpoint(rs.maxhealth * 10);
                 r->SetHitPoint(rs.health * 10);
 
+                D3DXVECTOR2 shift = D3DXVECTOR2(rs_to.x - rs_from.x, rs_to.y - rs_from.y);
+                r->m_Speed = D3DXVec2Length(&shift);
+
+                if (r->GetAnimation() != static_cast<EAnimation>(rs.animation))
+                    r->SwitchAnimation(static_cast<EAnimation>(rs.animation));
+
                 // TODO: optimize this?
                 r->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
                 r->RNeed(MR_Matrix);

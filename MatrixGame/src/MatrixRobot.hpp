@@ -54,6 +54,7 @@ class CMatrixEffectSelection;
 
 struct SBotWeapon {
 private:
+public:
     CMatrixEffectWeapon *m_Weapon;
 
 public:
