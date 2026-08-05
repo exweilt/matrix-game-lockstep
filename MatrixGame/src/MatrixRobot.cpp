@@ -1204,14 +1204,20 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                                 else
                                     m_Weapons[nC].FireEnd();
                             }
-                            else if (m_Weapons[nC].GetWeaponType() == WEAPON_BOMB) {
-                                // if (type == 0)
-                                //     m_Weapons[nC].FireBegin(D3DXVECTOR3(f1, f2, f3), this);
+                            else if (g_Network.is_authority() && m_Weapons[nC].GetWeaponType() == WEAPON_BOMB) {
+                                if (type == 0)
+                                    m_Weapons[nC].FireBegin(D3DXVECTOR3(f1, f2, f3), this);
                                 // else
                                 //     m_Weapons[nC].FireEnd();
                             }
                             else {
-                                if (g_Network.is_authority() && m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE)
+                                if (g_Network.is_authority() &&
+                                    (   //m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE ||
+                                        m_Weapons[nC].GetWeaponType() == WEAPON_GUN ||
+                                        m_Weapons[nC].GetWeaponType() == WEAPON_PLASMA ||
+                                        m_Weapons[nC].GetWeaponType() == WEAPON_VOLCANO
+                                    )
+                                    )
                                 {
                                     if (type == 0)
                                     {
@@ -1453,7 +1459,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
                 // Special weapons handler
                 if (m_Weapons[nC].GetWeaponType() == WEAPON_BOMB) {
-                    m_Weapons[nC].Modify(vPos, vWeapPos, m_WeaponDir);
+                    m_Weapons[nC].Modify(vPos, m_WeaponDir, vWeapPos);
                     m_Weapons[nC].Takt(float(ms));
 
                     if (m_Weapons[nC].IsFireWas()) {

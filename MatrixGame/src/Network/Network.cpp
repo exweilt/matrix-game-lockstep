@@ -131,16 +131,16 @@ void Network::process_incoming_message(const Message &msg)
 
         // std::cout << "Processing events: " << msg.events.events.size() << std::endl;
 
-        std::set<u32> robot_fired{};
+        std::set<std::pair<u32, u8>> robot_fired{};
 
         for (EventFire event_fire : msg.events.events)
         {
-            if (robot_fired.contains(event_fire.nid))
+            if (robot_fired.contains(std::pair(event_fire.nid, event_fire.weapons)))
                 continue;
 
             if (robots.contains(event_fire.nid))
             {
-                robot_fired.insert(event_fire.nid);
+                robot_fired.insert(std::pair(event_fire.nid, event_fire.weapons));
                 CMatrixRobotAI *robot = robots.at(event_fire.nid);
 
 
@@ -149,7 +149,7 @@ void Network::process_incoming_message(const Message &msg)
                 for (int i = 0; i < robot->m_WeaponsCnt; i++)
                 {
                     // static bool shot = false;
-                    if (robot->m_Weapons[i].GetWeaponType() == WEAPON_HOMING_MISSILE && robot->m_Weapons[i].m_Weapon)
+                    if (robot->m_Weapons[i].GetWeaponType() == event_fire.weapons && robot->m_Weapons[i].m_Weapon)
                     {
                         // shot = true;
 
@@ -158,9 +158,17 @@ void Network::process_incoming_message(const Message &msg)
                         D3DXVec3TransformCoord(&vPos, &vPos, &m);
                         robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
 
-                        D3DXVECTOR3 dir = event_fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
-                        D3DXVec3Normalize(&dir, &dir);
-                        robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+                        if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
+                        {
+                            robot->m_Weapons[i].m_Weapon->m_Dir = event_fire.target_pos;
+                        }
+                        else
+                        {
+                            D3DXVECTOR3 dir = event_fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+                            D3DXVec3Normalize(&dir, &dir);
+                            robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+                        }
+
 
                         robot->m_Weapons[i].m_Weapon->m_Skip = robot;
                         robot->m_Weapons[i].m_Weapon->Fire();

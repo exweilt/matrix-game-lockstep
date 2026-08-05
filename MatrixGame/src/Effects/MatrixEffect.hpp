@@ -10,6 +10,7 @@
 
 #include "VectorObject.hpp"
 #include "CBillboard.hpp"
+struct SBotWeapon;
 enum EWeapon : unsigned int;
 
 #define MAX_EFFECT_DISTANCE_SQ ((3000) * (3000))
@@ -475,8 +476,10 @@ public:
                             float height, float angle, float ttl, bool intense, CTextureManaged *tex = NULL);
     static void CreateKonusSplash(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, float radius, float height,
                                   float angle, float ttl, bool intense, CTextureManaged *tex = NULL);
+    // static CMatrixEffect *CreateWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user,
+    //                                    FIRE_END_HANDLER handler, EWeapon type, int cooldown = 0);
     static CMatrixEffect *CreateWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user,
-                                       FIRE_END_HANDLER handler, EWeapon type, int cooldown = 0);
+                                       FIRE_END_HANDLER handler, EWeapon type, int cooldown = 0, SBotWeapon *weapon = nullptr);
     static void CreateFlame(SEffectHandler *eh, float ttl, DWORD hitmask, CMatrixMapStatic *skip, uintptr_t user,
                             FIRE_END_HANDLER handler);
     static void CreateBigBoom(const D3DXVECTOR3 &pos, float radius, float ttl, DWORD hitmask, CMatrixMapStatic *skip,

@@ -70,7 +70,7 @@ void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &p
 }
 
 CMatrixEffectWeapon::CMatrixEffectWeapon(const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir, uintptr_t user,
-                                         FIRE_END_HANDLER handler, EWeapon type, int cooldown)
+                                         FIRE_END_HANDLER handler, EWeapon type, int cooldown, SBotWeapon *weapon )
   : CMatrixEffect(), m_Type(type), m_User(user), m_Handler(handler), m_Pos(pos), m_Dir(dir),
     m_CoolDown(cooldown ? float(cooldown) : ((float)(int)type)), m_Time(0), m_Volcano(NULL), m_Ref(1),
     m_Sound(SOUND_ID_EMPTY), m_Owner(NULL), m_SideStorage(0)
@@ -80,6 +80,8 @@ CMatrixEffectWeapon::CMatrixEffectWeapon(const D3DXVECTOR3 &pos, const D3DXVECTO
 #endif
 {
     DTRACE();
+
+    owning_weapon = weapon;
 
     m_EffectType = EFFECT_WEAPON;
 
@@ -396,9 +398,16 @@ void CMatrixEffectWeapon::Fire(void) {
 
             // CHelper::Create(100,0)->Line(m_Speed, m_Speed + D3DXVECTOR3(0,0,100));
 
-            auto tmp = m_Pos - m_Speed;
+            // m_Speed = m_Pos;
+
+            // D3DXMATRIX m = (*owning_weapon->m_Unit->m_Graph->GetMatrixById(1)) * owning_weapon->m_Unit->m_Matrix;
+            // D3DXVec3TransformCoord(&m_Pos, &m_Pos, &m);
+            // m_Speed = D3DXVECTOR3(m._21, m._22, m._23);
+
+
+            auto tmp = m_Pos - m_Dir;
             float len = D3DXVec3Length(&tmp);
-            D3DXVECTOR3 dir((m_Pos - m_Speed) * (1.0f / len));
+            D3DXVECTOR3 dir((m_Pos - m_Dir) * (1.0f / len));
             if (len > m_WeaponDist * m_WeaponCoefficient)
                 len = m_WeaponDist * m_WeaponCoefficient;
 
@@ -415,11 +424,11 @@ void CMatrixEffectWeapon::Fire(void) {
 
             pts[0] = m_Pos;
 
-            if (m_Dir.z < 0) {
+            if (m_Speed.z < 0) {
                 // on flyer bombomet
-                pts[1] = m_Pos + m_Dir * 70 - D3DXVECTOR3(0, 0, 25);
-                pts[2] = m_Pos + m_Dir * 110 - D3DXVECTOR3(0, 0, 100);
-                pts[3] = m_Pos + m_Dir * 130 - D3DXVECTOR3(0, 0, 300);
+                pts[1] = m_Pos + m_Speed * 70 - D3DXVECTOR3(0, 0, 25);
+                pts[2] = m_Pos + m_Speed * 110 - D3DXVECTOR3(0, 0, 100);
+                pts[3] = m_Pos + m_Speed * 130 - D3DXVECTOR3(0, 0, 300);
 
                 pcnt = 4;
 
@@ -485,7 +494,8 @@ void CMatrixEffectWeapon::Fire(void) {
             SMOProps mo;
             mo.common.gun.maxdist = m_WeaponDist * m_WeaponCoefficient;
             mo.startpos = m_Pos;
-            mo.target = m_Speed;
+            // mo.target = m_Speed;
+            mo.target = m_Target;
             mo.curpos = mo.startpos;
 
             mo.side = m_SideStorage;

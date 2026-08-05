@@ -37,30 +37,31 @@
 
 #define WEAPON_MAX_HEAT 1000
 
+struct SBotWeapon;
 class CMatrixMapStatic;
 
 enum EWeapon : unsigned int {
-    WEAPON_NONE,
+    WEAPON_NONE = 0,
 
-    WEAPON_PLASMA = 200,
-    WEAPON_VOLCANO = 70,
-    WEAPON_HOMING_MISSILE = 1000,
-    WEAPON_BOMB = 2500,
-    WEAPON_FLAMETHROWER = 60,
-    WEAPON_BIGBOOM = 10000,
-    WEAPON_LIGHTENING = 99,
-    WEAPON_LASER = 98,
-    WEAPON_GUN = 598,
-    WEAPON_REPAIR = 57,
+    WEAPON_PLASMA = 1,
+    WEAPON_VOLCANO = 2,
+    WEAPON_HOMING_MISSILE = 3,
+    WEAPON_BOMB = 4,
+    WEAPON_FLAMETHROWER = 5,
+    WEAPON_BIGBOOM = 6,
+    WEAPON_LIGHTENING = 7,
+    WEAPON_LASER = 8,
+    WEAPON_GUN = 9,
+    WEAPON_REPAIR = 10,
 
-    WEAPON_CANNON0 = 300,
-    WEAPON_CANNON1 = 998,
-    WEAPON_CANNON2 = 97,
-    WEAPON_CANNON3 = 1002,
+    WEAPON_CANNON0 = 15,
+    WEAPON_CANNON1 = 16,
+    WEAPON_CANNON2 = 17,
+    WEAPON_CANNON3 = 18,
 
-    WEAPON_ABLAZE = 10000000,   // горим
-    WEAPON_SHORTED = 10000001,  // замкнуло
-    WEAPON_DEBRIS = 10000002,   // долбануло осколком
+    WEAPON_ABLAZE = 20,   // горим
+    WEAPON_SHORTED = 21,  // замкнуло
+    WEAPON_DEBRIS = 22,   // долбануло осколком
 
     WEAPON_COUNT = 17,
     WEAPON_INSTANT_DEATH = 0x7FFFFFFF - 1,
@@ -257,6 +258,9 @@ public:
     D3DXVECTOR3 m_Dir;
     D3DXVECTOR3 m_Speed;
     D3DXVECTOR3 m_Target; // net helper
+    D3DXVECTOR3 m_GrenadeHelper; //
+    SBotWeapon *owning_weapon;
+
 
     float m_Time;
     float m_CoolDown;
@@ -275,7 +279,7 @@ public:
     int m_SideStorage;  // side storage (if owner will be killed)
 
     CMatrixEffectWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user, FIRE_END_HANDLER handler,
-                        EWeapon type, int cooldown);
+                        EWeapon type, int cooldown, SBotWeapon *weapon = nullptr);
     virtual ~CMatrixEffectWeapon();
 
 public:

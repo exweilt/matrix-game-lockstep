@@ -114,7 +114,7 @@ public:
 
     void CreateEffect(uintptr_t user, FIRE_END_HANDLER handler, EWeapon type, int cooldown = 0) {
         m_Weapon = (CMatrixEffectWeapon *)CMatrixEffect::CreateWeapon(D3DXVECTOR3(0, 0, 0), D3DXVECTOR3(0, 0, 1), user,
-                                                                      handler, type, cooldown);
+                                                                      handler, type, cooldown, this);
         if (type == WEAPON_REPAIR) {
             PrepareRepair();
         }

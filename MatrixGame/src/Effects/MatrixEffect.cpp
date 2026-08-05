@@ -792,10 +792,17 @@ void CMatrixEffect::CreateKonusSplash(const D3DXVECTOR3 &start, const D3DXVECTOR
     }
 }
 
+// CMatrixEffect *CMatrixEffect::CreateWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user,
+//                                            FIRE_END_HANDLER handler, EWeapon type, int cooldown) {
+//     DTRACE();
+//     CMatrixEffectWeapon *e = HNew(m_Heap) CMatrixEffectWeapon(start, dir, user, handler, type, cooldown, nullptr);
+//     return e;
+// }
+
 CMatrixEffect *CMatrixEffect::CreateWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user,
-                                           FIRE_END_HANDLER handler, EWeapon type, int cooldown) {
+                                           FIRE_END_HANDLER handler, EWeapon type, int cooldown, SBotWeapon *weapon) {
     DTRACE();
-    CMatrixEffectWeapon *e = HNew(m_Heap) CMatrixEffectWeapon(start, dir, user, handler, type, cooldown);
+    CMatrixEffectWeapon *e = HNew(m_Heap) CMatrixEffectWeapon(start, dir, user, handler, type, cooldown, weapon);
     return e;
 }
 
