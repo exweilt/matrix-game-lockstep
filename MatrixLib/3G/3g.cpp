@@ -463,7 +463,7 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam);
 
 int L3GRun()
 {
-    using clock = std::chrono::high_resolution_clock;
+    using clock = std::chrono::steady_clock;
 
     constexpr auto to_milliseconds = [](auto dur) { return std::chrono::duration_cast<std::chrono::milliseconds>(dur); };
 
@@ -477,6 +477,10 @@ int L3GRun()
     MSG msg;
 
     auto prev_takt = clock::now();
+
+    constexpr auto dt = std::chrono::milliseconds(17);
+    auto next_tick = clock::now();
+
 
     while (true)
     {
@@ -504,17 +508,14 @@ int L3GRun()
         auto delta_time = (cur_takt - prev_takt);
         prev_takt = cur_takt;
 
-        // Ensure at least 1 ms passed since last iteration
-        auto delta_duration = std::chrono::duration<f64>(delta_time);
-        if (delta_duration < std::chrono::milliseconds(16)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta_duration);
-        }
 
 
         if (FLAG(g_Flags, GFLAG_4SPEED))
         {
             delta_time *= 4;
         }
+
+        delta_time *= g_Network.playback_speed;
 
         // int delta = to_milliseconds(delta_time).count();
         // g_total_ms += delta;
@@ -546,8 +547,14 @@ int L3GRun()
             // if (
             //     (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
             {
-
-                g_FormCur->Takt(17);
+                if (g_Network.is_authority())
+                {
+                    g_FormCur->Takt(17);
+                }
+                else
+                {
+                    g_FormCur->Takt(delta);
+                }
                 // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
 
                 // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
@@ -565,6 +572,16 @@ int L3GRun()
 #if (defined _DEBUG) && !(defined _RELDEBUG)
                 CHelper::AfterDraw();
 #endif
+
+                // // Ensure at least 16 ms passed since last iteration
+                // auto delta_duration = std::chrono::duration<f64>(clock::now() - prev_takt);
+                // if (delta_duration < std::chrono::milliseconds(16)) {
+                //     std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta_duration);
+                // }
+
+                next_tick += dt;
+                std::this_thread::sleep_until(next_tick);
+
                 fps++;
 
                 g_Network.graphics_frame += 1;
@@ -576,12 +593,12 @@ int L3GRun()
 
             g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
 
-            // if (g_Network.last_check + std::chrono::seconds(1) < clock::now())
-            // {
-            //     g_Network.last_check = clock::now();
-            //     g_Network.physics_fps = g_Network.frames_passed_since_last_check;
-            //     g_Network.frames_passed_since_last_check = 0;
-            // }
+            if (g_Network.last_check + std::chrono::seconds(1) < clock::now())
+            {
+                g_Network.last_check = clock::now();
+                g_Network.physics_fps = g_Network.frames_passed_since_last_check;
+                g_Network.frames_passed_since_last_check = 0;
+            }
         }
         // g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
         // g_Network.lgr.debug("====================================");

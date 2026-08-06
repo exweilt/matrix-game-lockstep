@@ -228,18 +228,79 @@ void Network::delete_robot(CMatrixRobotAI *robot)
 
 void Network::process_playback([[maybe_unused]]int ms)
 {
-    static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
-    std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
-    static std::chrono::time_point<std::chrono::steady_clock> prev_time = curr_time;
+    // // static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
+    // std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
+    // // static std::chrono::time_point<std::chrono::steady_clock>   prev_time = curr_time;
+    //
+    constexpr auto dt = std::chrono::milliseconds(102);
+    // static auto next_tick = std::chrono::steady_clock::now() + dt;
 
-    f64 tick_delta = std::chrono::duration<f64>(curr_time - tick_start_time).count();
+    static std::chrono::steady_clock::time_point playback_time = std::chrono::steady_clock::now();
+    static std::chrono::steady_clock::time_point last_update_time = playback_time;
+
+
+
+    {
+        if (g_Network.interpolation_buffer.size() <= 4)
+            g_Network.playback_speed = 0.50f;
+        else if (g_Network.interpolation_buffer.size() >= 6)
+            g_Network.playback_speed = 1.5f;
+        else
+            g_Network.playback_speed = 1.0f;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+
+    auto real_delta = now - last_update_time;
+    last_update_time = now;
+    auto modified_delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+        std::chrono::duration<double>(real_delta) * playback_speed
+    );
+
+    playback_time += modified_delta;
+
+    static u32 previous_frame = 0;
+    static std::chrono::steady_clock::time_point previous_snapshot_time = std::chrono::steady_clock::now();
+
+
+
+    // f64 tick_delta = std::chrono::duration<f64>(curr_time - tick_start_time).count() * g_Network.playback_speed;
 
     WorldSnapshot ws_from, ws_to;
     if (g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to))
     {
-        f32 k = std::min(1.0f, static_cast<float>(tick_delta) / 0.1f);
-        g_MatrixMap->m_DI.T(L"From physics frame", utils::format(L"%d", ws_from.frame).c_str(), 1000);
-        g_MatrixMap->m_DI.T(L"k", utils::format(L"%f", k).c_str(), 1000);
+
+        if (previous_frame != ws_from.frame)
+        {
+            previous_frame = ws_from.frame;
+            previous_snapshot_time = playback_time;
+        }
+
+        f32 k = std::clamp(
+        std::chrono::duration<float>(playback_time - previous_snapshot_time).count() / std::chrono::duration<float>(dt).count(),
+            0.0f,
+            1.0f
+        );
+
+        std::cout << "Interpolating frames: " << ws_from.frame << " -> " << ws_to.frame << " k = " << k << std::endl;
+
+
+        // const f32 k = 1.0f;
+        // f32 k = std::min(1.0f, static_cast<float>(tick_delta) / 15.0f);
+        u32 event_treshold_frame = ws_from.frame + std::ceil((ws_to.frame - ws_from.frame) * k);
+        g_MatrixMap->m_DI.T(L"Interpolating:", utils::format(L"%d -> %d [%d] (%.2f)", ws_from.frame, ws_to.frame, event_treshold_frame, k).c_str(), 1000);
+        g_MatrixMap->m_DI.T(L"Inter. Buffer:", utils::format(L"%2d/%d (speed %.2f)", g_Network.interpolation_buffer.size(), g_Network.interpolation_buffer.capacity(), g_Network.playback_speed).c_str(), 1000);
+
+
+        for (auto& [id, side_ss] : ws_to.sides)
+        {
+            g_MatrixMap->GetSideById(id)->SetResourceAmount(TITAN, side_ss.titanium);
+            g_MatrixMap->GetSideById(id)->SetResourceAmount(ELECTRONICS, side_ss.electronics);
+            g_MatrixMap->GetSideById(id)->SetResourceAmount(ENERGY, side_ss.energy);
+            g_MatrixMap->GetSideById(id)->SetResourceAmount(PLASMA, side_ss.plasma);
+        }
+
+
         for (auto& [id, rs] : ws_from.robots) {
             if (!g_Network.robots.contains(id))
             {
@@ -287,8 +348,9 @@ void Network::process_playback([[maybe_unused]]int ms)
         //     }
         // }
 
-        int frame_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - tick_start_time).count();
-        std::erase_if(robots, [this, frame_delta_ms](auto& pair) {
+        // int frame_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - tick_start_time).count() * g_Network.playback_speed;
+        // int delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>((curr_time - prev_time) * g_Network.playback_speed).count();
+        std::erase_if(robots, [this, modified_delta](auto& pair) {
             auto id = pair.first;
             auto robot = pair.second;
 
@@ -300,20 +362,34 @@ void Network::process_playback([[maybe_unused]]int ms)
             robot->is_processed_by_network = false;
 
 
-            return static_cast<CMatrixMapStatic *>(robot)->StaticTakt(frame_delta_ms);
+            return static_cast<CMatrixMapStatic *>(robot)->StaticTakt(
+                std::chrono::duration_cast<std::chrono::milliseconds>(modified_delta).count()
+            );
         });
 
         if (k >= 1.0f)
         {
             g_Network.interpolation_buffer.pop_front();
-            tick_start_time = std::chrono::steady_clock::now();
+            // tick_start_time = std::chrono::steady_clock::now();
+            // next_tick += dt;
         }
     }
     else
     {
-        tick_start_time = std::chrono::steady_clock::now();
+        // tick_start_time = std::chrono::steady_clock::now();
     }
-    prev_time = curr_time;
+    // auto delta = (std::chrono::steady_clock::now() - curr_time) * g_Network.playback_speed;
+    // curr_time += delta;
+
+    // auto delta = std::chrono::steady_clock::now() - curr_time;
+
+    // auto scaled_delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+    //     std::chrono::duration<double>(delta) * g_Network.playback_speed * 20.0f
+    // );
+
+    // curr_time += scaled_delta;
+
+    // prev_time = curr_time;
 }
 
 void Network::populate_robot(RobotSnapshot& rs)

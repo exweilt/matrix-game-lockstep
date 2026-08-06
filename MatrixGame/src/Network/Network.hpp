@@ -110,8 +110,8 @@ public:
     u8 controllable_side_id     = static_cast<u8>(SideID::RED); // SideID
     u32 graphics_frame        = 0; // current rendering frame
     u32 physics_frame         = 0; // current physics frame
-    u32 input_frame           = 0; // new inputs are sampled for this physics frame
-    u32 total_ms              = 0;
+    // u32 input_frame           = 0; // new inputs are sampled for this physics frame
+    // u32 total_ms              = 0;
     bool isClient2              = false;
     std::string server_ip;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
@@ -121,6 +121,7 @@ public:
     bool has_physics_frame_run = false;
     u32 code_logic_frame = 1;
     std::vector<EventFire> this_tick_event_pool;
+    f32 playback_speed = 1.0f;
 
     std::map<u32, CMatrixRobotAI*> robots;
 
@@ -138,7 +139,7 @@ public:
     // std::vector<Command> current_input{}; // list of all actions for
 
     u32 frames_passed_since_last_check = 0; // to calculate physics fps
-    std::chrono::high_resolution_clock::time_point last_check{}; // to calculate physics fps
+    std::chrono::steady_clock::time_point last_check{}; // to calculate physics fps
     u32 physics_fps = 0;
 
     void process_network_frame(u32 delta_ms);

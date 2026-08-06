@@ -3012,7 +3012,6 @@ void CMatrixMapLogic::Takt(int step) {
 
         // register the new frame
         g_Network.physics_frame += 1;
-        g_Network.frames_passed_since_last_check += 1; // to calc physics fps
         // g_Network.get_frame_record(g_Network.physics_frame); // create commands record if it is not present yet
 
         DCP();
@@ -3029,7 +3028,7 @@ void CMatrixMapLogic::Takt(int step) {
         // g_Network.has_physics_frame_run = true;
 
         constexpr int physics_frames_per_net_snapshot = 6;
-        if (g_Network.physics_frame % physics_frames_per_net_snapshot)
+        if (g_Network.physics_frame % physics_frames_per_net_snapshot == 0)
         {
             g_Network.broadcast_world_snapshot();
             g_Network.broadcast_events();
@@ -3040,6 +3039,8 @@ void CMatrixMapLogic::Takt(int step) {
         g_Network.process_playback(step);
     }
     DCP();
+    g_Network.frames_passed_since_last_check += 1; // to calc physics fps
+
 
     // Other logic?!
     m_Time += step;
@@ -3501,35 +3502,35 @@ void CMatrixMapLogic::physics_process(int step)
     DCP();
 
 
-    for (int i = 0; i < m_EffectSpawnersCnt; ++i) {
-        m_EffectSpawners[i].Takt(step);
-    }
-    DCP();
-    RemoveEffectSpawnerByTime();
-    DCP();
+    // for (int i = 0; i < m_EffectSpawnersCnt; ++i) {
+    //     m_EffectSpawners[i].Takt(step);
+    // }
+    // DCP();
+    // RemoveEffectSpawnerByTime();
+    // DCP();
 
     // SETFLAG(m_Flags,MMFLAG_EFF_TAKT);
-    for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
-#ifdef DEAD_PTR_SPY_ENABLE
-        CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
-        if (deade) {
-            debugbreak();
-        }
-#endif
-#ifdef DEAD_CLASS_SPY_ENABLE
-        CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
-        if (spot) {
-            debugbreak();
-        }
-
-#endif
-
-        m_EffectsNextTakt = e->m_Next;
-        DCP();
-        e->Takt(step);
-        DCP();
-        e = m_EffectsNextTakt;
-    }
+//     for (PCMatrixEffect e = m_EffectsFirst; e != NULL;) {
+// #ifdef DEAD_PTR_SPY_ENABLE
+//         CMatrixEffect *deade = (CMatrixEffect *)DeadPtr::get_dead_mem(e);
+//         if (deade) {
+//             debugbreak();
+//         }
+// #endif
+// #ifdef DEAD_CLASS_SPY_ENABLE
+//         CMatrixEffectLandscapeSpot *spot = (CMatrixEffectLandscapeSpot *)e->DCS_GetDeadBody();
+//         if (spot) {
+//             debugbreak();
+//         }
+//
+// #endif
+//
+//         m_EffectsNextTakt = e->m_Next;
+//         DCP();
+//         e->Takt(step);
+//         DCP();
+//         e = m_EffectsNextTakt;
+//     }
 }
 
 bool CMatrixMapLogic::IsLogicVisible(CMatrixMapStatic *ofrom, CMatrixMapStatic *oto, float second_z) {

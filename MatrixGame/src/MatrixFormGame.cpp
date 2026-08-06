@@ -243,11 +243,14 @@ void CFormMatrixGame::Leave(void) {
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
+    if (g_Network.is_authority())
+    {
+        g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_Network.physics_frame).c_str());
+    }
     g_MatrixMap->m_DI.T(L"Physics FPS", utils::format(L"%d", g_Network.physics_fps).c_str());
-    g_MatrixMap->m_DI.T(L"Physics Frame", utils::format(L"%d", g_Network.physics_frame).c_str());
-    g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_Network.input_frame).c_str());
+    // g_MatrixMap->m_DI.T(L"Input Frame", utils::format(L"%d", g_Network.input_frame).c_str());
     g_MatrixMap->m_DI.T(L"Graphics Frame", utils::format(L"%d", g_Network.graphics_frame).c_str());
-    g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_Network.total_ms).c_str());
+    // g_MatrixMap->m_DI.T(L"Total Time", utils::format(L"%d", g_Network.total_ms).c_str());
     g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", g_Network.controllable_side_id).c_str());
     g_MatrixMap->m_DI.T(L"game_ongoing", utils::format(L"%d", g_Network.game_ongoing).c_str());
 
