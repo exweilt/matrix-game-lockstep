@@ -22,7 +22,7 @@ constexpr u32 INPUT_BUFFER_SIZE = 15; // Size of input buffering
 constexpr u32 PHYSICS_FRAME_RATE = 10;
 static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
 constexpr u32 PHYSICS_FRAME_PERIOD_MS = static_cast<u32>(1000.0 / PHYSICS_FRAME_RATE) + 1;
-constexpr u32 INTERPOLATION_BUFFER_SIZE = 10;
+constexpr u32 INTERPOLATION_BUFFER_SIZE = 5;
 
 
 enum class SideID : u8

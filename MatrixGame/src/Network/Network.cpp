@@ -226,6 +226,20 @@ void Network::delete_robot(CMatrixRobotAI *robot)
     // robots.erase(robot->m_NID);
 }
 
+float lerp_angle(float t, float a, float b)
+{
+    constexpr float TWO_PI = 2.0f * M_PI;
+
+    float delta = std::fmod(b - a, TWO_PI);
+
+    if (delta > M_PI)
+        delta -= TWO_PI;
+    else if (delta < -M_PI)
+        delta += TWO_PI;
+
+    return a + delta * t;
+}
+
 void Network::process_playback([[maybe_unused]]int ms)
 {
     // // static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
@@ -241,11 +255,14 @@ void Network::process_playback([[maybe_unused]]int ms)
 
 
     {
-        if (g_Network.interpolation_buffer.size() <= 4)
-            g_Network.playback_speed = 0.50f;
-        else if (g_Network.interpolation_buffer.size() >= 6)
-            g_Network.playback_speed = 1.5f;
-        else
+        if (g_Network.interpolation_buffer.size() < 2)
+        {
+            g_Network.playback_speed = 0.95f;
+        }
+        else if (g_Network.interpolation_buffer.size() >= 3)
+        {
+            g_Network.playback_speed = 1.4f;
+        } else
             g_Network.playback_speed = 1.0f;
     }
 
@@ -315,8 +332,8 @@ void Network::process_playback([[maybe_unused]]int ms)
                 RobotSnapshot rs_to = ws_to.robots.at(id);
                 r->m_PosX = LERPFLOAT(k, rs_from.x, rs_to.x);
                 r->m_PosY = LERPFLOAT(k, rs_from.y, rs_to.y);
-                r->SetRotationZ(rs.rotation);
-                r->SetHullRotationZ(rs.hull_rotation);
+                r->SetRotationZ(lerp_angle(k, rs_from.rotation, rs_to.rotation));
+                r->SetHullRotationZ(lerp_angle(k, rs_from.hull_rotation, rs_to.hull_rotation));
                 r->InitMaxHitpoint(rs.maxhealth * 10);
                 r->SetHitPoint(rs.health * 10);
 
