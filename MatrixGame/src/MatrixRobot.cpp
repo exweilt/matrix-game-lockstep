@@ -1212,7 +1212,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                             }
                             else {
                                 if (g_Network.is_authority() &&
-                                    (   //m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE ||
+                                    (   m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE ||
                                         m_Weapons[nC].GetWeaponType() == WEAPON_GUN ||
                                         m_Weapons[nC].GetWeaponType() == WEAPON_PLASMA ||
                                         m_Weapons[nC].GetWeaponType() == WEAPON_VOLCANO

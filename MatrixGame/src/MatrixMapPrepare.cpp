@@ -441,7 +441,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return 0;
     }
 
-    if (g_Network.is_authority() && step == RS_RESOURCES) {
+    if (step == RS_RESOURCES) {
         ic = propkey->FindAsWStr(DATA_SIDERESINFO);
         if (ic >= 0) {
             auto sideresinfo = propval->GetAsParamParser(ic);
@@ -455,10 +455,11 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                     CMatrixSideUnit *su = m_Side + j;
                     if (su->m_Id == id) {
                         for (int k = 0; k < MAX_RESOURCES; ++k) {
-                            su->SetResourceAmount((ERes)k, def.GetStrPar(1 + k, L",").GetInt());
+                            su->SetResourceAmount((ERes)k, 500);
+                            // su->SetResourceAmount((ERes)k, def.GetStrPar(1 + k, L",").GetInt()); // ATTENTION
                         }
 
-                        if (def.GetCountPar(L",") > 5) {
+                        if (false && def.GetCountPar(L",") > 5) {
                             su->SetResourceForceUp(def.GetStrPar(5, L",").GetInt());
                         }
                         else {

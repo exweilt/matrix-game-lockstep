@@ -171,6 +171,7 @@ void Network::process_incoming_message(const Message &msg)
 
 
                         robot->m_Weapons[i].m_Weapon->m_Skip = robot;
+                        //robot->m_Weapons[i].m_On = true;
                         robot->m_Weapons[i].m_Weapon->Fire();
                         // std::cout << "Rocket launched. " << std::endl;
                     }

@@ -271,6 +271,12 @@ void CMatrixEffectWeapon::Modify(const D3DXVECTOR3 &pos, const D3DXVECTOR3 &dir,
 void CMatrixEffectWeapon::Fire(void) {
     DTRACE();
 
+
+    if (!g_Network.is_authority() && owning_weapon->m_Unit->m_Graph->SetAnimByNameNoBegin(ANIMATION_NAME_FIRELOOP)) {
+        // not looped
+        owning_weapon->m_Unit->m_Graph->SetAnimByName(ANIMATION_NAME_FIRE, 0);
+    }
+
     if (g_Network.is_authority())
     {
         CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
