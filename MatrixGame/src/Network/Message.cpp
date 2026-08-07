@@ -247,6 +247,7 @@ i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_o
     // TODO: add asserts
     int no = side->GetNextFreeLogicGroup();
 
+    side->m_PlayerGroup[no].m_RobotCnt = 0;
     side->m_PlayerGroup[no].Order(mpo_Stop);
     side->m_PlayerGroup[no].m_Obj = NULL;
     side->m_PlayerGroup[no].SetWar(false);

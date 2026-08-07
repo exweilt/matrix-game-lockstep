@@ -299,7 +299,7 @@ void Network::process_playback([[maybe_unused]]int ms)
             1.0f
         );
 
-        std::cout << "Interpolating frames: " << ws_from.frame << " -> " << ws_to.frame << " k = " << k << std::endl;
+        // std::cout << "Interpolating frames: " << ws_from.frame << " -> " << ws_to.frame << " k = " << k << std::endl;
 
 
         // const f32 k = 1.0f;

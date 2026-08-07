@@ -9787,6 +9787,7 @@ void CMatrixSideUnit::PGShowPlace(int no) {
                         CMatrixEffect::CreateMoveto(v);
                     }
                 }
+                robot->SetGroupLogic(-1);
             }
         }
 
