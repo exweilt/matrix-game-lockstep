@@ -397,7 +397,7 @@ void CMatrixEffectWeapon::Fire(void) {
             mo.side = m_SideStorage;
             // mo.attacker = m_Owner;
             // if (mo.attacker) mo.attacker->RefInc();
-            CHelper::Create(1000,0)->Line(mo.startpos, mo.target);
+            // CHelper::Create(1000,0)->Line(mo.startpos, mo.target);
 
             mo.shleif = (SEffectHandler *)HAlloc(sizeof(SEffectHandler), m_Heap);
             mo.shleif->effect = NULL;
@@ -593,7 +593,7 @@ void CMatrixEffectWeapon::Fire(void) {
                 ((CMatrixEffectLightening *)m_Effect.effect)->SetPos(m_Pos, hitpos);
             }
             else {
-                CMatrixEffect::CreateLightening(&m_Effect, m_Pos, hitpos, 1000000, 3, LIGHTENING_WIDTH);
+                CMatrixEffect::CreateLightening(&m_Effect, m_Pos, hitpos, 1600, 3, LIGHTENING_WIDTH);
             }
 
             if (m_Handler)
@@ -763,11 +763,11 @@ void CMatrixEffectWeapon::FireBegin(const D3DXVECTOR3 &speed, CMatrixMapStatic *
 
     // D3DXVECTOR3 fire_pos = D3DXVECTOR3(f1, f2, f3);
 
-    if (g_Network.is_authority())
-        CHelper::Create(1000,0)->Line(m_Pos, m_Pos+m_Dir*100);
+    // if (g_Network.is_authority())
+    //     CHelper::Create(1000,0)->Line(m_Pos, m_Pos+m_Dir*100);
 }
 
-void CMatrixEffectWeapon::FireEnd(void) {
+void CMatrixEffectWeapon::FireEnd() {
     if (!IsFire())
         return;
     RESETFLAG(m_Flags, WEAPFLAGS_FIRE);
@@ -780,6 +780,59 @@ void CMatrixEffectWeapon::FireEnd(void) {
     }
 
     if (m_Type == WEAPON_LIGHTENING) {
+#ifdef _DEBUG
+        m_Effect.Release(DEBUG_CALL_INFO);
+#else
+        m_Effect.Release();
+#endif
+    }
+    else if (m_Type == WEAPON_LASER || m_Type == WEAPON_CANNON2) {
+        if (m_Laser) {
+#ifdef _DEBUG
+            g_MatrixMap->SubEffect(DEBUG_CALL_INFO, m_Laser);
+#else
+            g_MatrixMap->SubEffect(m_Laser);
+#endif
+            m_Laser = NULL;
+        }
+    }
+    else if (m_Type == WEAPON_VOLCANO) {
+        if (m_Volcano) {
+#ifdef _DEBUG
+            g_MatrixMap->SubEffect(DEBUG_CALL_INFO, m_Volcano);
+#else
+            g_MatrixMap->SubEffect(m_Volcano);
+#endif
+            m_Volcano = NULL;
+        }
+    }
+    else if (m_Type == WEAPON_REPAIR) {
+        if (m_Repair) {
+            // CMatrixMapStatic *ms = m_Repair->GetTarget();
+            // if (ms && m_Handler) m_Handler(ms, ms->GetGeoCenter(), m_User, FEHF_LASTHIT);
+#ifdef _DEBUG
+            g_MatrixMap->SubEffect(DEBUG_CALL_INFO, m_Repair);
+#else
+            g_MatrixMap->SubEffect(m_Repair);
+#endif
+            m_Repair = NULL;
+        }
+    }
+    else if (m_Type == WEAPON_FLAMETHROWER) {
+        if (m_Effect.effect)
+            ((CMatrixEffectFlame *)m_Effect.effect)->Break();
+    }
+}
+
+void CMatrixEffectWeapon::StopEffects() {
+    if (m_SoundType != S_NONE) {
+        if (FLAG(m_Flags, WEAPFLAGS_SND_OFF)) {
+            CSound::StopPlay(m_Sound);
+            m_Sound = SOUND_ID_EMPTY;
+        }
+    }
+
+    if (false && m_Type == WEAPON_LIGHTENING) {
 #ifdef _DEBUG
         m_Effect.Release(DEBUG_CALL_INFO);
 #else

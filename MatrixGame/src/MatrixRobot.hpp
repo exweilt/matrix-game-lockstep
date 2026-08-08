@@ -310,6 +310,8 @@ public:
 
     int m_LastDelayDamageSide;
 
+    u32 last_shot_frame;
+
 ///////////////////////////////////////////////////////////////////////
 // each robot will have its own unique ID, so collision detection will
 // compare them by ID instead of memory addresses

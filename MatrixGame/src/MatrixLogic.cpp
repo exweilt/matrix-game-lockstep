@@ -1876,45 +1876,46 @@ int CMatrixMapLogic::FindPathInZone(int nsh, int zstart, int zend, const CMatrix
     for (int i = 0; i < cnt; i++)
         m_RN.m_Zone[m_ZoneIndex[i]].m_FPLevel = 0;
 
-#if (defined _DEBUG) && !(defined _RELDEBUG)
-    if (test && !g_TestLocal) {
-        for (int i = 0; i < m_RN.m_ZoneCnt; i++) {
-            zone = m_RN.m_Zone + i;
-            D3DXVECTOR3 v;
-            v.x = zone->m_Center.x * GLOBAL_SCALE_MOVE;
-            v.y = zone->m_Center.y * GLOBAL_SCALE_MOVE;
-            v.z = GetZ(v.x, v.y);
-            if (zone->m_Access)
-                CHelper::Create(0, 100)->Line(v, D3DXVECTOR3(v.x, v.y, v.z + 20.0f), 0xffffffff, 0xffffffff);
-            else
-                CHelper::Create(0, 100)->Line(v, D3DXVECTOR3(v.x, v.y, v.z + 20.0f), 0xffff0000, 0xffff0000);
-        }
-        for (int i = 0; i < route->m_Header[routeno].m_Cnt; i++) {
-            D3DXVECTOR3 v;
-            v.x = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Crotch->m_Center.x * GLOBAL_SCALE_MOVE;
-            v.y = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Crotch->m_Center.y * GLOBAL_SCALE_MOVE;
-            v.z = GetZ(v.x, v.y);
-            CHelper::Create(0, 100)->Line(D3DXVECTOR3(v.x, v.y, v.z + 50.0f), D3DXVECTOR3(v.x, v.y, v.z + 120.0f),
-                                          0xff00ff00, 0xff00ff00);
-
-            CMatrixRoad *road = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Road;
-
-            if (road)
-                for (int u = 1; u < road->m_ZoneCnt; u++) {
-                    SMatrixMapZone &z1 = m_RN.m_Zone[road->m_Zone[u - 1]];
-                    SMatrixMapZone &z2 = m_RN.m_Zone[road->m_Zone[u]];
-                    D3DXVECTOR3 v1, v2;
-                    v1.x = z1.m_Center.x * GLOBAL_SCALE_MOVE;
-                    v1.y = z1.m_Center.y * GLOBAL_SCALE_MOVE;
-                    v1.z = GetZ(v1.x, v1.y) + 50.0f;
-                    v2.x = z2.m_Center.x * GLOBAL_SCALE_MOVE;
-                    v2.y = z2.m_Center.y * GLOBAL_SCALE_MOVE;
-                    v2.z = GetZ(v2.x, v2.y) + 50.0f;
-                    CHelper::Create(0, 100)->Line(v1, v2, 0xff00ff00, 0xff00ff00);
-                }
-        }
-    }
-#endif
+//     //GRID
+// #if (defined _DEBUG) && !(defined _RELDEBUG)
+//     if (test && !g_TestLocal) {
+//         for (int i = 0; i < m_RN.m_ZoneCnt; i++) {
+//             zone = m_RN.m_Zone + i;
+//             D3DXVECTOR3 v;
+//             v.x = zone->m_Center.x * GLOBAL_SCALE_MOVE;
+//             v.y = zone->m_Center.y * GLOBAL_SCALE_MOVE;
+//             v.z = GetZ(v.x, v.y);
+//             if (zone->m_Access)
+//                 CHelper::Create(0, 100)->Line(v, D3DXVECTOR3(v.x, v.y, v.z + 20.0f), 0xffffffff, 0xffffffff);
+//             else
+//                 CHelper::Create(0, 100)->Line(v, D3DXVECTOR3(v.x, v.y, v.z + 20.0f), 0xffff0000, 0xffff0000);
+//         }
+//         for (int i = 0; i < route->m_Header[routeno].m_Cnt; i++) {
+//             D3DXVECTOR3 v;
+//             v.x = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Crotch->m_Center.x * GLOBAL_SCALE_MOVE;
+//             v.y = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Crotch->m_Center.y * GLOBAL_SCALE_MOVE;
+//             v.z = GetZ(v.x, v.y);
+//             CHelper::Create(0, 100)->Line(D3DXVECTOR3(v.x, v.y, v.z + 50.0f), D3DXVECTOR3(v.x, v.y, v.z + 120.0f),
+//                                           0xff00ff00, 0xff00ff00);
+//
+//             CMatrixRoad *road = route->m_Units[routeno * m_RN.m_CrotchCnt + i].m_Road;
+//
+//             if (road)
+//                 for (int u = 1; u < road->m_ZoneCnt; u++) {
+//                     SMatrixMapZone &z1 = m_RN.m_Zone[road->m_Zone[u - 1]];
+//                     SMatrixMapZone &z2 = m_RN.m_Zone[road->m_Zone[u]];
+//                     D3DXVECTOR3 v1, v2;
+//                     v1.x = z1.m_Center.x * GLOBAL_SCALE_MOVE;
+//                     v1.y = z1.m_Center.y * GLOBAL_SCALE_MOVE;
+//                     v1.z = GetZ(v1.x, v1.y) + 50.0f;
+//                     v2.x = z2.m_Center.x * GLOBAL_SCALE_MOVE;
+//                     v2.y = z2.m_Center.y * GLOBAL_SCALE_MOVE;
+//                     v2.z = GetZ(v2.x, v2.y) + 50.0f;
+//                     CHelper::Create(0, 100)->Line(v1, v2, 0xff00ff00, 0xff00ff00);
+//                 }
+//         }
+//     }
+// #endif
 
     sme = 0;
     level = 1;

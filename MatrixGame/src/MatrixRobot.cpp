@@ -1207,8 +1207,8 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                             else if (g_Network.is_authority() && m_Weapons[nC].GetWeaponType() == WEAPON_BOMB) {
                                 if (type == 0)
                                     m_Weapons[nC].FireBegin(D3DXVECTOR3(f1, f2, f3), this);
-                                // else
-                                //     m_Weapons[nC].FireEnd();
+                                else
+                                    m_Weapons[nC].FireEnd();
                             }
                             else {
                                 if (g_Network.is_authority()
@@ -1223,8 +1223,8 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                                     {
                                         m_Weapons[nC].FireBegin(m_Velocity * (1.0f / LOGIC_TAKT_PERIOD), this);
                                     }
-                                    // else
-                                    //     m_Weapons[nC].FireEnd();
+                                    else
+                                        m_Weapons[nC].FireEnd();
                                 }
                             }
                         }

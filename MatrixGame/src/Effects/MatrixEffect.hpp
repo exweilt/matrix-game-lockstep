@@ -377,8 +377,9 @@ protected:
 
     EEffectType m_EffectType;
     SEffectHandler *m_EffectHandler;
+public:
     DWORD m_Flags;
-
+protected:
     CMatrixEffect *m_TypePrev;
     CMatrixEffect *m_TypeNext;
 

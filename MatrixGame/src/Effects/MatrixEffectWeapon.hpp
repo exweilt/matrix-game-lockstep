@@ -326,6 +326,7 @@ public:
 
     void FireBegin(const D3DXVECTOR3 &speed, CMatrixMapStatic *skip);
     void FireEnd(void);
+    void StopEffects(void);
 
     static void SoundHit(EWeapon w, const D3DXVECTOR3 &pos);
 };

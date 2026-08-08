@@ -268,17 +268,15 @@ void Network::process_playback([[maybe_unused]]int ms)
 
 
 
+    if (g_Network.interpolation_buffer.size() < 2)
     {
-        if (g_Network.interpolation_buffer.size() < 2)
-        {
-            g_Network.playback_speed = 0.95f;
-        }
-        else if (g_Network.interpolation_buffer.size() >= 3)
-        {
-            g_Network.playback_speed = 1.4f;
-        } else
-            g_Network.playback_speed = 1.0f;
+        g_Network.playback_speed = 0.95f;
     }
+    else if (g_Network.interpolation_buffer.size() >= 3)
+    {
+        g_Network.playback_speed = 1.4f;
+    } else
+        g_Network.playback_speed = 1.0f;
 
     auto now = std::chrono::steady_clock::now();
 
@@ -373,6 +371,19 @@ void Network::process_playback([[maybe_unused]]int ms)
                 if (r->GetAnimation() != static_cast<EAnimation>(rs.animation))
                     r->SwitchAnimation(static_cast<EAnimation>(rs.animation));
 
+                if (event_treshold_frame - r->last_shot_frame > 20)
+                {
+
+                    // SETFLAG(r->m_Flags, WEAPFLAGS_FIRE);
+                    // r->LowLevelStopFire();
+                    for (int nC = 0; nC < r->m_WeaponsCnt; nC++) {
+                        if (r->m_Weapons[nC].IsEffectPresent()) {
+                            r->m_Weapons[nC].m_Weapon->StopEffects();
+                            r->m_Weapons[nC].m_Unit->m_Graph->SetAnimLooped(0);
+                        }
+                    }
+                }
+
                 // TODO: optimize this?
                 r->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
                 r->RNeed(MR_Matrix);
@@ -451,7 +462,7 @@ void Network::populate_robot(RobotSnapshot& rs)
     bot.m_Head.m_nKind = static_cast<ERobotUnitKind>(rs.head);
 
     for (int i = 0; i < rs.weapon_cnt; i++)
-        bot.m_Weapon[i].m_Unit.m_nKind =  static_cast<ERobotUnitKind>(rs.weapons[i]);
+        bot.m_Weapon[i].m_Unit.m_nKind =  static_cast<ERobotUnitKind>(rs.weapons[rs.weapon_cnt - 1 - i]);
 
     // bot.m_Weapon[0].m_Unit.m_nKind = RUK_WEAPON_LASER;
 
@@ -480,39 +491,44 @@ void Network::clear_events_for_current_tick()
 
 void Network::play_fire_event(const EventFire &event)
 {
-        if (!robots.contains(event.nid))
-            return;
+    if (!robots.contains(event.nid))
+        return;
 
-        CMatrixRobotAI *robot = robots.at(event.nid);
+    CMatrixRobotAI *robot = robots.at(event.nid);
+    robot->last_shot_frame = event.frame;
 
-        // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event.frame << std::endl;
-        for (int i = 0; i < robot->m_WeaponsCnt; i++)
+    // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event.frame << std::endl;
+    for (int i = 0; i < robot->m_WeaponsCnt; i++)
+    {
+        if (robot->m_Weapons[i].GetWeaponType() == event.weapons && robot->m_Weapons[i].m_Weapon)
         {
-            if (robot->m_Weapons[i].GetWeaponType() == event.weapons && robot->m_Weapons[i].m_Weapon)
+            // SETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_FIRE);
+            // RESETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_FIREWAS);
+            // RESETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_HITWAS);
+
+            // Trigger fire event
+            D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
+            D3DXVECTOR3 vPos;
+            D3DXVec3TransformCoord(&vPos, &vPos, &m);
+            robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
+
+            if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
             {
-                // Trigger fire event
-                D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
-                D3DXVECTOR3 vPos;
-                D3DXVec3TransformCoord(&vPos, &vPos, &m);
-                robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
-
-                if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
-                {
-                    robot->m_Weapons[i].m_Weapon->m_Dir = event.target_pos;
-                }
-                else
-                {
-                    D3DXVECTOR3 dir = event.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
-                    D3DXVec3Normalize(&dir, &dir);
-                    robot->m_Weapons[i].m_Weapon->m_Dir = dir;
-                }
-
-                robot->m_Weapons[i].m_Weapon->m_Skip = robot;
-                //robot->m_Weapons[i].m_On = true;
-                robot->m_Weapons[i].m_Weapon->Fire();
-                // std::cout << "Rocket launched. " << std::endl;
+                robot->m_Weapons[i].m_Weapon->m_Dir = event.target_pos;
             }
+            else
+            {
+                D3DXVECTOR3 dir = event.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+                D3DXVec3Normalize(&dir, &dir);
+                robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+            }
+
+            robot->m_Weapons[i].m_Weapon->m_Skip = robot;
+            //robot->m_Weapons[i].m_On = true;
+            robot->m_Weapons[i].m_Weapon->Fire();
+            // std::cout << "Rocket launched. " << std::endl;
         }
+    }
 }
 
 void Network::initialize_replay_mode_with_files(std::wstring commands_filename)
