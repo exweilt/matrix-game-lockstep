@@ -3958,6 +3958,7 @@ void CIFaceList::LiveRobot(void) {
 }
 
 void CIFaceList::EnterRobot(bool pos) {
+    return;
     CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
     if (ps->GetCurGroup() && ps->GetCurGroup()->m_FirstObject) {
         CMatrixMapStatic *o = ps->GetCurGroup()->m_FirstObject->GetObject();

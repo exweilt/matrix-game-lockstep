@@ -1211,12 +1211,12 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                                 //     m_Weapons[nC].FireEnd();
                             }
                             else {
-                                if (g_Network.is_authority() &&
-                                    (   m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE ||
-                                        m_Weapons[nC].GetWeaponType() == WEAPON_GUN ||
-                                        m_Weapons[nC].GetWeaponType() == WEAPON_PLASMA ||
-                                        m_Weapons[nC].GetWeaponType() == WEAPON_VOLCANO
-                                    )
+                                if (g_Network.is_authority()
+                                    // (   m_Weapons[nC].GetWeaponType() == WEAPON_HOMING_MISSILE ||
+                                    //     m_Weapons[nC].GetWeaponType() == WEAPON_GUN ||
+                                    //     m_Weapons[nC].GetWeaponType() == WEAPON_PLASMA ||
+                                    //     m_Weapons[nC].GetWeaponType() == WEAPON_VOLCANO
+                                    // )
                                     )
                                 {
                                     if (type == 0)
