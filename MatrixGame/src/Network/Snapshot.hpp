@@ -117,6 +117,17 @@ struct EventFire
     static EventFire deserialize_from_bitstream(BitReader &reader);
 };
 
+struct EventFireComparator
+{
+    bool operator()(const EventFire& a, const EventFire& b) const
+    {
+        if (a.frame != b.frame)
+            return a.frame > b.frame;
+
+        return a.precise_time > b.precise_time;
+    }
+};
+
 // // Stores the
 // struct WorldSnapshot
 // {

@@ -280,9 +280,26 @@ void CMatrixEffectWeapon::Fire(void) {
     if (g_Network.is_authority())
     {
         CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
-        EventFire e = EventFire(robot->m_NID, m_Target, GetWeaponType(), g_Network.physics_frame, 1.0);
-        g_Network.add_event_to_current_tick(e);
-        // std::cout << "Registering shot from " << robot->m_NID << " at " << g_Network.physics_frame << std::endl;
+
+        bool already_fired = false;
+        int sz = g_Network.this_tick_event_pool.size();
+        // Check last 4 events if already fired.
+        for (int i = sz - 1; i >= sz - 4 && i >= 0; i--)
+        {
+            auto past_event = g_Network.this_tick_event_pool.at(i);
+            if (past_event.nid == robot->m_NID && past_event.frame == g_Network.physics_frame && past_event.weapons == GetWeaponType())
+            {
+                already_fired = true;
+                break;
+            }
+        }
+
+        if (!already_fired)
+        {
+            EventFire e = EventFire(robot->m_NID, m_Target, GetWeaponType(), g_Network.physics_frame, 1.0);
+            g_Network.add_event_to_current_tick(e);
+            // std::cout << "Registering shot from " << robot->m_NID << " at " << g_Network.physics_frame << std::endl;
+        }
     }
 
     ++m_FireCount;

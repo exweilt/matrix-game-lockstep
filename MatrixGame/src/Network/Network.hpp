@@ -17,6 +17,7 @@
 #include <list>
 #include <memory>
 #include <vector>
+#include <queue>
 
 constexpr u32 INPUT_BUFFER_SIZE = 15; // Size of input buffering
 constexpr u32 PHYSICS_FRAME_RATE = 10;
@@ -133,6 +134,8 @@ public:
     u32 next_nid              = 0;
 
     RingBuffer<WorldSnapshot, INTERPOLATION_BUFFER_SIZE> interpolation_buffer;
+
+    std::priority_queue<EventFire, std::vector<EventFire>, EventFireComparator> events_queue;
 
     // RingBuffer<WorldSnapshot, INPUT_BUFFER_SIZE> history_game_states;
 

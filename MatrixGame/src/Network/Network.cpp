@@ -129,55 +129,68 @@ void Network::process_incoming_message(const Message &msg)
     {
         if (msg.events.events.size() == 0) return;
 
-        // std::cout << "Processing events: " << msg.events.events.size() << std::endl;
-
-        std::set<std::pair<u32, u8>> robot_fired{};
-
+        EventFireComparator compare;
         for (EventFire event_fire : msg.events.events)
         {
-            if (robot_fired.contains(std::pair(event_fire.nid, event_fire.weapons)))
-                continue;
-
-            if (robots.contains(event_fire.nid))
+            if (!events_queue.empty() && compare(events_queue.top(), event_fire))
             {
-                robot_fired.insert(std::pair(event_fire.nid, event_fire.weapons));
-                CMatrixRobotAI *robot = robots.at(event_fire.nid);
-
-
-                // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event_fire.frame << std::endl;
-                // Trigger all rocket launchers
-                for (int i = 0; i < robot->m_WeaponsCnt; i++)
-                {
-                    // static bool shot = false;
-                    if (robot->m_Weapons[i].GetWeaponType() == event_fire.weapons && robot->m_Weapons[i].m_Weapon)
-                    {
-                        // shot = true;
-
-                        D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
-                        D3DXVECTOR3 vPos;
-                        D3DXVec3TransformCoord(&vPos, &vPos, &m);
-                        robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
-
-                        if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
-                        {
-                            robot->m_Weapons[i].m_Weapon->m_Dir = event_fire.target_pos;
-                        }
-                        else
-                        {
-                            D3DXVECTOR3 dir = event_fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
-                            D3DXVec3Normalize(&dir, &dir);
-                            robot->m_Weapons[i].m_Weapon->m_Dir = dir;
-                        }
-
-
-                        robot->m_Weapons[i].m_Weapon->m_Skip = robot;
-                        //robot->m_Weapons[i].m_On = true;
-                        robot->m_Weapons[i].m_Weapon->Fire();
-                        // std::cout << "Rocket launched. " << std::endl;
-                    }
-                }
+                std::cout << "Dropping the event, because it is from the past" << std::endl;
+            }
+            else
+            {
+                events_queue.push(event_fire);
             }
         }
+
+        // std::cout << "Processing events: " << msg.events.events.size() << std::endl;
+
+        // std::set<std::pair<u32, u8>> robot_fired{};
+        //
+        // for (EventFire event_fire : msg.events.events)
+        // {
+        //     if (robot_fired.contains(std::pair(event_fire.nid, event_fire.weapons)))
+        //         continue;
+        //
+        //     if (robots.contains(event_fire.nid))
+        //     {
+        //         robot_fired.insert(std::pair(event_fire.nid, event_fire.weapons));
+        //         CMatrixRobotAI *robot = robots.at(event_fire.nid);
+        //
+        //
+        //         // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event_fire.frame << std::endl;
+        //         // Trigger all rocket launchers
+        //         for (int i = 0; i < robot->m_WeaponsCnt; i++)
+        //         {
+        //             // static bool shot = false;
+        //             if (robot->m_Weapons[i].GetWeaponType() == event_fire.weapons && robot->m_Weapons[i].m_Weapon)
+        //             {
+        //                 // shot = true;
+        //
+        //                 D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
+        //                 D3DXVECTOR3 vPos;
+        //                 D3DXVec3TransformCoord(&vPos, &vPos, &m);
+        //                 robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
+        //
+        //                 if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
+        //                 {
+        //                     robot->m_Weapons[i].m_Weapon->m_Dir = event_fire.target_pos;
+        //                 }
+        //                 else
+        //                 {
+        //                     D3DXVECTOR3 dir = event_fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+        //                     D3DXVec3Normalize(&dir, &dir);
+        //                     robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+        //                 }
+        //
+        //
+        //                 robot->m_Weapons[i].m_Weapon->m_Skip = robot;
+        //                 //robot->m_Weapons[i].m_On = true;
+        //                 robot->m_Weapons[i].m_Weapon->Fire();
+        //                 // std::cout << "Rocket launched. " << std::endl;
+        //             }
+        //         }
+        //     }
+        // }
 
 
         // for (int i = 0; i < msg.events.events.size(); i++)
@@ -318,6 +331,12 @@ void Network::process_playback([[maybe_unused]]int ms)
             g_MatrixMap->GetSideById(id)->SetResourceAmount(PLASMA, side_ss.plasma);
         }
 
+        while (!events_queue.empty() && events_queue.top().frame <= event_treshold_frame)
+        {
+            EventFire e = events_queue.top();
+            play_fire_event(e);
+            events_queue.pop();
+        }
 
         for (auto& [id, rs] : ws_from.robots) {
             if (!g_Network.robots.contains(id))
@@ -451,7 +470,39 @@ void Network::clear_events_for_current_tick()
 
 void Network::play_fire_event(const EventFire &event)
 {
+        if (!robots.contains(event.nid))
+            return;
 
+        CMatrixRobotAI *robot = robots.at(event.nid);
+
+        // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event.frame << std::endl;
+        for (int i = 0; i < robot->m_WeaponsCnt; i++)
+        {
+            if (robot->m_Weapons[i].GetWeaponType() == event.weapons && robot->m_Weapons[i].m_Weapon)
+            {
+                // Trigger fire event
+                D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
+                D3DXVECTOR3 vPos;
+                D3DXVec3TransformCoord(&vPos, &vPos, &m);
+                robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
+
+                if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
+                {
+                    robot->m_Weapons[i].m_Weapon->m_Dir = event.target_pos;
+                }
+                else
+                {
+                    D3DXVECTOR3 dir = event.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+                    D3DXVec3Normalize(&dir, &dir);
+                    robot->m_Weapons[i].m_Weapon->m_Dir = dir;
+                }
+
+                robot->m_Weapons[i].m_Weapon->m_Skip = robot;
+                //robot->m_Weapons[i].m_On = true;
+                robot->m_Weapons[i].m_Weapon->Fire();
+                // std::cout << "Rocket launched. " << std::endl;
+            }
+        }
 }
 
 void Network::initialize_replay_mode_with_files(std::wstring commands_filename)
