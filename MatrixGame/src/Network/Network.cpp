@@ -399,9 +399,9 @@ void Network::process_playback([[maybe_unused]]int ms)
         // int delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>((curr_time - prev_time) * g_Network.playback_speed).count();
         std::erase_if(robots, [this, modified_delta](auto& pair) {
             auto id = pair.first;
-            auto robot = pair.second;
+            CMatrixRobotAI *robot = pair.second;
 
-            if (!robot->is_processed_by_network)
+            if (!robot->is_processed_by_network && robot->m_CurrState != ROBOT_DIP)
             {
                 std::cout << "Robot " << id << " is missing from the snapshot, removing it.\n";
                 delete_robot(robot);
