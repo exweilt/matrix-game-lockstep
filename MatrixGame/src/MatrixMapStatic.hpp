@@ -246,8 +246,9 @@ protected:
         const CRect *rect;
         bool found;
     };
-
+public:
     DWORD m_ObjectState;  // битовый набор.
+protected:
     DWORD m_RChange;  // Какой ресурс объекта изменился. При созданнии класса устанавливается в 0xffffffff
 
     SObjectCore *m_Core;

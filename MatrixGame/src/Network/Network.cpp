@@ -325,6 +325,16 @@ void Network::process_playback([[maybe_unused]]int ms)
 
         for (auto& [id, side_ss] : ws_to.sides)
         {
+            if (g_MatrixMap->GetSideById(id)->GetResourcesAmount(TITAN) < side_ss.titanium)
+            {
+                CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+                for (; ms; ms = ms->GetNextLogic()) {
+                    if (ms->IsLiveBuilding() && ms->GetSide() == id)
+                    {
+                        SETFLAG(ms->m_ObjectState, BUILDING_NEW_INCOME);
+                    }
+                }
+            }
             g_MatrixMap->GetSideById(id)->SetResourceAmount(TITAN, side_ss.titanium);
             g_MatrixMap->GetSideById(id)->SetResourceAmount(ELECTRONICS, side_ss.electronics);
             g_MatrixMap->GetSideById(id)->SetResourceAmount(ENERGY, side_ss.energy);
