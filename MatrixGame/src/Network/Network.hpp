@@ -228,6 +228,7 @@ void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& des
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);
 
 void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid);
+void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id);
 
 // Places an order to construct a robot
 void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,

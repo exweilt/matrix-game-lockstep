@@ -703,6 +703,10 @@ void Network::process_server_network_frame()
             {
                 m.command_build.execute_for_side();
             }
+            else if (m.type == MessageType::COMMAND_CAPTURE)
+            {
+                m.capture.execute();
+            }
 
             //
             // if (g_server_state == ServerState::BROADCASTING)
@@ -967,6 +971,20 @@ void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& des
     g_Network.send_message(command);
 
     command.command_move.execute_for_side(local_side_id);
+}
+
+void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)
+{
+    Message command { MessageCommandCaptureParams {entities_nid, target_nid} };
+    g_Network.send_message(command);
+}
+
+void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id)
+{
+    Message command { MessageCommandCaptureParams {entities_nid, target_nid} };
+    g_Network.send_message(command);
+
+    command.capture.execute_for_side(local_side_id);
 }
 
 // void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)

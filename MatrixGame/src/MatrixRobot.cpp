@@ -1019,25 +1019,26 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                     DCP();
                     if (g_Network.is_authority())
                     {
-                        if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
-                        if (isKeyPressed(KA_UNIT_FORWARD) || isKeyPressed(KA_UNIT_FORWARD_ALT))
+                        if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject())
                         {
-                            D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
-                            dest += m_Forward * m_maxSpeed;
-                            LowLevelMove(ms, dest, true, true, false);
+                            if (isKeyPressed(KA_UNIT_FORWARD) || isKeyPressed(KA_UNIT_FORWARD_ALT))
+                            {
+                                D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
+                                dest += m_Forward * m_maxSpeed;
+                                LowLevelMove(ms, dest, true, true, false);
+                            }
+                            else if (isKeyPressed(KA_UNIT_BACKWARD) || isKeyPressed(KA_UNIT_BACKWARD_ALT))
+                            {
+                                D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
+                                dest -= m_Forward * m_maxSpeed;
+                                LowLevelMove(ms, dest, true, true, false, true);
+                            }
+                            else {
+                                StopMoving();
+                            }
+                            MapPosCalc();
+                            break;
                         }
-                        else if (isKeyPressed(KA_UNIT_BACKWARD) || isKeyPressed(KA_UNIT_BACKWARD_ALT))
-                        {
-                            D3DXVECTOR3 dest(m_PosX, m_PosY, 0);
-                            dest -= m_Forward * m_maxSpeed;
-                            LowLevelMove(ms, dest, true, true, false, true);
-                        }
-                        else {
-                            StopMoving();
-                        }
-                        MapPosCalc();
-                        break;
-                    }
 
                     int i;
                     for (i = 0; i < m_OrdersInPool; i++) {

@@ -411,25 +411,27 @@ public:
         return m_CurrState == ROBOT_IN_SPAWN || m_CurrState == ROBOT_BASE_MOVEOUT || m_CurrState == ROBOT_BASE_CAPTURE;
     }
     bool CanBreakOrder(void) {
-        if (m_Side != PLAYER_SIDE || FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
-        {
-            CMatrixBuilding *cf = GetCaptureFactory();
-            if (cf) {
-                return false;  // DO NOT BREAK CAPTURING!!!!!!!!!!!!!!!!!!!!!!!! NEVER!!!!!!!!!!
-                // if (cf->IsBase()) return false;
-                // if (cf->GetSide()!=robot->GetSide())
-                //{
-                //    if(
-                //        (float(cf->m_TrueColor.m_ColoredCnt)/MAX_ZAHVAT_POINTS)
-                //        >
-                //        (1.0-(robot->AsRobot()->GetHitPoint()*1.1f)/robot->AsRobot()->GetMaxHitPoint())
-                //    ) return false;
-                //}
-            }
-        }
+        // Attention
+        // if (m_Side != PLAYER_SIDE || FLAG(g_MatrixMap->m_Flags, MMFLAG_FULLAUTO))
+        // {
+        //     CMatrixBuilding *cf = GetCaptureFactory();
+        //     if (cf) {
+        //         return false;  // DO NOT BREAK CAPTURING!!!!!!!!!!!!!!!!!!!!!!!! NEVER!!!!!!!!!!
+        //         // if (cf->IsBase()) return false;
+        //         // if (cf->GetSide()!=robot->GetSide())
+        //         //{
+        //         //    if(
+        //         //        (float(cf->m_TrueColor.m_ColoredCnt)/MAX_ZAHVAT_POINTS)
+        //         //        >
+        //         //        (1.0-(robot->AsRobot()->GetHitPoint()*1.1f)/robot->AsRobot()->GetMaxHitPoint())
+        //         //    ) return false;
+        //         //}
+        //     }
+        // }
 
-        return !IsAutomaticMode() &&
-               ((m_Side != g_Network.controllable_side_id) || (g_MatrixMap->GetControllableSide()->GetArcadedObject() != this));
+        return true; // ATTENTION
+        // return !IsAutomaticMode() &&
+        //        ((m_Side != g_Network.controllable_side_id) || (g_MatrixMap->GetControllableSide()->GetArcadedObject() != this));
     }
 
     void OBBToAABBCollision(int nHeight, int nWidth);

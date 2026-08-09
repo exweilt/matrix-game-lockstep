@@ -29,6 +29,7 @@ enum class MessageType : u8
     WORLD_SNAPSHOT,
     COMMAND_MOVE,
     COMMAND_BUILD,
+    COMMAND_CAPTURE,
     INFO,
     SAY,
     JOIN,
@@ -157,6 +158,35 @@ struct MessageCommandBuildParams
     // }
 };
 
+struct MessageCommandCaptureParams
+{
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
+    u32 target_nid;
+
+    MessageCommandCaptureParams() : number_of_robots(0), robot_nid(0), target_nid(0) {};
+    // MessageCommandCaptureParams(const u32 r_nid, const D3DXVECTOR3 &dest);
+    MessageCommandCaptureParams(const std::vector<u32> &robots_nid, u32 target_NID)
+    {
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_nid = target_NID;
+    };
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandCaptureParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
+    void execute();
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+    }
+};
+
 struct MessageChecksumParams
 {
     u32 target_frame;
@@ -223,6 +253,7 @@ struct Message
         MessageCommandMoveParams command_move;
         MessageCommandBuildParams command_build;
         MessageEventsParams events;
+        MessageCommandCaptureParams capture;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -235,6 +266,7 @@ struct Message
     Message(MessageCommandMoveParams m)         : type(MessageType::COMMAND_MOVE),      command_move(m)     {};
     Message(MessageCommandBuildParams m)         : type(MessageType::COMMAND_BUILD),      command_build(m)     {};
     Message(MessageEventsParams e)         : type(MessageType::EVENTS),      events(e)     {};
+    Message(MessageCommandCaptureParams x)         : type(MessageType::COMMAND_CAPTURE),      capture(x)     {};
 
     ~Message()
     {
@@ -264,6 +296,9 @@ struct Message
             case MessageType::EVENTS:
                 events.~MessageEventsParams();
                 break;
+            case MessageType::COMMAND_CAPTURE:
+                capture.~MessageCommandCaptureParams();
+                break;
             default:;
         }
     }
@@ -284,6 +319,7 @@ struct Message
             case MessageType::DESYNC:           desync          .serialize_to_bitstream(writer); break;
             case MessageType::STATE_REPORT:     report          .serialize_to_bitstream(writer); break;
             case MessageType::EVENTS:           events          .serialize_to_bitstream(writer); break;
+            case MessageType::COMMAND_CAPTURE:  capture          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
     }
@@ -310,6 +346,8 @@ struct Message
                 return MessageChecksumParams::      deserialize_from_bitstream(reader);
             case MessageType::EVENTS:
                 return MessageEventsParams::        deserialize_from_bitstream(reader);
+            case MessageType::COMMAND_CAPTURE:
+                return MessageCommandCaptureParams::deserialize_from_bitstream(reader);
             default:
                 assert(false);
         }

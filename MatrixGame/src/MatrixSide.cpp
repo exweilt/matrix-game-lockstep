@@ -873,7 +873,25 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     {
         if (IS_TRACE_STOP_OBJECT(pObject) && pObject->IsLiveBuilding() && pObject->GetSide() != m_Id) {
             // Capture
-            PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
+            if (g_Network.is_authority())
+            {
+                PGOrderCapture(SelGroupToLogicGroup(), (CMatrixBuilding *)pObject);
+            }
+            else
+            {
+                std::vector<u32> robots_nid{};
+                for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+                {
+                    if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
+                    {
+                        robots_nid.push_back(go->m_Object->m_NID);
+                    }
+                }
+                if (robots_nid.size() > 0)
+                {
+                    NetOrderCapture(robots_nid, pObject->m_NID, m_Id);
+                }
+            }
             // std::vector<u32> robots_nid{};
             // for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
             // {
@@ -9765,7 +9783,7 @@ void CMatrixSideUnit::PGShowPlace(int no) {
             obj = obj->GetNextLogic();
         }
     }
-    else
+    if (!g_Network.is_authority())
     {
         for (auto& [id, robot] : g_Network.robots)
         {

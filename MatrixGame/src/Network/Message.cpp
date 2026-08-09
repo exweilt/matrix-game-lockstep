@@ -47,6 +47,33 @@
 //     return result; // :)
 // }
 
+// bundles robots together, slow. TODO: optimize
+// dangerous, changes the world!
+i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_of_robots)
+{
+    // TODO: add asserts
+    int no = side->GetNextFreeLogicGroup();
+
+    side->m_PlayerGroup[no].m_RobotCnt = 0;
+    side->m_PlayerGroup[no].Order(mpo_Stop);
+    side->m_PlayerGroup[no].m_Obj = NULL;
+    side->m_PlayerGroup[no].SetWar(false);
+    side->m_PlayerGroup[no].m_RoadPath->Clear();
+
+    for (i32 i = 0; i < number_of_robots; i++)
+    {
+        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
+        // assert(obj->IsLiveRobot()); // bad
+        if (obj->IsLiveRobot())
+        {
+            obj->AsRobot()->SetGroupLogic(no);
+            side->m_PlayerGroup[no].m_RobotCnt++;
+        }
+    }
+
+    return no;
+}
+
 void MessageWorldSnapshotParams::serialize_to_bitstream(BitWriter &writer) const
 {
     ws.serialize_to_bitstream(writer);
@@ -183,6 +210,57 @@ void MessageCommandBuildParams::execute_for_side()
     // g_IFaceList->m_RCountControl->CheckUp();
 }
 
+void MessageCommandCaptureParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8( this->number_of_robots );
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_u32(this->target_nid);
+}
+
+MessageCommandCaptureParams MessageCommandCaptureParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandCaptureParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32)); //
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.target_nid = reader.read_u32();
+
+    return result;
+}
+
+void MessageCommandCaptureParams::execute_for_side(u32 side_id)
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+    // side->PGOrder
+    // robot_nid[0]
+    // g_MatrixMap->find_static_with_nid(target_nid)->AsRobot()->CaptureFactory(g_MatrixMap->find_static_with_nid(target_nid)->AsBuilding());
+    // TODO: show correct waypoints
+    auto b = g_MatrixMap->find_static_with_nid(target_nid)->AsBuilding();
+    D3DXVECTOR2 v = b->AsBuilding()->m_Pos;
+    side->PGOrderCapture(no, b);
+    CMatrixEffect::CreateMoveto(D3DXVECTOR3(v.x, v.y, g_MatrixMap->GetZ(v.x, v.y) + 2.0f));
+}
+
+void MessageCommandCaptureParams::execute()
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(g_MatrixMap->find_static_with_nid(robot_nid[0])->AsRobot()->GetSide());
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+    side->PGOrderCapture(no, g_MatrixMap->find_static_with_nid(target_nid)->AsBuilding());
+}
+
 // void MessageCommandBuildParams::execute()
 // {
 // }
@@ -240,32 +318,7 @@ MessageCommandMoveParams::MessageCommandMoveParams(const u32 r_nid, const D3DXVE
     this->target_pos = dest;
 }
 
-// bundles robots together, slow. TODO: optimize
-// dangerous, changes the world!
-i32 robots_to_logic_group(CMatrixSideUnit *side, u32 *robot_nid, size_t number_of_robots)
-{
-    // TODO: add asserts
-    int no = side->GetNextFreeLogicGroup();
 
-    side->m_PlayerGroup[no].m_RobotCnt = 0;
-    side->m_PlayerGroup[no].Order(mpo_Stop);
-    side->m_PlayerGroup[no].m_Obj = NULL;
-    side->m_PlayerGroup[no].SetWar(false);
-    side->m_PlayerGroup[no].m_RoadPath->Clear();
-
-    for (i32 i = 0; i < number_of_robots; i++)
-    {
-        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
-        // assert(obj->IsLiveRobot()); // bad
-        if (obj->IsLiveRobot())
-        {
-            obj->AsRobot()->SetGroupLogic(no);
-            side->m_PlayerGroup[no].m_RobotCnt++;
-        }
-    }
-
-    return no;
-}
 
 void MessageCommandMoveParams::execute_for_side(u32 side_id)
 {
