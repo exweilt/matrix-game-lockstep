@@ -67,14 +67,20 @@ struct RobotSnapshot
 enum EBuildingType : u32;
 struct BuildingSnapshot
 {
+    u32 nid;
     EBuildingType type;
     u8 side;
     f32 health;
+    u8 capturing_progress;
+    u32 capturing_color;
 
     template <class Archive>
     void serialize(Archive& ar) {
         ar(CEREAL_NVP(type), CEREAL_NVP(side), CEREAL_NVP(health));
     }
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static BuildingSnapshot deserialize_from_bitstream(BitReader &reader);
 };
 
 // Stores the
@@ -83,6 +89,7 @@ struct WorldSnapshot
     u32 frame;
     std::map<u8, SideSnapshot>        sides;
     std::map<u32, RobotSnapshot>      robots;
+    std::map<u32, BuildingSnapshot>   buildings;
 
     std::string to_json_string() const;
 

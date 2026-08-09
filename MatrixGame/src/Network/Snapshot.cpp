@@ -165,6 +165,30 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     return result;
 }
 
+void BuildingSnapshot::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(nid);
+    writer.write_u8(type);
+    writer.write_u8(side);
+    writer.write_f32(health);
+    writer.write_u32(capturing_progress);
+    writer.write_u32(capturing_color);
+}
+
+BuildingSnapshot BuildingSnapshot::deserialize_from_bitstream(BitReader &reader)
+{
+    BuildingSnapshot result{};
+
+    result.nid = reader.read_u32();
+    result.type = static_cast<EBuildingType>(reader.read_u8());
+    result.side = reader.read_u8();
+    result.health = reader.read_f32();
+    result.capturing_progress = reader.read_u32();
+    result.capturing_color = reader.read_u32();
+
+    return result;
+}
+
 std::string WorldSnapshot::to_json_string() const
 {
     std::ostringstream ss;
@@ -189,6 +213,11 @@ void WorldSnapshot::serialize_to_bitstream(BitWriter &writer) const
     for (const auto& [Id, rob_snapshot] : robots) {
         rob_snapshot.serialize_to_bitstream(writer);
     }
+
+    writer.write_u32(buildings.size());
+    for (const auto& [Id, b_snapshot] : buildings) {
+        b_snapshot.serialize_to_bitstream(writer);
+    }
 }
 
 WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
@@ -209,6 +238,13 @@ WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
     {
         RobotSnapshot rs = RobotSnapshot::deserialize_from_bitstream(reader);
         result.robots.emplace(rs.nid, rs);
+    }
+
+    int b_count = reader.read_u32();
+    for (int i = 0; i < b_count; i++)
+    {
+        BuildingSnapshot bs = BuildingSnapshot::deserialize_from_bitstream(reader);
+        result.buildings.emplace(bs.nid, bs);
     }
 
     return result;
@@ -265,12 +301,15 @@ Stopwatch cws_stopwatch;
     {
         if (obj->IsBuilding())
         {
-            // CMatrixBuilding *building = obj->AsBuilding();
-            // result.buildings.emplace(building->m_NID, BuildingSnapshot{
-            //     building->m_Kind,
-            //     static_cast<u8>(building->m_Side),
-            //     building->GetHitPoint()
-            // });
+            CMatrixBuilding *building = obj->AsBuilding();
+            result.buildings.emplace(building->m_NID, BuildingSnapshot{
+                building->m_NID,
+                building->m_Kind,
+                static_cast<u8>(building->m_Side),
+                building->GetHitPoint(),
+                static_cast<u8>(building->m_TrueColor.m_ColoredCnt),
+                building->m_TrueColor.m_Color
+            });
         }
         else if (obj->IsLiveRobot())
         {

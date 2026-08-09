@@ -391,6 +391,23 @@ void Network::process_playback([[maybe_unused]]int ms)
             }
         }
 
+        CMatrixMapStatic * ms = CMatrixMapStatic::GetFirstLogic();
+        while (ms)
+        {
+            if (ms->IsLiveBuilding())
+            {
+                if (ws_to.buildings.contains(ms->m_NID))
+                {
+                    BuildingSnapshot b = ws_to.buildings.at(ms->m_NID);
+                    static_cast<CMatrixBuilding *>(ms)->m_Side = b.side;
+                    static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_ColoredCnt = b.capturing_progress;
+                    // static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_Color =  0xFF000000 | g_MatrixMap->GetSideColor(b.side);
+                    static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_Color =  b.capturing_color;
+                }
+            }
+            ms = ms->GetNextLogic();
+        }
+
         // kill unneeded
         // for (auto& [id, robot] : robots)
         // {

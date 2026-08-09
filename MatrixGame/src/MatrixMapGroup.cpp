@@ -617,6 +617,27 @@ CMatrixMapStatic *CMatrixMapGroup::FindObjectAny(DWORD mask, const D3DXVECTOR2 &
             return *ms;
         }
     }
+
+    // for net mod
+    if (!g_Network.is_authority())
+    {
+        for (auto& [id, r] : g_Network.robots)
+        {
+            if (!r->FitToMask(mask))
+                continue;
+
+            auto tmp = *(D3DXVECTOR2 *)&r->GetGeoCenter() - pos;
+            float dist =
+                    D3DXVec2Length(&tmp) - r->GetRadius() * scale_radius;
+            // if (dist< 0) dist = 0;
+            if (dist < maxdist) {
+                i = ms - m_Objects + 1;
+                return r;
+            }
+        }
+    }
+
+
     return NULL;
 }
 
