@@ -84,12 +84,23 @@ set(BITMAP_HEADERS
 # file(GLOB BITMAP_SOURCES Bitmap/*.cpp)
 # file(GLOB BITMAP_HEADERS Bitmap/*.hpp Bitmap/*.pch)
 
+set(IMGUI_SOURCES
+        ../ThirdParty/imgui/imgui.cpp
+        ../ThirdParty/imgui/imgui_demo.cpp
+        ../ThirdParty/imgui/imgui_draw.cpp
+        ../ThirdParty/imgui/imgui_tables.cpp
+        ../ThirdParty/imgui/imgui_widgets.cpp
+        ../ThirdParty/imgui/backends/imgui_impl_win32.cpp
+        ../ThirdParty/imgui/backends/imgui_impl_dx9.cpp
+)
+
 target_sources(
     MatrixLib
     PRIVATE
         ${3G_SOURCES} ${3G_HEADERS}
         ${BASE_SOURCES} ${BASE_HEADERS}
         ${BITMAP_SOURCES} ${BITMAP_HEADERS}
+        ${IMGUI_SOURCES}
 )
 
 target_include_directories(
@@ -100,6 +111,8 @@ target_include_directories(
         Bitmap
         ../ThirdParty/cereal/include
         "${ENET_SOURCE_DIR}/include"
+        ../ThirdParty/imgui
+        ../ThirdParty/imgui/backends
         #"${XXHASH_DIR}/include"
 )
 
@@ -108,6 +121,7 @@ target_link_libraries(
     PUBLIC
         LIBPNG
         ${DIRECTX9_LIBRARIES}
+        dwmapi
 )
 
 if(MSVC)

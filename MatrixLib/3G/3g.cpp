@@ -15,6 +15,10 @@
 #include "Types.hpp"
 #include <chrono>
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx9.h"
+
 #include "../../MatrixGame/src/Network/Network.hpp"
 
 
@@ -73,6 +77,9 @@ STextureStageOp g_AlphaOp[8] = {
 
 static D3DGAMMARAMP g_StoreRamp0;
 static D3DGAMMARAMP g_StoreRamp1;
+
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 LRESULT CALLBACK L3G_WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -283,6 +290,18 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
             &d3dpp,
             &g_D3DD
         );
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io; // Used for tweaking fonts/settings later
+
+    // Setup Dear ImGui style (Dark is default)
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplWin32_Init(g_Wnd);        // Pass your existing Win32 HWND
+    ImGui_ImplDX9_Init(g_D3DD);       // Pass your existing DX9 Device
 
     switch(cd_res)
     {
@@ -497,6 +516,16 @@ int L3GRun()
             break;
         }
 
+        ImGui_ImplDX9_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+
+        // 2. Build your UI (TEST WINDOW)
+        ImGui::ShowDemoWindow(); // <--- THIS IS YOUR TEST!
+
+        // 3. Prepare ImGui for rendering
+        ImGui::Render();
+
         // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
         // {
         //     std::this_thread::yield();
@@ -685,6 +714,9 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
  */
 LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+        return true;
+
     switch (message)
     {
         case WM_PAINT:

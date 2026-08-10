@@ -42,6 +42,9 @@
 #include <chrono>
 #include <format>
 
+#include "imgui.h"
+#include "imgui_impl_dx9.h"
+
 namespace {
 
 using Input::isKeyPressed;
@@ -320,6 +323,7 @@ void CFormMatrixGame::Draw(void) {
     }
 
     ASSERT_DX(g_D3DD->BeginScene());
+
 #ifdef _DEBUG
     if (!FLAG(g_Flags, GFLAG_EXTRAFREERES)) {
         SETFLAG(g_Flags, GFLAG_RENDERINPROGRESS);
@@ -327,6 +331,8 @@ void CFormMatrixGame::Draw(void) {
 #endif
 
     g_MatrixMap->Draw();
+
+    ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
     ASSERT_DX(g_D3DD->EndScene());
     ASSERT_DX(g_D3DD->Present(NULL, NULL, NULL, NULL));
