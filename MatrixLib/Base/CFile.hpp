@@ -20,6 +20,7 @@ typedef void (*ENUM_FILES)(const std::wstring &name, DWORD user);
 
 class BASE_API CFile : public CMain {
 #ifndef MAXEXP_EXPORTS
+public:
     static CPackCollection *m_Packs;
     static int m_PacksRef;
 

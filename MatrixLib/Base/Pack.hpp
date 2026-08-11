@@ -94,6 +94,7 @@ class CHsFolder : public CMain {
     // bool        m_ToUpdate;         // Необходимо обновить информацию в пакетном файле
     // bool        m_ToSave;           // Необходимо записать на новое место в пакетный файл
 
+public:
     SFileRec *GetFileRec(int ind) const  // Возвращает запись по номеру
     {
         if (DWORD(ind) < m_FolderRec.m_Recnum) {

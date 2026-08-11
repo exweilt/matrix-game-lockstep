@@ -509,6 +509,7 @@ int L3GRun()
 
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
+            TranslateMessage(&msg);
             DispatchMessage(&msg); // Effectively calls L3GWndProc() handler
         }
         if (FLAG(g_Flags, GFLAG_APPCLOSE) || FLAG(g_Flags, GFLAG_EXITLOOP))
@@ -520,11 +521,7 @@ int L3GRun()
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // 2. Build your UI (TEST WINDOW)
-        ImGui::ShowDemoWindow(); // <--- THIS IS YOUR TEST!
 
-        // 3. Prepare ImGui for rendering
-        ImGui::Render();
 
         // if (!FLAG(g_Flags, GFLAG_APPACTIVE) || !g_FormCur)
         // {
@@ -537,34 +534,50 @@ int L3GRun()
         auto delta_time = (cur_takt - prev_takt);
         prev_takt = cur_takt;
 
-
-
-        if (FLAG(g_Flags, GFLAG_4SPEED))
+        if (g_Network.game_state == GameState::LOBBY)
         {
-            delta_time *= 4;
+            g_Network.lobby.draw();
+            ImGui::Render();
+            ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+            g_D3DD->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_RGBA(45, 45, 48, 255), 1.0f, 0);
+
+            if (SUCCEEDED(g_D3DD->BeginScene()))
+            {
+                // Draw the ImGui geometry to the DX9 back buffer
+                ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+
+                g_D3DD->EndScene();
+            }
+
+            // 6. Display the frame on the screen
+            HRESULT result = g_D3DD->Present(NULL, NULL, NULL, NULL);
         }
-
-        delta_time *= g_Network.playback_speed;
-
-        // int delta = to_milliseconds(delta_time).count();
-        // g_total_ms += delta;
-
-        //Stopwatch sw_net;
-        g_Network.process_network_frame(0);
-        // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
-
-        int delta = std::min(100LL, to_milliseconds(delta_time).count());
-
-        // TODO: bring smoothness back?
-        // smooths -= smooth[smp];
-        // smooths += delta;
-        // smooth[smp] = delta;
-        // smp = (smp + 1) & (SMOOTH_COUNT - 1);
-
-        // delta = smooths / SMOOTH_COUNT;
-
-        // if (g_Network.game_ongoing)
+        else
         {
+            if (FLAG(g_Flags, GFLAG_4SPEED))
+            {
+                delta_time *= 4;
+            }
+
+            delta_time *= g_Network.playback_speed;
+
+            // int delta = to_milliseconds(delta_time).count();
+            // g_total_ms += delta;
+
+            //Stopwatch sw_net;
+            g_Network.process_network_frame(0);
+            // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
+
+            int delta = std::min(100LL, to_milliseconds(delta_time).count());
+
+            // TODO: bring smoothness back?
+            // smooths -= smooth[smp];
+            // smooths += delta;
+            // smooth[smp] = delta;
+            // smp = (smp + 1) & (SMOOTH_COUNT - 1);
+
+            // delta = smooths / SMOOTH_COUNT;
+
 #ifdef _DEBUG
             SETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
@@ -573,54 +586,35 @@ int L3GRun()
 
             //SRemindCore::Takt(delta); ATTENTION
             // Stopwatch sw_phys;
-            // if (
-            //     (g_Network.get_current_frame_record()->is_side_input_ready(2) && g_Network.get_current_frame_record()->is_side_input_ready(3)))
-            {
-                if (g_Network.is_authority())
-                {
-                    g_FormCur->Takt(17);
-                }
-                else
-                {
-                    g_FormCur->Takt(delta);
-                }
-                // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
 
-                // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
+
+            if (g_Network.is_authority())
+            {
+                g_FormCur->Takt(17);
+            }
+            else
+            {
+                g_FormCur->Takt(delta);
+            }
+            // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
+
+            // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
-                RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+            RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
 
-                // g_physics_tick += 1;
+            // g_physics_tick += 1;
 
-                // TODO: maybe add back FPS limit?
-                // Stopwatch sw_draw;
-                g_FormCur->Draw();
-                // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
+            // TODO: maybe add back FPS limit?
+            // Stopwatch sw_draw;
+            g_FormCur->Draw();
+            // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
 
 #if (defined _DEBUG) && !(defined _RELDEBUG)
-                CHelper::AfterDraw();
+            CHelper::AfterDraw();
 #endif
 
-                // // Ensure at least 16 ms passed since last iteration
-                // auto delta_duration = std::chrono::duration<f64>(clock::now() - prev_takt);
-                // if (delta_duration < std::chrono::milliseconds(16)) {
-                //     std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta_duration);
-                // }
-
-                next_tick += dt;
-                std::this_thread::sleep_until(next_tick);
-
-                fps++;
-
-                g_Network.graphics_frame += 1;
-
-                g_DrawFPS = fps.count();
-            }
-
-
-
-            g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+            g_Network.graphics_frame += 1;
 
             if (g_Network.last_check + std::chrono::seconds(1) < clock::now())
             {
@@ -628,16 +622,18 @@ int L3GRun()
                 g_Network.physics_fps = g_Network.frames_passed_since_last_check;
                 g_Network.frames_passed_since_last_check = 0;
             }
-        }
-        // g_Network.lgr.debug("Main loop time    : {:.3f} ms")(sw_total.elapsed_ms());
-        // g_Network.lgr.debug("====================================");
 
-        // if (g_Network.has_physics_frame_run)
-        // {
-        //     // g_Network.code_logic_frame += 1;
-        //     g_Network.physics_frame += 1;
-        //     g_Network.has_physics_frame_run = false;
-        // }
+        }
+
+        next_tick += dt;
+        std::this_thread::sleep_until(next_tick);
+
+        fps++;
+
+        g_DrawFPS = fps.count();
+
+        g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+
     }
 
     return 1;

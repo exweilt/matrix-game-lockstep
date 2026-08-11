@@ -19,6 +19,8 @@
 #include <vector>
 #include <queue>
 
+#include "Lobby.hpp"
+
 constexpr u32 INPUT_BUFFER_SIZE = 15; // Size of input buffering
 constexpr u32 PHYSICS_FRAME_RATE = 10;
 static_assert(PHYSICS_FRAME_RATE >= 1 && PHYSICS_FRAME_RATE < 200);
@@ -88,6 +90,12 @@ enum class NetworkMode : u8
     SINGLEPLAYER = 3
 };
 
+enum class GameState : u8
+{
+    LOBBY = 0,
+    GAME = 1,
+};
+
 class Network
 {
 public:
@@ -107,6 +115,7 @@ public:
 
     ENetHost* host;
 
+    GameState game_state;
     NetworkMode network_mode = NetworkMode::NONE;
     u8 controllable_side_id     = static_cast<u8>(SideID::RED); // SideID
     u32 graphics_frame        = 0; // current rendering frame
@@ -125,6 +134,8 @@ public:
     f32 playback_speed = 1.0f;
 
     std::map<u32, CMatrixRobotAI*> robots;
+
+    Lobby lobby;
 
     // bool next_frame_requested   = false; // should simulate next physics frame
 

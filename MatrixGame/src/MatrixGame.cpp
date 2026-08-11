@@ -403,6 +403,9 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
 
     DCP();
 
+    g_Network.lobby.refresh_list_of_maps();
+    g_Network.lobby.select_map(0);
+
     g_MatrixMap = HNew(g_MatrixHeap) CMatrixMapLogic;
 
     g_MatrixMap->LoadSide(*g_MatrixData->BlockGet(L"Side"));

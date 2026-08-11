@@ -92,7 +92,7 @@ autoload:
         LoadFromFile(buf, CacheExtsTex);
     }
 
-    if (FAILED(D3DXCreateTextureFromFileInMemoryEx(g_D3DD, buf.Get(), buf.Len(), 0, 0,
+    if (FAILED(D3DXCreateTextureFromFileInMemoryEx(g_D3DD, buf.Get(), buf.Len(), D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2,
                                                    FLAG(m_Flags, TF_NOMIPMAP) ? 1 : 0, 0, D3DFMT_UNKNOWN, pool,
                                                    D3DX_FILTER_NONE, D3DX_FILTER_BOX, 0, NULL, NULL, &ret))) {
         return NULL;

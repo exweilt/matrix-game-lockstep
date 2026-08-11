@@ -332,7 +332,6 @@ void CFormMatrixGame::Draw(void) {
 
     g_MatrixMap->Draw();
 
-    ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
     ASSERT_DX(g_D3DD->EndScene());
     ASSERT_DX(g_D3DD->Present(NULL, NULL, NULL, NULL));
