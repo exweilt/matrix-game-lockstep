@@ -25,6 +25,7 @@ public:
     std::vector<std::string> cached_list_of_maps;
     void select_map(u32 map_index);
         LPDIRECT3DTEXTURE9 map_texture;
+    u8 input_playing_side = 1;
 
     std::string get_selected_map_name();
     void load_map_texture();

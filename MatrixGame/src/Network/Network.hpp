@@ -117,7 +117,7 @@ public:
 
     GameState game_state;
     NetworkMode network_mode = NetworkMode::NONE;
-    u8 controllable_side_id     = static_cast<u8>(SideID::RED); // SideID
+    u8 controllable_side_id     = static_cast<u8>(SideID::YELLOW); // SideID
     u32 graphics_frame        = 0; // current rendering frame
     u32 physics_frame         = 0; // current physics frame
     // u32 input_frame           = 0; // new inputs are sampled for this physics frame
@@ -187,6 +187,7 @@ public:
     void static_init_networking();
     void consume_input_frame(const u32 frame);
     void send_message(Message &msg);
+    void send_message(Message &msg, ENetPeer *peer);
 
     void save_commands_journal_to_file();
 
@@ -211,7 +212,7 @@ public:
         network_mode = new_network_mode;
     }
 
-private:
+public:
     // double linked list of all commands for all frames
     // Access through public methods
     // TODO: consider changing to std::map?
@@ -222,7 +223,7 @@ private:
     void init_client_host();
     void init_server_host();
     void deinit_client_host();
-    void connect_to_server();
+    MessageGameSettingsParams connect_to_server(std::string ip);
     void process_server_network_frame();
     void initialize_replay_mode_with_files(std::wstring commands_filename);
     void initialize_replay_mode_with_files(std::wstring commands_filename, std::wstring checksums_filename);

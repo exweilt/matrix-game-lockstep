@@ -71,6 +71,23 @@ void Network::send_message(Message &msg)
     enet_host_flush(host);
 }
 
+void Network::send_message(Message &msg, ENetPeer *peer)
+{
+    BitWriter writer;
+    msg.serialize_to_bitstream(writer);
+
+    // Create the packet
+    ENetPacket* packet = enet_packet_create(
+        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+    );
+
+    // Broadcast to all connected peers on Channel 0
+    enet_host_broadcast(host, 0, packet);
+
+    // Send the data immediately
+    enet_host_flush(host);
+}
+
 void Network::approve_final_input(u32 target_frame)
 {
     // // get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
@@ -661,6 +678,11 @@ void Network::process_server_network_frame()
                 std::cout << host->peers[i].connectID << std::endl;
             }
 
+            {
+                Message msg{ MessageGameSettingsParams( g_Network.lobby.get_selected_map_name() ) };
+                g_Network.send_message(msg, event.peer);
+            }
+
             // Register the player
             // peer_to_side.emplace(event.peer->connectID, g_server_host->connectedPeers - 1);
 
@@ -823,7 +845,7 @@ void Network::deinit_client_host()
     enet_host_destroy(host);
 }
 
-void Network::connect_to_server()
+MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
 {
     ENetAddress address;
     ENetEvent event;
@@ -843,7 +865,6 @@ void Network::connect_to_server()
 
     while (true)
     {
-
         if (enet_host_service (host, &event, 1000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
         {
             std::cout << "Connected to the server!\n";
@@ -858,6 +879,22 @@ void Network::connect_to_server()
             // enet_peer_reset(peer);
             continue;
         }
+    }
+
+    // Waiting for game settings
+    while (true)
+    {
+        if (enet_host_service (host, &event, 300) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
+        {
+            BitReader reader = BitReader(event.packet->data);
+            Message m { Message::deserialize_from_bitstream(reader) };
+
+            if (m.type == MessageType::GAME_SETTINGS)
+            {
+                return m.game_settings;
+            }
+        }
+        Sleep(50);
     }
 }
 
@@ -900,15 +937,15 @@ void Network::static_init_networking()
     std::atexit(enet_deinitialize);
 
     // Init ENet client host
-    if (is_client())
-    {
-        init_client_host();
-        connect_to_server();
-    }
-    else
-    {
-        init_server_host();
-    }
+    // if (is_client())
+    // {
+    //     init_client_host();
+    //     connect_to_server();
+    // }
+    // else
+    // {
+    //     init_server_host();
+    // }
 }
 
 // void Network::consume_input_frame(const u32 frame)

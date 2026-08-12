@@ -84,6 +84,16 @@ MessageWorldSnapshotParams MessageWorldSnapshotParams::deserialize_from_bitstrea
     return MessageWorldSnapshotParams( WorldSnapshot::deserialize_from_bitstream(reader) );
 }
 
+void MessageGameSettingsParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_string(mapname);
+}
+
+MessageGameSettingsParams MessageGameSettingsParams::deserialize_from_bitstream(BitReader &reader)
+{
+    return MessageGameSettingsParams(reader.read_string());
+}
+
 void MessageEventsParams::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(events.size());

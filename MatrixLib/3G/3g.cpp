@@ -517,9 +517,7 @@ int L3GRun()
             break;
         }
 
-        ImGui_ImplDX9_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
+
 
 
 
@@ -536,6 +534,9 @@ int L3GRun()
 
         if (g_Network.game_state == GameState::LOBBY)
         {
+            ImGui_ImplDX9_NewFrame();
+            ImGui_ImplWin32_NewFrame();
+            ImGui::NewFrame();
             g_Network.lobby.draw();
             ImGui::Render();
             ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());

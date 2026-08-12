@@ -30,6 +30,7 @@ CLoadProgress::CLoadProgress(void) {
 }
 
 void CLoadProgress::SetCurLP(int lp) {
+    return; // ATTENTION
     if (m_CurLoadProcess >= 0) {
         m_cursizedone += lp_props[m_CurLoadProcess].len;
     };
@@ -40,6 +41,7 @@ void CLoadProgress::SetCurLP(int lp) {
 #endif
 }
 void CLoadProgress::SetCurLPPos(int i) {
+    return; // ATTENTION
     float k = m_fullsize1 * (m_cursizedone + ((m_cur_lp_size1 * float(i)) * lp_props[m_CurLoadProcess].len));
 
     int ac = Float2Int(k * LPACCURACY);

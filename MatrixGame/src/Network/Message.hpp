@@ -39,6 +39,19 @@ enum class MessageType : u8
     CHECKSUM,
     STATE_REPORT,
     EVENTS,
+    GAME_SETTINGS,
+};
+
+struct MessageGameSettingsParams
+{
+    std::string mapname;
+
+    MessageGameSettingsParams(std::string map): mapname(map) {}
+    ~MessageGameSettingsParams() {}
+
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageGameSettingsParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageEventsParams
@@ -254,6 +267,7 @@ struct Message
         MessageCommandBuildParams command_build;
         MessageEventsParams events;
         MessageCommandCaptureParams capture;
+        MessageGameSettingsParams game_settings;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -267,6 +281,7 @@ struct Message
     Message(MessageCommandBuildParams m)         : type(MessageType::COMMAND_BUILD),      command_build(m)     {};
     Message(MessageEventsParams e)         : type(MessageType::EVENTS),      events(e)     {};
     Message(MessageCommandCaptureParams x)         : type(MessageType::COMMAND_CAPTURE),      capture(x)     {};
+    Message(MessageGameSettingsParams x)         : type(MessageType::GAME_SETTINGS),      game_settings(x)     {};
 
     ~Message()
     {
@@ -299,6 +314,9 @@ struct Message
             case MessageType::COMMAND_CAPTURE:
                 capture.~MessageCommandCaptureParams();
                 break;
+            case MessageType::GAME_SETTINGS:
+                game_settings.~MessageGameSettingsParams();
+                break;
             default:;
         }
     }
@@ -320,6 +338,7 @@ struct Message
             case MessageType::STATE_REPORT:     report          .serialize_to_bitstream(writer); break;
             case MessageType::EVENTS:           events          .serialize_to_bitstream(writer); break;
             case MessageType::COMMAND_CAPTURE:  capture          .serialize_to_bitstream(writer); break;
+            case MessageType::GAME_SETTINGS:  game_settings          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
     }
@@ -348,6 +367,8 @@ struct Message
                 return MessageEventsParams::        deserialize_from_bitstream(reader);
             case MessageType::COMMAND_CAPTURE:
                 return MessageCommandCaptureParams::deserialize_from_bitstream(reader);
+            case MessageType::GAME_SETTINGS:
+                return MessageGameSettingsParams::deserialize_from_bitstream(reader);
             default:
                 assert(false);
         }

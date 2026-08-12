@@ -108,19 +108,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     const wchar *map           = get_cmd_flag_value(L"-m", args, numarg);
     bool is_server             = cmd_flag_exists(L"-s", args, numarg);
 
-    if (!is_server && (ip_addr == nullptr || playing_side == nullptr))
-    {
-        std::cout << "Incorrect usage. Please specify both ip and playing side." << std::endl << std::endl;
-        print_help();
-        return 1;
-    }
+    // if (!is_server && (ip_addr == nullptr || playing_side == nullptr))
+    // {
+    //     std::cout << "Incorrect usage. Please specify both ip and playing side." << std::endl << std::endl;
+    //     print_help();
+    //     return 1;
+    // }
 
     // save arguments into network manager
     g_Network.server_ip = ip_addr != nullptr ? std::string(ip_addr, ip_addr + wcslen(ip_addr)) : "127.0.0.1";
     g_Network.isClient2 = cmd_flag_exists(L"--second", args, numarg);
-    g_Network.controllable_side_id = playing_side != nullptr ? std::stoi(std::wstring(playing_side)) : 1;
+    // g_Network.controllable_side_id = playing_side != nullptr ? std::stoi(std::wstring(playing_side)) : 1;
     g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
-    g_Network.set_network_mode(is_server ? NetworkMode::SERVER : NetworkMode::CLIENT);
+    // g_Network.set_network_mode(is_server ? NetworkMode::SERVER : NetworkMode::CLIENT);
 
     // if (replaying_commands_filename != nullptr)
     // {
@@ -244,6 +244,118 @@ static void static_init(void) {
     SInshorewave::StaticInit();
 
     g_Flags = 0;  // GFLAG_FORMACCESS;
+}
+
+void CGame::load_map(std::wstring mapname)
+{
+    CBlockPar bpi;
+    bpi.LoadFromTextFile(IF_PATH);
+
+    CInterface *pInterface = NULL;
+    bool iface_save = false;
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_BASE);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+
+
+    g_PopupMenu = HNew(g_MatrixHeap) CIFaceMenu;
+
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_TOP);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+    g_LoadProgress->SetCurLPPos(100);
+
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_MINI_MAP);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+    g_LoadProgress->SetCurLPPos(200);
+
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_RADAR);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+    g_LoadProgress->SetCurLPPos(300);
+
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_BASE);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+    g_IFaceList->m_BaseX = Float2Int(pInterface->m_xPos);
+    g_IFaceList->m_BaseY = Float2Int(pInterface->m_yPos);
+    g_LoadProgress->SetCurLPPos(400);
+
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_MAIN);
+    g_IFaceList->SetMainPos(pInterface->m_xPos, pInterface->m_yPos);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+
+    g_LoadProgress->SetCurLPPos(500);
+
+    pInterface = HNew(g_MatrixHeap) CInterface;
+    iface_save |= pInterface->Load(bpi, IF_HINTS);
+    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    g_IFaceList->m_Hints = pInterface;
+
+    g_LoadProgress->SetCurLPPos(600);
+
+    iface_save |= CIFaceMenu::LoadMenuGraphics(bpi);
+
+
+
+
+    g_IFaceList->ConstructorButtonsInit();
+
+    // // Process map name
+    // std::wstring mapname;
+    // if (map != nullptr)
+    // {
+    //     if (wcschr(map, '\\') == nullptr)
+    //     {
+    //         // Format map name to include package .pkg path (although the map file can be inside "Matrix/Map/" directory as well)
+    //         mapname = L"Matrix\\Map\\";
+    //         mapname += map;
+    //     }
+    //     else
+    //     {
+    //         mapname = map;
+    //     }
+    // }
+    // else
+    // {
+    //     mapname = g_MatrixData->BlockGet(L"Config")->ParGet(L"Map");
+    // }
+    mapname = L"Matrix\\Map\\" + mapname;
+    CStorage stor;
+    stor.Load(mapname.c_str());
+    DCP();
+
+    if (0 > g_MatrixMap->PrepareMap(stor, mapname))
+    {
+        ERROR_S(L"Unable to load map. Error happens.");
+    }
+    DCP();
+
+    // std::wstring mapname_lowercase(g_MatrixMap->MapName()); // MapName() is actually the same as "mapname"
+    // utils::to_lower(mapname_lowercase);
+    // if (mapname_lowercase.find(L"demo") != std::wstring::npos)
+    // {
+    //     SETFLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE | MMFLAG_FLYCAM | MMFLAG_FULLAUTO);
+    // }
+    // DCP();
+
+    g_MatrixMap->CalcCannonPlace();
+
+    g_MatrixMap->CreatePoolDefaultResources(true);
+    g_MatrixMap->InitObjectsLights();
+
+    g_MatrixMap->GetControllableSide()->Select(BUILDING, g_MatrixMap->GetControllableSide()->m_ActiveObject);
+
+
+    SSpecialBot::LoadAIRobotType(*g_MatrixData->BlockGet(L"AIRobotType"));
+
 }
 
 void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uint32_t seed, const SRobotsSettings *provided_settings,
@@ -419,46 +531,11 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     CStorage stor;
     DCP();
 
-    // Process map name
-    std::wstring mapname;
-    if (map != nullptr)
-    {
-        if (wcschr(map, '\\') == nullptr)
-        {
-            // Format map name to include package .pkg path (although the map file can be inside "Matrix/Map/" directory as well)
-            mapname = L"Matrix\\Map\\";
-            mapname += map;
-        }
-        else
-        {
-            mapname = map;
-        }
-    }
-    else
-    {
-        mapname = g_MatrixData->BlockGet(L"Config")->ParGet(L"Map");
-    }
-    // mapname = L"Matrix\\Map\\PAW.cmap";
+    // ====================
 
-    stor.Load(mapname.c_str());
-    DCP();
 
-    if (0 > g_MatrixMap->PrepareMap(stor, mapname))
-    {
-        ERROR_S(L"Unable to load map. Error happens.");
-    }
-    DCP();
-
-    std::wstring mapname_lowercase(g_MatrixMap->MapName()); // MapName() is actually the same as "mapname"
-    utils::to_lower(mapname_lowercase);
-    if (mapname_lowercase.find(L"demo") != std::wstring::npos)
-    {
-        SETFLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE | MMFLAG_FLYCAM | MMFLAG_FULLAUTO);
-    }
-    DCP();
-
-    g_MatrixMap->CalcCannonPlace();
-    SSpecialBot::LoadAIRobotType(*g_MatrixData->BlockGet(L"AIRobotType"));
+    // =============
+    // SSpecialBot::LoadAIRobotType(*g_MatrixData->BlockGet(L"AIRobotType"));
 
     g_LoadProgress->SetCurLP(LP_PREPARININTERFACE);
     g_LoadProgress->InitCurLP(701);
@@ -517,53 +594,53 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
 
     CIFaceMenu::m_MenuGraphics = HNew(g_MatrixHeap) CInterface;
 
-    g_PopupMenu = HNew(g_MatrixHeap) CIFaceMenu;
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_TOP);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-
-    g_LoadProgress->SetCurLPPos(100);
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_MINI_MAP);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-
-    g_LoadProgress->SetCurLPPos(200);
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_RADAR);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-
-    g_LoadProgress->SetCurLPPos(300);
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_BASE);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-
-    g_IFaceList->m_BaseX = Float2Int(pInterface->m_xPos);
-    g_IFaceList->m_BaseY = Float2Int(pInterface->m_yPos);
-    g_LoadProgress->SetCurLPPos(400);
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_MAIN);
-    g_IFaceList->SetMainPos(pInterface->m_xPos, pInterface->m_yPos);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-
-    g_LoadProgress->SetCurLPPos(500);
-
-    pInterface = HNew(g_MatrixHeap) CInterface;
-    iface_save |= pInterface->Load(bpi, IF_HINTS);
-    LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
-    g_IFaceList->m_Hints = pInterface;
-
-    g_LoadProgress->SetCurLPPos(600);
-
-    iface_save |= CIFaceMenu::LoadMenuGraphics(bpi);
+    // g_PopupMenu = HNew(g_MatrixHeap) CIFaceMenu;
+    //
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_TOP);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    //
+    // g_LoadProgress->SetCurLPPos(100);
+    //
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_MINI_MAP);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    //
+    // g_LoadProgress->SetCurLPPos(200);
+    //
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_RADAR);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    //
+    // g_LoadProgress->SetCurLPPos(300);
+    //
+    // // pInterface = HNew(g_MatrixHeap) CInterface;
+    // // iface_save |= pInterface->Load(bpi, IF_BASE);
+    // // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    //
+    // g_IFaceList->m_BaseX = Float2Int(pInterface->m_xPos);
+    // g_IFaceList->m_BaseY = Float2Int(pInterface->m_yPos);
+    // g_LoadProgress->SetCurLPPos(400);
+    //
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_MAIN);
+    // g_IFaceList->SetMainPos(pInterface->m_xPos, pInterface->m_yPos);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    //
+    // g_LoadProgress->SetCurLPPos(500);
+    //
+    // pInterface = HNew(g_MatrixHeap) CInterface;
+    // iface_save |= pInterface->Load(bpi, IF_HINTS);
+    // LIST_ADD(pInterface, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface, m_NextInterface);
+    // g_IFaceList->m_Hints = pInterface;
+    //
+    // g_LoadProgress->SetCurLPPos(600);
+    //
+    // iface_save |= CIFaceMenu::LoadMenuGraphics(bpi);
     // LIST_ADD(CIFaceMenu::m_MenuGraphics, g_IFaceList->m_First, g_IFaceList->m_Last, m_PrevInterface,
     // m_NextInterface);
 
-    g_IFaceList->ConstructorButtonsInit();
+    // g_IFaceList->ConstructorButtonsInit();
 
     g_LoadProgress->SetCurLPPos(700);
 
@@ -585,10 +662,10 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     g_MatrixMap->m_Transition.RenderToPrimaryScreen();
 
     CMatrixEffect::InitEffects(*g_MatrixData);
-    g_MatrixMap->CreatePoolDefaultResources(true);
-    g_MatrixMap->InitObjectsLights();
 
-    g_MatrixMap->GetControllableSide()->Select(BUILDING, g_MatrixMap->GetControllableSide()->m_ActiveObject);
+    // =====
+
+    // =====
     g_MatrixMap->m_Cursor.Select(CURSOR_ARROW);
 
     // ATTENTION: Disabled for some time

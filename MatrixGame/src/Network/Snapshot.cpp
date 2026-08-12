@@ -137,6 +137,7 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     result.hull_rotation = robot->GetHullRotationZ();
     result.side = robot->GetSide();
     result.animation = robot->GetAnimation();
+    result.head = 0;
 
     result.weapon_cnt = 0;
     for (int i = 0; i < robot->m_UnitCnt; i++)

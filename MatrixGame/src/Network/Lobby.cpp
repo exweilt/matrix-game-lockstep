@@ -7,6 +7,8 @@
 #include "CStorage.hpp"
 #include "D3DControl.hpp"
 #include "imgui.h"
+#include "MatrixGame.h"
+#include "Network.hpp"
 #include "Pack.hpp"
 
 bool Lobby::is_file_map(SFileRec * file)
@@ -107,6 +109,18 @@ void Lobby::load_map_texture()
     //     std::cout << "";
     //     // Handle error: texture failed to load
     // }
+}
+
+std::string side_to_colorname(u32 side)
+{
+    switch (side)
+    {
+        case 1: return "Yellow";
+        case 2: return "Red";
+        case 3: return "Blue";
+        case 4: return "Green";
+        default: return "UnknownColor";
+    }
 }
 
 void Lobby::draw()
@@ -226,8 +240,13 @@ void Lobby::draw()
 
         if (ImGui::Button("Start Game", button_dimensions))
         {
-            // ConnectToServer();
-            // LaunchGame();
+            g_Network.set_network_mode(NetworkMode::SERVER);
+            g_Network.controllable_side_id = static_cast<u8>(SideID::YELLOW);
+            std::string map = get_selected_map_name();
+            CGame::load_map( std::wstring(map.begin(), map.end()) );
+            g_Network.game_state = GameState::GAME;
+            g_Network.init_server_host();
+
         }
     }
     ImGui::End();
@@ -247,8 +266,25 @@ void Lobby::draw()
         if (ImGui::InputTextWithHint("Username", "YourNameHere", input_username, sizeof(input_username)))
         {}
 
+        ImGui::Text("Select Playing Side");
+        std::string chosen_side = side_to_colorname(input_playing_side);
+        if (ImGui::BeginCombo("##SelectSide", chosen_side.c_str()))
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                if (ImGui::Selectable(side_to_colorname(i).c_str(), input_playing_side == i)) input_playing_side = i;
+            }
+            ImGui::EndCombo();
+        }
+
         if (ImGui::Button("Join Game", button_dimensions))
         {
+            g_Network.set_network_mode(NetworkMode::CLIENT);
+            g_Network.controllable_side_id = input_playing_side;
+            g_Network.init_client_host();
+            std::string map = g_Network.connect_to_server(input_server_ip).mapname;
+            CGame::load_map( std::wstring(map.begin(), map.end()) );
+            g_Network.game_state = GameState::GAME;
 
         }
     }

@@ -85,6 +85,7 @@ public:
      */
     static void RunGameLoop(CFormMatrixGame *formGame);
     static void SaveResult(SRobotGameState *state);
+    static void load_map(std::wstring mapname);
 
 private:
     static void ApplyVideoParams(SRobotsSettings &settings);
