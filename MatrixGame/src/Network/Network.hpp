@@ -124,8 +124,10 @@ public:
     // u32 total_ms              = 0;
     bool isClient2              = false;
     std::string server_ip;
+    bool flag_server_skip_lobby = false;
+    int flag_client_skip_lobby = 0;
     f64 time_to_next_input    = 0.017; // time in seconds until switching input_frame
-    bool game_ongoing           = false;
+    bool game_ongoing           = true;
     u32 desync_happened_at_frame = 0;
     bool desync_happened = false;
     bool has_physics_frame_run = false;

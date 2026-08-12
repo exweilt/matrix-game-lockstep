@@ -116,7 +116,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
     // }
 
     // save arguments into network manager
-    g_Network.server_ip = ip_addr != nullptr ? std::string(ip_addr, ip_addr + wcslen(ip_addr)) : "127.0.0.1";
+    // g_Network.server_ip = ip_addr != nullptr ? std::string(ip_addr, ip_addr + wcslen(ip_addr)) : "127.0.0.1";
     g_Network.isClient2 = cmd_flag_exists(L"--second", args, numarg);
     // g_Network.controllable_side_id = playing_side != nullptr ? std::stoi(std::wstring(playing_side)) : 1;
     g_Network.isCompactMode    = cmd_flag_exists(L"-c", args, numarg);
@@ -137,6 +137,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int)
 
         CFormMatrixGame *formgame = HNew(NULL) CFormMatrixGame();
         FormChange(formgame);
+
+        // Skip lobby
+        if (is_server)
+        {
+            g_Network.lobby.select_map(18);
+            g_Network.lobby.start_game();
+        }
+        else if (playing_side != nullptr)
+        {
+            g_Network.lobby.input_playing_side = std::stoi(std::wstring(playing_side));
+            g_Network.lobby.join_game();
+        }
 
         timeBeginPeriod(1);
 

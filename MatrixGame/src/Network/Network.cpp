@@ -61,7 +61,7 @@ void Network::send_message(Message &msg)
 
     // Create the packet
     ENetPacket* packet = enet_packet_create(
-        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+        writer.get_buffer(), writer.get_buffer_size(), 0
     );
 
     // Broadcast to all connected peers on Channel 0
@@ -78,7 +78,7 @@ void Network::send_message(Message &msg, ENetPeer *peer)
 
     // Create the packet
     ENetPacket* packet = enet_packet_create(
-        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
+        writer.get_buffer(), writer.get_buffer_size(), 0
     );
 
     // Broadcast to all connected peers on Channel 0

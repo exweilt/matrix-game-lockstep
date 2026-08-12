@@ -111,6 +111,26 @@ void Lobby::load_map_texture()
     // }
 }
 
+void Lobby::start_game()
+{
+    g_Network.set_network_mode(NetworkMode::SERVER);
+    g_Network.controllable_side_id = static_cast<u8>(SideID::YELLOW);
+    std::string map = get_selected_map_name();
+    CGame::load_map( std::wstring(map.begin(), map.end()) );
+    g_Network.game_state = GameState::GAME;
+    g_Network.init_server_host();
+}
+
+void Lobby::join_game()
+{
+    g_Network.set_network_mode(NetworkMode::CLIENT);
+    g_Network.controllable_side_id = input_playing_side;
+    g_Network.init_client_host();
+    std::string map = g_Network.connect_to_server(input_server_ip).mapname;
+    CGame::load_map( std::wstring(map.begin(), map.end()) );
+    g_Network.game_state = GameState::GAME;
+}
+
 std::string side_to_colorname(u32 side)
 {
     switch (side)
@@ -240,13 +260,7 @@ void Lobby::draw()
 
         if (ImGui::Button("Start Game", button_dimensions))
         {
-            g_Network.set_network_mode(NetworkMode::SERVER);
-            g_Network.controllable_side_id = static_cast<u8>(SideID::YELLOW);
-            std::string map = get_selected_map_name();
-            CGame::load_map( std::wstring(map.begin(), map.end()) );
-            g_Network.game_state = GameState::GAME;
-            g_Network.init_server_host();
-
+            start_game();
         }
     }
     ImGui::End();
@@ -279,13 +293,7 @@ void Lobby::draw()
 
         if (ImGui::Button("Join Game", button_dimensions))
         {
-            g_Network.set_network_mode(NetworkMode::CLIENT);
-            g_Network.controllable_side_id = input_playing_side;
-            g_Network.init_client_host();
-            std::string map = g_Network.connect_to_server(input_server_ip).mapname;
-            CGame::load_map( std::wstring(map.begin(), map.end()) );
-            g_Network.game_state = GameState::GAME;
-
+            join_game();
         }
     }
     ImGui::End();

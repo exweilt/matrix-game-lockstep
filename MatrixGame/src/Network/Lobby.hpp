@@ -12,12 +12,12 @@ namespace Base {
 
 class Lobby
 {
+public:
     u32 selected_map_index = 0;
     char input_server_ip[32] = {};
     char input_username[32] = {};
 
     bool is_file_map(Base::SFileRec * file);
-public:
     Lobby();
     ~Lobby();
 
@@ -29,6 +29,9 @@ public:
 
     std::string get_selected_map_name();
     void load_map_texture();
+
+    void start_game();
+    void join_game();
 
     void draw();
 
