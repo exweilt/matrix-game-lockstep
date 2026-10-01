@@ -384,8 +384,7 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     CFile::AddPackFile(L"DATA\\robots.pkg");
     CFile::OpenPackFiles();
 
-    CLoadProgress lp;
-    g_LoadProgress = &lp;
+    g_LoadProgress = new CLoadProgress();
     DCP();
 
     CStorage stor_cfg(g_MatrixHeap);
