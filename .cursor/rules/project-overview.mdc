@@ -1,0 +1,28 @@
+---
+description: Critical guidelines, safety boundaries, and build instructions for MatrixGame modding
+alwaysApply: true
+---
+# Project Overview & Guardrails
+
+## Core Context
+- **Project**: Multiplayer Mod for *Planetary Battles* (Space Rangers HD / MatrixGame Engine).
+- **Primary Languages**: C++ with CMake.
+- **Platform**: For Windows, legacy DirectX9
+- **Goal**: Implement complete authoritative state-sync architecture for online multiplayer.
+- **Status**: The mod is already more than halfway done. Players can host a game and join a game, but there is a lot of issues needing fixes and many features are missing.
+
+## Rules for AI Agents
+
+1. **Scope Isolation**:
+   - Do NOT rewrite or "optimize" legacy graphics (DirectX/OpenGL rendering), audio, or UI code unless explicitly requested.
+
+2. **Code Modification Rules**:
+   - Do NOT delete existing legacy function signatures; create wrapper functions or event hooks alongside them to avoid breaking hidden engine dependencies.
+   - When editing memory pointers or state structs, keep memory alignment identical across C++  definitions.
+
+3. **Build & Error Handling**:
+   - Keep all changes compile-ready. If a change spans multiple files, modify header declarations and source implementations together in the same step.
+
+4. **Existing Code Quality Reality**:
+   - Keep in mind that a lot of the existing code is of bad quality, non-intuitive with bad decision making or even with bugs.
+        If you see a clearly bad code you are free to change it as long as it doesn't break the engine.
