@@ -111,7 +111,7 @@ void Network::approve_final_input(u32 target_frame)
 
 void Network::handle_new_world_snapshot(WorldSnapshot ws)
 {
-    if (ws.frame <= interpolation_buffer.back().frame)
+    if (interpolation_buffer.size() > 0 && ws.frame <= interpolation_buffer.back().frame)
     {
         std::cout << "Snapshot for frame: " << ws.frame << " is outdated. Dropping it." << std::endl;
         return;
@@ -235,7 +235,7 @@ void Network::broadcast_events()
     {
         MessageEventsParams { this_tick_event_pool }
     };
-    std::cout << "Broadcasting events: " << msg.events.events.size() << std::endl;
+    // std::cout << "Broadcasting events: " << msg.events.events.size() << std::endl;
     g_Network.send_message(msg);
 
     // if (msg.events.events.size() > 0)
@@ -273,32 +273,41 @@ float lerp_angle(float t, float a, float b)
 
 void Network::process_playback([[maybe_unused]]int ms)
 {
-    // // static std::chrono::time_point<std::chrono::steady_clock>   tick_start_time = std::chrono::steady_clock::now();
-    // std::chrono::time_point<std::chrono::steady_clock>          curr_time = std::chrono::steady_clock::now();
-    // // static std::chrono::time_point<std::chrono::steady_clock>   prev_time = curr_time;
-    //
-    constexpr auto dt = std::chrono::milliseconds(102);
-    // static auto next_tick = std::chrono::steady_clock::now() + dt;
+    constexpr auto dt = std::chrono::milliseconds(50);
 
     static std::chrono::steady_clock::time_point playback_time = std::chrono::steady_clock::now();
     static std::chrono::steady_clock::time_point last_update_time = playback_time;
 
-
-
-    if (g_Network.interpolation_buffer.size() < 2)
+    size_t buf_size = g_Network.interpolation_buffer.size();
+    if (buf_size <= 2)
     {
-        g_Network.playback_speed = 0.95f;
+        g_Network.playback_speed = 0.97f;
     }
-    else if (g_Network.interpolation_buffer.size() >= 3)
+    else if (buf_size == 3)
     {
-        g_Network.playback_speed = 1.4f;
-    } else
         g_Network.playback_speed = 1.0f;
+    }
+    else if (buf_size == 4)
+    {
+        g_Network.playback_speed = 1.03f;
+    }
+    else if (buf_size == 5)
+    {
+        g_Network.playback_speed = 1.10f;
+    }
+    else
+    {
+        g_Network.playback_speed = 1.35f;
+    }
 
     auto now = std::chrono::steady_clock::now();
 
     auto real_delta = now - last_update_time;
     last_update_time = now;
+    if (real_delta > std::chrono::milliseconds(100))
+    {
+        real_delta = std::chrono::milliseconds(100);
+    }
     auto modified_delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
         std::chrono::duration<double>(real_delta) * playback_speed
     );
@@ -306,36 +315,47 @@ void Network::process_playback([[maybe_unused]]int ms)
     playback_time += modified_delta;
 
     static u32 previous_frame = 0;
-    static std::chrono::steady_clock::time_point previous_snapshot_time = std::chrono::steady_clock::now();
-
-
-
-    // f64 tick_delta = std::chrono::duration<f64>(curr_time - tick_start_time).count() * g_Network.playback_speed;
+    static std::chrono::steady_clock::time_point previous_snapshot_time = playback_time;
 
     WorldSnapshot ws_from, ws_to;
     if (g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to))
     {
-
+        // Only resync the clock on initial startup or if the buffer overflowed and skipped frames
         if (previous_frame != ws_from.frame)
         {
             previous_frame = ws_from.frame;
             previous_snapshot_time = playback_time;
         }
 
+        // Advance to the next snapshot pair ONLY if there is a 3rd snapshot waiting in the buffer!
+        // Never pop when size() == 2, because that leaves size() == 1 with no ws_to to interpolate toward.
+        while (playback_time - previous_snapshot_time >= dt && g_Network.interpolation_buffer.size() >= 3)
+        {
+            previous_snapshot_time += dt;
+            g_Network.interpolation_buffer.pop_front();
+            g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to);
+            previous_frame = ws_from.frame;
+        }
+
+        // If the buffer ran dry (still waiting for the next packet after dt), clamp playback_time
+        // to the end of the current span so we don't accumulate debt and snap when it arrives.
+        if (playback_time - previous_snapshot_time > dt)
+        {
+            playback_time = previous_snapshot_time + dt;
+        }
+
         f32 k = std::clamp(
-        std::chrono::duration<float>(playback_time - previous_snapshot_time).count() / std::chrono::duration<float>(dt).count(),
+            std::chrono::duration<float>(playback_time - previous_snapshot_time).count() / std::chrono::duration<float>(dt).count(),
             0.0f,
             1.0f
         );
 
-        // std::cout << "Interpolating frames: " << ws_from.frame << " -> " << ws_to.frame << " k = " << k << std::endl;
-
-
-        // const f32 k = 1.0f;
-        // f32 k = std::min(1.0f, static_cast<float>(tick_delta) / 15.0f);
         u32 event_treshold_frame = ws_from.frame + std::ceil((ws_to.frame - ws_from.frame) * k);
         g_MatrixMap->m_DI.T(L"Interpolating:", utils::format(L"%d -> %d [%d] (%.2f)", ws_from.frame, ws_to.frame, event_treshold_frame, k).c_str(), 1000);
         g_MatrixMap->m_DI.T(L"Inter. Buffer:", utils::format(L"%2d/%d (speed %.2f)", g_Network.interpolation_buffer.size(), g_Network.interpolation_buffer.capacity(), g_Network.playback_speed).c_str(), 1000);
+
+        // std::cout << "Interpolating: " << ws_from.frame << " -> " << ws_to.frame << "[" << event_treshold_frame << "] k=" << k << std::endl;
+        // std::cout << "Inter. Buffer: " << g_Network.interpolation_buffer.size() << "/" << g_Network.interpolation_buffer.capacity() << " (speed = " << g_Network.playback_speed << ")" << std::endl << std::endl;
 
 
         for (auto& [id, side_ss] : ws_to.sides)
@@ -383,10 +403,25 @@ void Network::process_playback([[maybe_unused]]int ms)
                 r->SetHitPoint(rs.health * 10);
 
                 D3DXVECTOR2 shift = D3DXVECTOR2(rs_to.x - rs_from.x, rs_to.y - rs_from.y);
-                r->m_Speed = D3DXVec2Length(&shift);
+                float ticks_in_span = std::max(1.0f, float(std::chrono::duration_cast<std::chrono::milliseconds>(dt).count()) / float(LOGIC_TAKT_PERIOD));
+                r->m_Speed = D3DXVec2Length(&shift) / ticks_in_span;
 
-                if (r->GetAnimation() != static_cast<EAnimation>(rs.animation))
-                    r->SwitchAnimation(static_cast<EAnimation>(rs.animation));
+                EAnimation target_anim = static_cast<EAnimation>(rs.animation);
+                if (target_anim == ANIMATION_BEGINMOVE || target_anim == ANIMATION_MOVE) {
+                    if (r->GetAnimation() != ANIMATION_MOVE && r->GetAnimation() != ANIMATION_BEGINMOVE) {
+                        r->SwitchAnimation(ANIMATION_MOVE);
+                    }
+                } else if (target_anim == ANIMATION_BEGINMOVE_BACK || target_anim == ANIMATION_MOVE_BACK) {
+                    if (r->GetAnimation() != ANIMATION_MOVE_BACK && r->GetAnimation() != ANIMATION_BEGINMOVE_BACK) {
+                        r->SwitchAnimation(ANIMATION_MOVE_BACK);
+                    }
+                } else if (target_anim == ANIMATION_ENDMOVE || target_anim == ANIMATION_ENDMOVE_BACK || target_anim == ANIMATION_STAY) {
+                    if (r->GetAnimation() != ANIMATION_STAY && r->GetAnimation() != ANIMATION_ENDMOVE && r->GetAnimation() != ANIMATION_ENDMOVE_BACK) {
+                        r->SwitchAnimation(ANIMATION_STAY);
+                    }
+                } else if (r->GetAnimation() != target_anim) {
+                    r->SwitchAnimation(target_anim);
+                }
 
                 if (event_treshold_frame - r->last_shot_frame > 20)
                 {
@@ -400,11 +435,6 @@ void Network::process_playback([[maybe_unused]]int ms)
                         }
                     }
                 }
-
-                // TODO: optimize this?
-                r->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
-                r->RNeed(MR_Matrix);
-                r->JoinToGroup();
             }
         }
 
@@ -425,23 +455,6 @@ void Network::process_playback([[maybe_unused]]int ms)
             ms = ms->GetNextLogic();
         }
 
-        // kill unneeded
-        // for (auto& [id, robot] : robots)
-        // {
-        //     if (!robot->is_processed_by_network)
-        //     {
-        //         std::cout << "Robot " << id << " is missing from the snapshot, removing it." << std::endl;
-        //         std::cout << "snapshot: " << ws_from.to_json_string() << std::endl;
-        //         delete_robot(robot);
-        //     }
-        //     else
-        //     {
-        //         robot->is_processed_by_network = false;
-        //     }
-        // }
-
-        // int frame_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - tick_start_time).count() * g_Network.playback_speed;
-        // int delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>((curr_time - prev_time) * g_Network.playback_speed).count();
         std::erase_if(robots, [this, modified_delta](auto& pair) {
             auto id = pair.first;
             CMatrixRobotAI *robot = pair.second;
@@ -453,35 +466,18 @@ void Network::process_playback([[maybe_unused]]int ms)
             }
             robot->is_processed_by_network = false;
 
-
-            return static_cast<CMatrixMapStatic *>(robot)->StaticTakt(
+            bool deleted = static_cast<CMatrixMapStatic *>(robot)->StaticTakt(
                 std::chrono::duration_cast<std::chrono::milliseconds>(modified_delta).count()
             );
+            if (!deleted)
+            {
+                robot->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
+                robot->RNeed(MR_Matrix);
+                robot->JoinToGroup();
+            }
+            return deleted;
         });
-
-        if (k >= 1.0f)
-        {
-            g_Network.interpolation_buffer.pop_front();
-            // tick_start_time = std::chrono::steady_clock::now();
-            // next_tick += dt;
-        }
     }
-    else
-    {
-        // tick_start_time = std::chrono::steady_clock::now();
-    }
-    // auto delta = (std::chrono::steady_clock::now() - curr_time) * g_Network.playback_speed;
-    // curr_time += delta;
-
-    // auto delta = std::chrono::steady_clock::now() - curr_time;
-
-    // auto scaled_delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-    //     std::chrono::duration<double>(delta) * g_Network.playback_speed * 20.0f
-    // );
-
-    // curr_time += scaled_delta;
-
-    // prev_time = curr_time;
 }
 
 void Network::populate_robot(RobotSnapshot& rs)

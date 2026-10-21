@@ -497,7 +497,7 @@ int L3GRun()
 
     auto prev_takt = clock::now();
 
-    constexpr auto dt = std::chrono::milliseconds(17);
+    constexpr auto dt = std::chrono::microseconds(16667);
     auto next_tick = clock::now();
 
 
@@ -539,7 +539,6 @@ int L3GRun()
             ImGui::NewFrame();
             g_Network.lobby.draw();
             ImGui::Render();
-            ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
             g_D3DD->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_RGBA(45, 45, 48, 255), 1.0f, 0);
 
             if (SUCCEEDED(g_D3DD->BeginScene()))
@@ -559,8 +558,6 @@ int L3GRun()
             {
                 delta_time *= 4;
             }
-
-            delta_time *= g_Network.playback_speed;
 
             // int delta = to_milliseconds(delta_time).count();
             // g_total_ms += delta;
@@ -591,7 +588,7 @@ int L3GRun()
 
             if (g_Network.is_authority())
             {
-                g_FormCur->Takt(17);
+                g_FormCur->Takt(delta); // SUS
             }
             else
             {

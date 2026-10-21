@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "BitStream.hpp"
-#include "Command.hpp"
 
 #include <cassert>
 

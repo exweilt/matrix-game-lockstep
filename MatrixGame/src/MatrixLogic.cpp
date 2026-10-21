@@ -3028,7 +3028,7 @@ void CMatrixMapLogic::Takt(int step) {
 
         // g_Network.has_physics_frame_run = true;
 
-        constexpr int physics_frames_per_net_snapshot = 6;
+        constexpr int physics_frames_per_net_snapshot = 3;
         if (g_Network.physics_frame % physics_frames_per_net_snapshot == 0)
         {
             g_Network.broadcast_world_snapshot();
@@ -3465,29 +3465,13 @@ void CMatrixMapLogic::physics_process(int step)
 
 
     CMatrixMapStatic::ProceedLogic(step);
-    // int portions = step / LOGIC_TAKT_PERIOD;
-    // for (int cnt = 0; cnt < portions; cnt++) {
-    //     CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-    // }
+    while (GetTime() > m_TaktNext) {
+        m_TaktNext += LOGIC_TAKT_PERIOD;
+        // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
 
-    // DCP();
-
-    // portions = step - portions * LOGIC_TAKT_PERIOD;
-    // if (portions) {
-    //     CMatrixMapStatic::ProceedLogic(portions);
-    // }
-    DCP();
-
-    // while (GetTime() > m_TaktNext) {
-    //     m_TaktNext += LOGIC_TAKT_PERIOD;
-    //     // CMatrixMapStatic::ProceedLogic(LOGIC_TAKT_PERIOD);
-    //
-    //     for (int i = 0; i < m_SideCnt; i++) {
-    //         m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
-    //     }
-    // }
-    for (int i = 0; i < m_SideCnt; i++) {
-        m_Side[i].LogicTakt(step);
+        for (int i = 0; i < m_SideCnt; i++) {
+            m_Side[i].LogicTakt(LOGIC_TAKT_PERIOD);
+        }
     }
 
     DCP();

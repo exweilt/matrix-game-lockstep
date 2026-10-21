@@ -22,7 +22,6 @@
 #include "Interface/CCounter.h"
 #include "MatrixGamePathUtils.hpp"
 
-#include "Network/Command.hpp"
 #include "Network/Message.hpp"
 #include "Network/Network.hpp"
 

@@ -321,19 +321,21 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     do_animation:;
         DCP();
 
-        if (fabs(m_Speed) <= 0.01f) {
-            SwitchAnimation(ANIMATION_STAY);
-        }
-        else {
-            bool mt = FindOrderLikeThat(ROT_MOVE_TO);
-            if (!mt)
-                mt = FindOrderLikeThat(ROT_CAPTURE_FACTORY);
-
-            if (mt) {
-                SwitchAnimation(ANIMATION_MOVE);
+        if (g_Network.is_authority()) {
+            if (fabs(m_Speed) <= 0.01f) {
+                SwitchAnimation(ANIMATION_STAY);
             }
-            else if (FindOrderLikeThat(ROT_MOVE_TO_BACK)) {
-                SwitchAnimation(ANIMATION_MOVE_BACK);
+            else {
+                bool mt = FindOrderLikeThat(ROT_MOVE_TO);
+                if (!mt)
+                    mt = FindOrderLikeThat(ROT_CAPTURE_FACTORY);
+
+                if (mt) {
+                    SwitchAnimation(ANIMATION_MOVE);
+                }
+                else if (FindOrderLikeThat(ROT_MOVE_TO_BACK)) {
+                    SwitchAnimation(ANIMATION_MOVE_BACK);
+                }
             }
         }
 
@@ -1004,7 +1006,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     //}
 
 
-    if (1 || g_Network.is_authority())
+    if (g_Network.is_authority())
     {
         int cnt = 0;
         while (cnt < m_OrdersInPool) {
