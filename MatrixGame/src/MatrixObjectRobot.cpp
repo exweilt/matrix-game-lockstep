@@ -915,6 +915,12 @@ void CMatrixRobot::Takt(int cms) {
         DoAnimation(cms);
     }
 
+    if (g_Network.is_client() && m_CurrState != ROBOT_IN_SPAWN) {
+        const ERobotUnitKind chassis = m_Unit[0].u1.s1.m_Kind;
+        if (chassis == RUK_CHASSIS_TRACK || chassis == RUK_CHASSIS_WHEEL)
+            SpawnChassisGroundTraces();
+    }
+
     // RChange(MR_Matrix);
 }
 
@@ -1493,6 +1499,40 @@ correction:
 
         m_PosX -= curlink.x;
         m_PosY -= curlink.y;
+    }
+}
+
+void CMatrixRobot::SpawnChassisGroundTraces(void) {
+    if (m_CurrState == ROBOT_IN_SPAWN)
+        return;
+
+    if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_TRACK) {
+        auto tmp = m_ChassisData.u1.s3.m_LastSolePos - m_Core->m_GeoCenter;
+        if (D3DXVec3LengthSq(&tmp) > 100) {
+            m_ChassisData.u1.s3.m_LastSolePos = m_Core->m_GeoCenter;
+            int x = TruncFloat(m_Core->m_GeoCenter.x * INVERT(GLOBAL_SCALE));
+            int y = TruncFloat(m_Core->m_GeoCenter.y * INVERT(GLOBAL_SCALE));
+            SMatrixMapUnit *mu = g_MatrixMap->UnitGetTest(x, y);
+            if (mu && mu->IsLand() && !mu->IsBridge()) {
+                float ang = (float)atan2(-m_Forward.x, m_Forward.y);
+                CMatrixEffect::CreateLandscapeSpot(NULL, *(D3DXVECTOR2 *)&m_Core->m_Matrix._41, ang, 2.f,
+                                                   SPOT_SOLE_TRACK);
+            }
+        }
+    }
+    else if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_WHEEL) {
+        auto tmp = m_ChassisData.u1.s3.m_LastSolePos - m_Core->m_GeoCenter;
+        if (D3DXVec3LengthSq(&tmp) > 100) {
+            m_ChassisData.u1.s3.m_LastSolePos = m_Core->m_GeoCenter;
+            int x = TruncFloat(m_Core->m_GeoCenter.x * INVERT(GLOBAL_SCALE));
+            int y = TruncFloat(m_Core->m_GeoCenter.y * INVERT(GLOBAL_SCALE));
+            SMatrixMapUnit *mu = g_MatrixMap->UnitGetTest(x, y);
+            if (mu && mu->IsLand() && !mu->IsBridge()) {
+                float ang = (float)atan2(-m_Forward.x, m_Forward.y);
+                CMatrixEffect::CreateLandscapeSpot(NULL, *(D3DXVECTOR2 *)&m_Core->m_Matrix._41, ang, 3.0f,
+                                                   SPOT_SOLE_WHEEL);
+            }
+        }
     }
 }
 

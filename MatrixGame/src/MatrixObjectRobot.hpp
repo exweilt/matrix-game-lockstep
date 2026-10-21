@@ -277,6 +277,7 @@ public:
     static void DestroyPneumaticData(void);
     void LinkPneumatic(void);
     void FirstLinkPneumatic(void);
+    void SpawnChassisGroundTraces(void);
 
     float GetChassisHeight(void) const;
 

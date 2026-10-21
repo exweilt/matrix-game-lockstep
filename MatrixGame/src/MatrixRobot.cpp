@@ -727,42 +727,8 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     }
     DCP();
 
-    // soles
     if (g_Network.is_authority() && m_CurrState != ROBOT_IN_SPAWN) {
-        DCP();
-
-        if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_TRACK) {
-            auto tmp = m_ChassisData.u1.s3.m_LastSolePos - m_Core->m_GeoCenter;
-            float dist_sq = D3DXVec3LengthSq(&tmp);
-            if (dist_sq > 100) {
-                m_ChassisData.u1.s3.m_LastSolePos = m_Core->m_GeoCenter;
-                int x = TruncFloat(m_Core->m_GeoCenter.x * INVERT(GLOBAL_SCALE));
-                int y = TruncFloat(m_Core->m_GeoCenter.y * INVERT(GLOBAL_SCALE));
-                SMatrixMapUnit *mu = g_MatrixMap->UnitGetTest(x, y);
-                if (mu && mu->IsLand() && !mu->IsBridge()) {
-                    float ang = (float)atan2(-m_Forward.x, m_Forward.y);
-                    CMatrixEffect::CreateLandscapeSpot(NULL, *(D3DXVECTOR2 *)&m_Core->m_Matrix._41, ang, 2,
-                                                       SPOT_SOLE_TRACK);
-                }
-            }
-        }
-        DCP();
-
-        if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_WHEEL) {
-            auto tmp = m_ChassisData.u1.s3.m_LastSolePos - m_Core->m_GeoCenter;
-            float dist_sq = D3DXVec3LengthSq(&tmp);
-            if (dist_sq > 100) {
-                m_ChassisData.u1.s3.m_LastSolePos = m_Core->m_GeoCenter;
-                int x = TruncFloat(m_Core->m_GeoCenter.x * INVERT(GLOBAL_SCALE));
-                int y = TruncFloat(m_Core->m_GeoCenter.y * INVERT(GLOBAL_SCALE));
-                SMatrixMapUnit *mu = g_MatrixMap->UnitGetTest(x, y);
-                if (mu && mu->IsLand() && !mu->IsBridge()) {
-                    float ang = (float)atan2(-m_Forward.x, m_Forward.y);
-                    CMatrixEffect::CreateLandscapeSpot(NULL, *(D3DXVECTOR2 *)&m_Core->m_Matrix._41, ang, 3.0f,
-                                                       SPOT_SOLE_WHEEL);
-                }
-            }
-        }
+        SpawnChassisGroundTraces();
     }
     DCP();
 
