@@ -3449,6 +3449,11 @@ bool CIFaceList::OnMouseLBDown() {
         }
     }
 
+    if (!bCatch && IS_PREORDERING_NOSELECT) {
+        g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(0, 0));
+        bCatch = TRUE;
+    }
+
     return bCatch;
 }
 

@@ -240,6 +240,7 @@ void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& des
 // Places an order to attack robot
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id);
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_map_x, u32 target_map_y, int local_side_id);
 
 void NetOrderStop(const std::vector<u32> &entities_nid, bool break_robot_orders);
 void NetOrderStop(const std::vector<u32> &entities_nid, int local_side_id, bool break_robot_orders);

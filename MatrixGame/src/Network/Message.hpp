@@ -206,8 +206,10 @@ struct MessageCommandAttackParams
     u8 number_of_robots;
     u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
     u32 target_nid;
+    u32 target_map_x;
+    u32 target_map_y;
 
-    MessageCommandAttackParams() : number_of_robots(0), robot_nid(0), target_nid(0) {};
+    MessageCommandAttackParams() : number_of_robots(0), robot_nid(0), target_nid(0), target_map_x(0), target_map_y(0) {};
     MessageCommandAttackParams(const std::vector<u32> &robots_nid, u32 target_NID)
     {
         assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
@@ -215,6 +217,18 @@ struct MessageCommandAttackParams
         memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
         memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
         target_nid = target_NID;
+        target_map_x = 0;
+        target_map_y = 0;
+    };
+    MessageCommandAttackParams(const std::vector<u32> &robots_nid, u32 map_x, u32 map_y, bool /*ground_attack*/)
+    {
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_nid = 0;
+        target_map_x = map_x;
+        target_map_y = map_y;
     };
 
     void serialize_to_bitstream(BitWriter &writer) const;
@@ -225,7 +239,8 @@ struct MessageCommandAttackParams
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid),
+           CEREAL_NVP(target_map_x), CEREAL_NVP(target_map_y));
     }
 };
 

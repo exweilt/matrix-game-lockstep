@@ -635,7 +635,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
 
     CMatrixMapStatic *pObject = GetObjectUnderCursor();
 
-    if (pObject == TRACE_STOP_NONE)
+    if (pObject == TRACE_STOP_NONE && !IS_PREORDERING)
         return;
 
     if(m_CurrentAction == BUILDING_TURRET && m_CannonForBuild.m_Cannon && m_CannonForBuild.m_CanBuildFlag/* && (m_CannonForBuild.m_ParentBuilding->m_TurretsHave < m_CannonForBuild.m_ParentBuilding->m_TurretsMax)*/){
@@ -696,6 +696,9 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
     }
 
     if (IS_PREORDERING) {
+        if (m_Id != g_Network.controllable_side_id)
+            return;
+
         if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_MOVE)) {
             // Move
             RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_MOVE | ORDERING_MODE);
@@ -726,13 +729,13 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
             if (IS_TRACE_STOP_OBJECT(pObject) && (pObject->IsLive() || pObject->IsSpecial())) {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_FIRE | ORDERING_MODE);
 
-                PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
+                PlayerGroupAttackOrder(pObject, CPoint(0, 0));
             }
             else {
                 RESETFLAG(g_IFaceList->m_IfListFlags, PREORDER_FIRE | ORDERING_MODE);
 
-                PGOrderAttack(SelGroupToLogicGroup(),
-                              CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2), NULL);
+                PlayerGroupAttackOrder(
+                    NULL, CPoint(mx - ROBOT_MOVECELLS_PER_SIZE / 2, my - ROBOT_MOVECELLS_PER_SIZE / 2));
             }
         }
         else if (FLAG(g_IFaceList->m_IfListFlags, PREORDER_CAPTURE)) {
@@ -905,25 +908,7 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         else if (IS_TRACE_STOP_OBJECT(pObject) &&
                  ((IsLiveUnit(pObject) && pObject->GetSide() != m_Id) || pObject->IsSpecial())) {
             // Attack
-            if (g_Network.is_authority())
-            {
-                PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
-            }
-            else
-            {
-                std::vector<u32> robots_nid{};
-                for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
-                {
-                    if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
-                    {
-                        robots_nid.push_back(go->m_Object->m_NID);
-                    }
-                }
-                if (robots_nid.size() > 0)
-                {
-                    NetOrderAttack(robots_nid, pObject->m_NID, m_Id);
-                }
-            }
+            PlayerGroupAttackOrder(pObject, CPoint(0, 0));
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
@@ -1576,6 +1561,36 @@ void CMatrixSideUnit::SelectedGroupBreakOrders() {
         else if (objs->GetObject()->GetObjectType() == OBJECT_TYPE_FLYER) {
         }
         objs = objs->m_NextObject;
+    }
+}
+
+void CMatrixSideUnit::PlayerGroupAttackOrder(CMatrixMapStatic *target_obj, const CPoint &ground_tp) {
+    if (GetCurGroup() == nullptr)
+        return;
+
+    const CPoint attack_tp = target_obj ? GetMapPos(target_obj) : ground_tp;
+
+    if (g_Network.is_authority())
+    {
+        PGOrderAttack(SelGroupToLogicGroup(), attack_tp, target_obj);
+    }
+    else
+    {
+        std::vector<u32> robots_nid{};
+        for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+        {
+            if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
+            {
+                robots_nid.push_back(go->m_Object->m_NID);
+            }
+        }
+        if (robots_nid.size() > 0)
+        {
+            if (target_obj != NULL)
+                NetOrderAttack(robots_nid, target_obj->m_NID, m_Id);
+            else
+                NetOrderAttack(robots_nid, static_cast<u32>(ground_tp.x), static_cast<u32>(ground_tp.y), m_Id);
+        }
     }
 }
 

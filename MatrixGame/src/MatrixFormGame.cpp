@@ -733,12 +733,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
                                                              TRACE_ROBOT | TRACE_BUILDING, selcallback, (uintptr_t)&cbs);
                 }
             }
-            // g_MatrixMap->GetPlayerSide()->OnLButtonDown(CPoint(x, y));
-            // g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(1)->OnLButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(2)->OnLButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(3)->OnLButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(4)->OnLButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonDown(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_RBUTTON) {
             DCP();

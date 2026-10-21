@@ -1069,6 +1069,14 @@ void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid, int lo
     command.attack.execute_for_side(local_side_id);
 }
 
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_map_x, u32 target_map_y, int local_side_id)
+{
+    Message command { MessageCommandAttackParams {entities_nid, target_map_x, target_map_y, true} };
+    g_Network.send_message(command);
+
+    command.attack.execute_for_side(local_side_id);
+}
+
 void NetOrderStop(const std::vector<u32> &entities_nid, bool break_robot_orders)
 {
     Message command { MessageCommandStopParams {entities_nid, break_robot_orders} };

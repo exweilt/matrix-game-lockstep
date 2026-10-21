@@ -282,6 +282,8 @@ void MessageCommandAttackParams::serialize_to_bitstream(BitWriter &writer) const
     }
 
     writer.write_u32(this->target_nid);
+    writer.write_u32(this->target_map_x);
+    writer.write_u32(this->target_map_y);
 }
 
 MessageCommandAttackParams MessageCommandAttackParams::deserialize_from_bitstream(BitReader &reader)
@@ -297,28 +299,39 @@ MessageCommandAttackParams MessageCommandAttackParams::deserialize_from_bitstrea
     }
 
     result.target_nid = reader.read_u32();
+    result.target_map_x = reader.read_u32();
+    result.target_map_y = reader.read_u32();
 
     return result;
+}
+
+static void apply_attack_command(CMatrixSideUnit *side, int no, u32 target_nid, u32 target_map_x, u32 target_map_y)
+{
+    if (target_nid != 0)
+    {
+        CMatrixMapStatic *target = g_MatrixMap->find_static_with_nid(target_nid);
+        if (target == nullptr)
+            return;
+        side->PGOrderAttack(no, GetMapPos(target), target);
+    }
+    else
+    {
+        side->PGOrderAttack(no, CPoint(static_cast<int>(target_map_x), static_cast<int>(target_map_y)), NULL);
+    }
 }
 
 void MessageCommandAttackParams::execute_for_side(u32 side_id)
 {
     CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
-    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
-    CMatrixMapStatic *target = g_MatrixMap->find_static_with_nid(target_nid);
-    if (target == nullptr)
-        return;
-    side->PGOrderAttack(no, GetMapPos(target), target);
+    int no = side->SelGroupToLogicGroup();
+    apply_attack_command(side, no, target_nid, target_map_x, target_map_y);
 }
 
 void MessageCommandAttackParams::execute()
 {
     CMatrixSideUnit *side = g_MatrixMap->GetSideById(g_MatrixMap->find_static_with_nid(robot_nid[0])->AsRobot()->GetSide());
     int no = robots_to_logic_group(side, robot_nid, number_of_robots);
-    CMatrixMapStatic *target = g_MatrixMap->find_static_with_nid(target_nid);
-    if (target == nullptr)
-        return;
-    side->PGOrderAttack(no, GetMapPos(target), target);
+    apply_attack_command(side, no, target_nid, target_map_x, target_map_y);
 }
 
 static void break_robot_orders_for_command(u32 *robot_nid, size_t number_of_robots)
