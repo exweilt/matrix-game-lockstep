@@ -2,6 +2,7 @@
 
 // #include <xxhash.h>
 
+#include <algorithm>
 #include <cereal/archives/binary.hpp>
 
 #include "MatrixRobot.hpp"
@@ -47,6 +48,8 @@ void RobotSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_u8(pack_rotation(hull_rotation));
     writer.write_u8(side);
     writer.write_u8(animation);
+    writer.write_u8(robot_state);
+    writer.write_u32(spawn_base_nid);
     writer.write_u8(weapon_cnt);
 
     for (int i = 0; i < weapon_cnt; i++)
@@ -75,6 +78,8 @@ RobotSnapshot RobotSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.hull_rotation = unpack_rotation(reader.read_u8());
     result.side = reader.read_u8();
     result.animation = reader.read_u8();
+    result.robot_state = reader.read_u8();
+    result.spawn_base_nid = reader.read_u32();
     result.weapon_cnt = reader.read_u8();
 
     for (int i = 0; i < result.weapon_cnt; i++)
@@ -137,6 +142,8 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     result.hull_rotation = robot->GetHullRotationZ();
     result.side = robot->GetSide();
     result.animation = robot->GetAnimation();
+    result.robot_state = static_cast<u8>(robot->m_CurrState);
+    result.spawn_base_nid = robot->GetBase() ? robot->GetBase()->m_NID : 0u;
     result.head = 0;
 
     result.weapon_cnt = 0;
@@ -174,6 +181,9 @@ void BuildingSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_f32(health);
     writer.write_u32(capturing_progress);
     writer.write_u32(capturing_color);
+    writer.write_u8(base_state);
+    writer.write_u8(base_floor_q);
+    writer.write_u8(spawning_bot);
 }
 
 BuildingSnapshot BuildingSnapshot::deserialize_from_bitstream(BitReader &reader)
@@ -186,6 +196,9 @@ BuildingSnapshot BuildingSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.health = reader.read_f32();
     result.capturing_progress = reader.read_u32();
     result.capturing_color = reader.read_u32();
+    result.base_state = reader.read_u8();
+    result.base_floor_q = reader.read_u8();
+    result.spawning_bot = reader.read_u8();
 
     return result;
 }
@@ -303,13 +316,25 @@ Stopwatch cws_stopwatch;
         if (obj->IsBuilding())
         {
             CMatrixBuilding *building = obj->AsBuilding();
+            u8 base_floor_q = 0;
+            u8 base_state = static_cast<u8>(BASE_CLOSED);
+            u8 spawning_bot = 0;
+            if (building->IsBase()) {
+                base_state = static_cast<u8>(building->m_State);
+                base_floor_q = static_cast<u8>(std::min(255.f, std::max(0.f, building->m_BaseFloor * 255.f)));
+                spawning_bot = building->IsSpawningBot() ? 1u : 0u;
+            }
+
             result.buildings.emplace(building->m_NID, BuildingSnapshot{
                 building->m_NID,
                 building->m_Kind,
                 static_cast<u8>(building->m_Side),
                 building->IsLiveBuilding() ? building->GetHitPoint() : 0.f,
                 static_cast<u8>(building->m_TrueColor.m_ColoredCnt),
-                building->m_TrueColor.m_Color
+                building->m_TrueColor.m_Color,
+                base_state,
+                base_floor_q,
+                spawning_bot
             });
         }
         else if (obj->IsLiveRobot())

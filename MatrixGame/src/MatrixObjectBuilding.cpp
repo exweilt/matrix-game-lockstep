@@ -825,23 +825,8 @@ bool CMatrixBuilding::LogicTakt(int cms) {
             }
         }
 
-        if (m_BaseFloor != oldf) {
-            CVectorObjectGroupUnit *gu;
-
-            gu = m_GGraph->GetById(1);
-            SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
-            D3DXMatrixTranslation(&(gu->m_Matrix), 0, 0, -(1.0f - m_BaseFloor) * 63.0f - 3.0f);
-
-            gu = m_GGraph->GetById(2);
-            SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
-            D3DXMatrixTranslation(&(gu->m_Matrix), std::min(m_BaseFloor * 2, 1.0f) * 25.0f, 0, 0);
-
-            gu = m_GGraph->GetById(3);
-            SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
-            D3DXMatrixTranslation(&(gu->m_Matrix), -std::min(m_BaseFloor * 2, 1.0f) * 25.0f, 0, 0);
-
-            RChange(MR_Matrix);
-        }
+        if (m_BaseFloor != oldf)
+            ApplyBaseFloorGraphics();
     }
 
     // ESound snd = S_BASE_AMBIENT;
@@ -977,6 +962,27 @@ void CMatrixBuilding::DrawShadowProj() {
 
 float CMatrixBuilding::GetFloorZ(void) {
     return m_BuildZ + (1.0f - m_BaseFloor) * BASE_FLOOR_Z - 3.0f + 2.7f;
+}
+
+void CMatrixBuilding::ApplyBaseFloorGraphics(void) {
+    if (m_Kind != BUILDING_BASE || !m_GGraph)
+        return;
+
+    CVectorObjectGroupUnit *gu;
+
+    gu = m_GGraph->GetById(1);
+    SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
+    D3DXMatrixTranslation(&(gu->m_Matrix), 0, 0, -(1.0f - m_BaseFloor) * 63.0f - 3.0f);
+
+    gu = m_GGraph->GetById(2);
+    SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
+    D3DXMatrixTranslation(&(gu->m_Matrix), std::min(m_BaseFloor * 2, 1.0f) * 25.0f, 0, 0);
+
+    gu = m_GGraph->GetById(3);
+    SETFLAG(gu->m_Flags, VOUF_MATRIX_USE);
+    D3DXMatrixTranslation(&(gu->m_Matrix), -std::min(m_BaseFloor * 2, 1.0f) * 25.0f, 0, 0);
+
+    RChange(MR_Matrix);
 }
 
 void CMatrixBuilding::OnLoad(void) {

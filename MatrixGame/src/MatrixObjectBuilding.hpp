@@ -304,6 +304,9 @@ public:
 
     float GetFloorZ(void);
 
+    /** Updates platform / door sub-meshes from m_BaseFloor (base buildings only). */
+    void ApplyBaseFloorGraphics(void);
+
     void CreateProgressBarClone(float x, float y, float width, EPBCoord clone_type);
     void DeleteProgressBarClone(EPBCoord clone_type);
 

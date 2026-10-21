@@ -49,6 +49,8 @@ struct RobotSnapshot
     f32 hull_rotation;
     u8 animation;
     u8 side;
+    u8 robot_state;
+    u32 spawn_base_nid;
     // D3DXVECTOR3 target;
     // bool is_firing;
 
@@ -73,6 +75,9 @@ struct BuildingSnapshot
     f32 health;
     u8 capturing_progress;
     u32 capturing_color;
+    u8 base_state;
+    u8 base_floor_q;
+    u8 spawning_bot;
 
     template <class Archive>
     void serialize(Archive& ar) {

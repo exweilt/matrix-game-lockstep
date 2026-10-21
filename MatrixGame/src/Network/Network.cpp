@@ -40,6 +40,55 @@ void apply_snapshot_animation(CMatrixRobotAI *r, EAnimation target_anim) {
     }
 }
 
+CMatrixBuilding *find_building_by_nid(u32 nid) {
+    if (nid == 0)
+        return nullptr;
+
+    for (CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic(); obj; obj = obj->GetNextLogic()) {
+        if (obj->IsLiveBuilding() && obj->m_NID == nid)
+            return obj->AsBuilding();
+    }
+    return nullptr;
+}
+
+void apply_robot_spawn_sync(CMatrixRobotAI *r, const RobotSnapshot &rs) {
+    const ERobotState new_state = static_cast<ERobotState>(rs.robot_state);
+    if (r->m_CurrState != new_state) {
+        r->m_CurrState = new_state;
+        r->RChange(MR_Matrix);
+    }
+
+    if (rs.spawn_base_nid != 0) {
+        if (CMatrixBuilding *base = find_building_by_nid(rs.spawn_base_nid))
+            r->SetBase(base);
+    } else if (new_state == ROBOT_SUCCESSFULLY_BUILD || new_state == ROBOT_DIP) {
+        r->SetBase(nullptr);
+    }
+
+    if (new_state == ROBOT_IN_SPAWN || new_state == ROBOT_BASE_MOVEOUT)
+        SETFLAG(r->m_ObjectState, ROBOT_FLAG_DISABLE_MANUAL);
+}
+
+void sync_base_building_from_snapshot(CMatrixBuilding *building, const BuildingSnapshot &b_from,
+                                      const BuildingSnapshot &b_to, f32 k) {
+    if (!building->IsBase())
+        return;
+
+    building->m_State = static_cast<EBaseState>(b_to.base_state);
+
+    f32 floor_q = static_cast<f32>(b_to.base_floor_q);
+    if (b_from.nid == b_to.nid)
+        floor_q = LERPFLOAT(k, static_cast<f32>(b_from.base_floor_q), static_cast<f32>(b_to.base_floor_q));
+    building->m_BaseFloor = floor_q / 255.f;
+
+    if (b_to.spawning_bot)
+        building->SetSpawningBot();
+    else
+        building->ResetSpawningBot();
+
+    building->ApplyBaseFloorGraphics();
+}
+
 void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
     if (r->m_Unit[0].u1.s1.m_Kind != RUK_CHASSIS_PNEUMATIC)
         return;
@@ -446,7 +495,13 @@ void Network::process_playback([[maybe_unused]]int ms)
                 float ticks_in_span = std::max(1.0f, float(std::chrono::duration_cast<std::chrono::milliseconds>(dt).count()) / float(LOGIC_TAKT_PERIOD));
                 r->m_Speed = D3DXVec2Length(&shift) / ticks_in_span;
 
-                EAnimation target_anim = static_cast<EAnimation>(rs.animation);
+                RobotSnapshot rs_spawn = rs_to;
+                if (k < 0.5f)
+                    rs_spawn.robot_state = rs_from.robot_state;
+                apply_robot_spawn_sync(r, rs_spawn);
+
+                const RobotSnapshot &rs_anim = k < 0.5f ? rs_from : rs_to;
+                EAnimation target_anim = static_cast<EAnimation>(rs_anim.animation);
                 apply_snapshot_animation(r, target_anim);
                 sync_pneumatic_client_visuals(r);
 
@@ -506,6 +561,11 @@ void Network::process_playback([[maybe_unused]]int ms)
                             if (building->m_HitPointMax > 0.f)
                                 building->m_PB.Modify(building->m_HitPoint * building->m_MaxHitPointInversed);
                         }
+
+                        if (ws_from.buildings.contains(nid))
+                            sync_base_building_from_snapshot(building, ws_from.buildings.at(nid), b_to, k);
+                        else
+                            sync_base_building_from_snapshot(building, b_to, b_to, 1.f);
                     }
                     else if (ws_from.buildings.contains(nid) && ws_from.buildings.at(nid).health <= 0.f)
                     {
@@ -581,6 +641,8 @@ void Network::populate_robot(RobotSnapshot& rs)
     r->JoinToGroup();
     r->CreateTextures();
     r->InitMaxHitpoint(10000.0);
+
+    apply_robot_spawn_sync(r, rs);
 
     apply_snapshot_animation(r, static_cast<EAnimation>(rs.animation));
     sync_pneumatic_client_visuals(r);
