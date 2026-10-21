@@ -17,8 +17,45 @@
 #include <algorithm>
 #include <map>
 #include "Interface/CConstructor.h"
+#include "MatrixRobot.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
+
+namespace {
+
+void apply_snapshot_animation(CMatrixRobotAI *r, EAnimation target_anim) {
+    // Match authority LogicTakt (do_animation): call SwitchAnimation every tick, not only on
+    // transitions. BEGINMOVE -> MOVE and ENDMOVE -> STAY need repeated SwitchAnimation calls
+    // while the chassis clip plays (IsAnimEnd checks inside SwitchAnimation).
+    if (target_anim == ANIMATION_BEGINMOVE || target_anim == ANIMATION_MOVE) {
+        r->SwitchAnimation(ANIMATION_MOVE);
+    } else if (target_anim == ANIMATION_BEGINMOVE_BACK || target_anim == ANIMATION_MOVE_BACK) {
+        r->SwitchAnimation(ANIMATION_MOVE_BACK);
+    } else if (target_anim == ANIMATION_ENDMOVE || target_anim == ANIMATION_ENDMOVE_BACK || target_anim == ANIMATION_STAY) {
+        r->SwitchAnimation(ANIMATION_STAY);
+    } else if (r->GetAnimation() != target_anim) {
+        r->SwitchAnimation(target_anim);
+    }
+}
+
+void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
+    if (r->m_Unit[0].u1.s1.m_Kind != RUK_CHASSIS_PNEUMATIC)
+        return;
+
+    const EAnimation anim = r->GetAnimation();
+    const bool moving_anim = anim == ANIMATION_MOVE || anim == ANIMATION_BEGINMOVE || anim == ANIMATION_MOVE_BACK ||
+                             anim == ANIMATION_BEGINMOVE_BACK;
+    if (!moving_anim)
+        return;
+
+    if (r->m_Speed <= 0.01f)
+        r->m_Speed = 0.5f;
+
+    if (!FLAG(r->m_ObjectState, ROBOT_FLAG_LINKED))
+        r->FirstLinkPneumatic();
+}
+
+}  // namespace
 
 Network g_Network{};
 
@@ -407,21 +444,8 @@ void Network::process_playback([[maybe_unused]]int ms)
                 r->m_Speed = D3DXVec2Length(&shift) / ticks_in_span;
 
                 EAnimation target_anim = static_cast<EAnimation>(rs.animation);
-                if (target_anim == ANIMATION_BEGINMOVE || target_anim == ANIMATION_MOVE) {
-                    if (r->GetAnimation() != ANIMATION_MOVE && r->GetAnimation() != ANIMATION_BEGINMOVE) {
-                        r->SwitchAnimation(ANIMATION_MOVE);
-                    }
-                } else if (target_anim == ANIMATION_BEGINMOVE_BACK || target_anim == ANIMATION_MOVE_BACK) {
-                    if (r->GetAnimation() != ANIMATION_MOVE_BACK && r->GetAnimation() != ANIMATION_BEGINMOVE_BACK) {
-                        r->SwitchAnimation(ANIMATION_MOVE_BACK);
-                    }
-                } else if (target_anim == ANIMATION_ENDMOVE || target_anim == ANIMATION_ENDMOVE_BACK || target_anim == ANIMATION_STAY) {
-                    if (r->GetAnimation() != ANIMATION_STAY && r->GetAnimation() != ANIMATION_ENDMOVE && r->GetAnimation() != ANIMATION_ENDMOVE_BACK) {
-                        r->SwitchAnimation(ANIMATION_STAY);
-                    }
-                } else if (r->GetAnimation() != target_anim) {
-                    r->SwitchAnimation(target_anim);
-                }
+                apply_snapshot_animation(r, target_anim);
+                sync_pneumatic_client_visuals(r);
 
                 if (event_treshold_frame - r->last_shot_frame > 20)
                 {
@@ -505,6 +529,9 @@ void Network::populate_robot(RobotSnapshot& rs)
     r->JoinToGroup();
     r->CreateTextures();
     r->InitMaxHitpoint(10000.0);
+
+    apply_snapshot_animation(r, static_cast<EAnimation>(rs.animation));
+    sync_pneumatic_client_visuals(r);
 
     robots.emplace(rs.nid, r);
 }

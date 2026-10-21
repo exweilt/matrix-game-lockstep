@@ -339,7 +339,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
             }
         }
 
-        if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC) {
+        if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC && g_Network.is_authority()) {
             DoAnimation(ms);
             LinkPneumatic();  // corrects pneumatic
         }

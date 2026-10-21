@@ -898,8 +898,22 @@ void CMatrixRobot::Takt(int cms) {
         }
     }
 
-    if (m_Unit[0].u1.s1.m_Kind != RUK_CHASSIS_PNEUMATIC)
-        DoAnimation(cms);  // proceed animation only for NON pneumatic chassis
+    if (m_Unit[0].u1.s1.m_Kind == RUK_CHASSIS_PNEUMATIC) {
+        // Authority advances pneumatic legs in LogicTakt (do_animation); clients use the graphic tick.
+        if (g_Network.is_client()) {
+            // Finish BEGINMOVE/ENDMOVE transitions between snapshot applies (same as authority each LogicTakt).
+            if (m_Speed > 0.01f) {
+                if (m_Animation == ANIMATION_BEGINMOVE || m_Animation == ANIMATION_BEGINMOVE_BACK)
+                    SwitchAnimation(m_Animation == ANIMATION_BEGINMOVE_BACK ? ANIMATION_MOVE_BACK : ANIMATION_MOVE);
+            } else if (m_Animation == ANIMATION_ENDMOVE || m_Animation == ANIMATION_ENDMOVE_BACK) {
+                SwitchAnimation(ANIMATION_STAY);
+            }
+            DoAnimation(cms);
+            LinkPneumatic();
+        }
+    } else {
+        DoAnimation(cms);
+    }
 
     // RChange(MR_Matrix);
 }
