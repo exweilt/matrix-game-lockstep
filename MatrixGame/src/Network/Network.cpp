@@ -568,7 +568,7 @@ void Network::populate_robot(RobotSnapshot& rs)
     CMatrixRobotAI *r = bot.GetRobot(pos, rs.side);
     r->m_NID = rs.nid;
 
-    // g_MatrixMap->AddObject(r, true);
+    g_MatrixMap->AddObject(r, true); // should we do this?
 
     r->JoinToGroup();
     r->CreateTextures();
