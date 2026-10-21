@@ -95,7 +95,7 @@ struct WorldSnapshot
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots));
+        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots), CEREAL_NVP(buildings));
     }
 
     void serialize_to_bitstream(BitWriter &writer) const;

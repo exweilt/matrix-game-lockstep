@@ -277,7 +277,9 @@ void CMatrixEffectWeapon::Fire(void) {
         owning_weapon->m_Unit->m_Graph->SetAnimByName(ANIMATION_NAME_FIRE, 0);
     }
 
-    if (g_Network.is_authority())
+    // EventFire sync is only for robot-mounted weapons (owning_weapon is set in SBotWeapon::CreateEffect).
+    // Building/Terron BIGBOOM and turrets use CreateWeapon with user=0 or m_Core — not networkable robots.
+    if (g_Network.is_authority() && owning_weapon != nullptr && m_User != 0)
     {
         CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
 

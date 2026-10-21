@@ -18,6 +18,7 @@
 #include <map>
 #include "Interface/CConstructor.h"
 #include "MatrixRobot.hpp"
+#include "MatrixObjectBuilding.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
@@ -462,21 +463,64 @@ void Network::process_playback([[maybe_unused]]int ms)
             }
         }
 
-        CMatrixMapStatic * ms = CMatrixMapStatic::GetFirstLogic();
+        const int building_tick_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(modified_delta).count();
+
+        CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
         while (ms)
         {
-            if (ms->IsLiveBuilding())
+            CMatrixMapStatic *next = ms->GetNextLogic();
+            if (ms->IsBuilding())
             {
-                if (ws_to.buildings.contains(ms->m_NID))
+                CMatrixBuilding *building = ms->AsBuilding();
+                const u32 nid = ms->m_NID;
+
+                if (ms->IsLiveBuilding())
                 {
-                    BuildingSnapshot b = ws_to.buildings.at(ms->m_NID);
-                    static_cast<CMatrixBuilding *>(ms)->m_Side = b.side;
-                    static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_ColoredCnt = b.capturing_progress;
-                    // static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_Color =  0xFF000000 | g_MatrixMap->GetSideColor(b.side);
-                    static_cast<CMatrixBuilding *>(ms)->m_TrueColor.m_Color =  b.capturing_color;
+                    if (ws_to.buildings.contains(nid))
+                    {
+                        const BuildingSnapshot b_to = ws_to.buildings.at(nid);
+                        building->m_Side = b_to.side;
+                        building->m_TrueColor.m_ColoredCnt = b_to.capturing_progress;
+                        building->m_TrueColor.m_Color = b_to.capturing_color;
+
+                        if (b_to.health <= 0.f)
+                        {
+                            building->KillFromNetworkSync();
+                        }
+                        else
+                        {
+                            f32 health = b_to.health;
+                            if (ws_from.buildings.contains(nid))
+                            {
+                                const BuildingSnapshot &b_from = ws_from.buildings.at(nid);
+                                health = LERPFLOAT(k, b_from.health, b_to.health);
+                            }
+
+                            const float new_hp = health * 10.f;
+                            if (new_hp < building->m_HitPoint)
+                                building->ShowHitpoint();
+                            building->m_HitPoint = new_hp;
+                            if (building->m_HitPointMax > 0.f)
+                                building->m_PB.Modify(building->m_HitPoint * building->m_MaxHitPointInversed);
+                        }
+                    }
+                    else if (ws_from.buildings.contains(nid) && ws_from.buildings.at(nid).health <= 0.f)
+                    {
+                        building->KillFromNetworkSync();
+                    }
+                }
+                else if (building->m_State == BUILDING_DIP || building->m_State == BUILDING_DIP_EXPLODED)
+                {
+                    if (!ms->StaticTakt(building_tick_ms))
+                    {
+                        ms->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
+                        ms->RNeed(MR_Matrix);
+                        ms->JoinToGroup();
+                    }
                 }
             }
-            ms = ms->GetNextLogic();
+            ms = next;
         }
 
         std::erase_if(robots, [this, modified_delta](auto& pair) {

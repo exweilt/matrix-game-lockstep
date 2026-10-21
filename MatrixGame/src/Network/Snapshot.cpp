@@ -307,7 +307,7 @@ Stopwatch cws_stopwatch;
                 building->m_NID,
                 building->m_Kind,
                 static_cast<u8>(building->m_Side),
-                building->GetHitPoint(),
+                building->IsLiveBuilding() ? building->GetHitPoint() : 0.f,
                 static_cast<u8>(building->m_TrueColor.m_ColoredCnt),
                 building->m_TrueColor.m_Color
             });

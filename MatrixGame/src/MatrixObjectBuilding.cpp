@@ -278,6 +278,33 @@ void CMatrixBuilding::RNeed(dword need) {
     }
 }
 
+void CMatrixBuilding::KillFromNetworkSync() {
+    if (m_State == BUILDING_DIP || m_State == BUILDING_DIP_EXPLODED)
+        return;
+
+    if (m_Side == g_Network.controllable_side_id) {
+        bool bu = FRND(1) < 0.7f;
+        if (bu) {
+            if (m_Kind == BUILDING_BASE) {
+                CSound::Play(S_BASE_KILLED);
+            }
+            else {
+                CSound::Play(S_FACTORY_KILLED);
+            }
+        }
+        else {
+            CSound::Play(S_BUILDING_KILLED);
+        }
+    }
+
+    ReleaseMe();
+    m_HitPoint = -1;
+    m_State = BUILDING_DIP;
+    m_NextExplosionTime = g_MatrixMap->GetTime();
+    m_NextExplosionTimeSound = g_MatrixMap->GetTime();
+    g_MatrixMap->RemoveEffectSpawnerByObject(this);
+}
+
 bool CMatrixBuilding::Damage(
     EWeapon weap,
     const D3DXVECTOR3 &pos,
@@ -336,32 +363,12 @@ bool CMatrixBuilding::Damage(
     }
 
     if (m_HitPoint <= 0) {
-        if (m_Side == g_Network.controllable_side_id) {
-            bool bu = FRND(1) < 0.7f;
-            if (bu) {
-                if (m_Kind == BUILDING_BASE) {
-                    CSound::Play(S_BASE_KILLED);
-                }
-                else {
-                    CSound::Play(S_FACTORY_KILLED);
-                }
-            }
-            else {
-                CSound::Play(S_BUILDING_KILLED);
-            }
-        }
-
-        ReleaseMe();
-        m_HitPoint = -1;
-        m_State = BUILDING_DIP;
+        KillFromNetworkSync();
 
         if (attacker_side != 0 && !friendly_fire) {
             g_MatrixMap->GetSideById(attacker_side)->IncStatValue(STAT_BUILDING_KILL);
         }
 
-        m_NextExplosionTime = g_MatrixMap->GetTime();
-        m_NextExplosionTimeSound = g_MatrixMap->GetTime();
-        g_MatrixMap->RemoveEffectSpawnerByObject(this);
         return true;
     }
 

@@ -287,6 +287,8 @@ public:
     }
     float GetMaxHitPoint() { return m_HitPointMax / 10; }
     float GetHitPoint() { return m_HitPoint / 10; }
+    /** Client-only: start destruction when authoritative snapshot reports zero HP. */
+    void KillFromNetworkSync();
     void ReleaseMe();
 
     void SetNeutral(void);
