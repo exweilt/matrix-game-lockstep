@@ -44,6 +44,8 @@
 
 #define MAX_STACK_UNITS 6
 
+struct BuildStackEntrySnapshot;
+
 enum EFlyerKind : unsigned int;
 
 enum EBuildingTurrets {
@@ -141,6 +143,13 @@ public:
     int GetRobotsCnt(void) const;
     void KillBar(void);
 
+    int GetBuildTimerMs(void) const { return m_Timer; }
+    void SetBuildTimerMs(int ms) { m_Timer = ms; }
+
+    /** Client-only: mirror authoritative robot build queue for UI (icons + progress bar). */
+    void SyncClientVisualFromNetwork(const struct BuildStackEntrySnapshot *entries, u8 count, int build_timer_ms);
+    void UpdateBuildProgressDisplay(void);
+
     CBuildStack(CMatrixBuilding *base) : m_ParentBase(base) {
         m_Top = NULL;
         m_Bottom = NULL;
@@ -148,6 +157,10 @@ public:
         m_Timer = 0;
     }
     ~CBuildStack();
+
+private:
+    void RemoveTopItemClientVisual(void);
+    void ClearStackClientVisual(void);
 };
 
 struct STurretPlace {

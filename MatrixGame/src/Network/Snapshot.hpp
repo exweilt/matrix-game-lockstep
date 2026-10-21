@@ -67,6 +67,20 @@ struct RobotSnapshot
 };
 
 enum EBuildingType : u32;
+
+inline constexpr u8 kMaxBuildStackSnapshot = 6;
+
+struct BuildStackEntrySnapshot
+{
+    u8 chassis{};
+    u8 hull{};
+    u8 head{};
+    u8 weapon_cnt{};
+    u8 weapons[5]{};
+
+    static BuildStackEntrySnapshot from_robot(CMatrixRobotAI *robot);
+};
+
 struct BuildingSnapshot
 {
     u32 nid;
@@ -78,6 +92,9 @@ struct BuildingSnapshot
     u8 base_state;
     u8 base_floor_q;
     u8 spawning_bot;
+    u8 build_stack_count;
+    u16 build_timer;
+    BuildStackEntrySnapshot build_stack[kMaxBuildStackSnapshot]{};
 
     template <class Archive>
     void serialize(Archive& ar) {

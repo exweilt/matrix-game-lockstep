@@ -173,6 +173,47 @@ RobotSnapshot RobotSnapshot::from_robot(CMatrixRobotAI *robot)
     return result;
 }
 
+BuildStackEntrySnapshot BuildStackEntrySnapshot::from_robot(CMatrixRobotAI *robot)
+{
+    BuildStackEntrySnapshot result{};
+    result.weapon_cnt = 0;
+
+    for (int i = 0; i < robot->m_UnitCnt; i++) {
+        if (robot->m_Unit[i].m_Type == MRT_CHASSIS)
+            result.chassis = robot->m_Unit[i].u1.s1.m_Kind;
+        else if (robot->m_Unit[i].m_Type == MRT_ARMOR)
+            result.hull = robot->m_Unit[i].u1.s1.m_Kind;
+        else if (robot->m_Unit[i].m_Type == MRT_HEAD)
+            result.head = robot->m_Unit[i].u1.s1.m_Kind;
+        else if (robot->m_Unit[i].m_Type == MRT_WEAPON)
+            result.weapons[result.weapon_cnt++] = robot->m_Unit[i].u1.s1.m_Kind;
+    }
+
+    return result;
+}
+
+static void write_build_stack_entry(BitWriter &writer, const BuildStackEntrySnapshot &entry)
+{
+    writer.write_u8(entry.chassis);
+    writer.write_u8(entry.hull);
+    writer.write_u8(entry.head);
+    writer.write_u8(entry.weapon_cnt);
+    for (u8 i = 0; i < entry.weapon_cnt; i++)
+        writer.write_u8(entry.weapons[i]);
+}
+
+static BuildStackEntrySnapshot read_build_stack_entry(BitReader &reader)
+{
+    BuildStackEntrySnapshot result{};
+    result.chassis = reader.read_u8();
+    result.hull = reader.read_u8();
+    result.head = reader.read_u8();
+    result.weapon_cnt = reader.read_u8();
+    for (u8 i = 0; i < result.weapon_cnt; i++)
+        result.weapons[i] = reader.read_u8();
+    return result;
+}
+
 void BuildingSnapshot::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(nid);
@@ -184,6 +225,10 @@ void BuildingSnapshot::serialize_to_bitstream(BitWriter &writer) const
     writer.write_u8(base_state);
     writer.write_u8(base_floor_q);
     writer.write_u8(spawning_bot);
+    writer.write_u8(build_stack_count);
+    writer.write_u16(build_timer);
+    for (u8 i = 0; i < build_stack_count; i++)
+        write_build_stack_entry(writer, build_stack[i]);
 }
 
 BuildingSnapshot BuildingSnapshot::deserialize_from_bitstream(BitReader &reader)
@@ -199,6 +244,10 @@ BuildingSnapshot BuildingSnapshot::deserialize_from_bitstream(BitReader &reader)
     result.base_state = reader.read_u8();
     result.base_floor_q = reader.read_u8();
     result.spawning_bot = reader.read_u8();
+    result.build_stack_count = reader.read_u8();
+    result.build_timer = reader.read_u16();
+    for (u8 i = 0; i < result.build_stack_count && i < kMaxBuildStackSnapshot; i++)
+        result.build_stack[i] = read_build_stack_entry(reader);
 
     return result;
 }
@@ -325,7 +374,21 @@ Stopwatch cws_stopwatch;
                 spawning_bot = building->IsSpawningBot() ? 1u : 0u;
             }
 
-            result.buildings.emplace(building->m_NID, BuildingSnapshot{
+            u8 build_stack_count = 0;
+            u16 build_timer = 0;
+            BuildStackEntrySnapshot build_stack[kMaxBuildStackSnapshot]{};
+            if (building->IsBase()) {
+                build_timer = static_cast<u16>(std::min(65535, building->m_BS.GetBuildTimerMs()));
+                for (CMatrixMapStatic *item = building->m_BS.GetTopItem();
+                     item && build_stack_count < kMaxBuildStackSnapshot;
+                     item = item->m_NextStackItem) {
+                    if (item->IsRobot())
+                        build_stack[build_stack_count++] =
+                            BuildStackEntrySnapshot::from_robot(item->AsRobot());
+                }
+            }
+
+            BuildingSnapshot building_snap{
                 building->m_NID,
                 building->m_Kind,
                 static_cast<u8>(building->m_Side),
@@ -334,8 +397,13 @@ Stopwatch cws_stopwatch;
                 building->m_TrueColor.m_Color,
                 base_state,
                 base_floor_q,
-                spawning_bot
-            });
+                spawning_bot,
+                build_stack_count,
+                build_timer,
+            };
+            for (u8 i = 0; i < build_stack_count; ++i)
+                building_snap.build_stack[i] = build_stack[i];
+            result.buildings.emplace(building->m_NID, building_snap);
         }
         else if (obj->IsLiveRobot())
         {

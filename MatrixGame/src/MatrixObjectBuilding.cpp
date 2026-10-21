@@ -16,6 +16,8 @@
 #include "MatrixSkinManager.hpp"
 #include "MatrixObjectCannon.hpp"
 #include "Interface/CInterface.h"
+#include "Network/Network.hpp"
+#include "Network/Snapshot.hpp"
 
 #include "Effects/MatrixEffectSelection.hpp"
 #include "Effects/MatrixEffectExplosion.hpp"
@@ -1615,6 +1617,76 @@ void CMatrixBuilding::DeletePlacesShow() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+bool build_stack_entry_equal(const BuildStackEntrySnapshot &a, const BuildStackEntrySnapshot &b) {
+    if (a.chassis != b.chassis || a.hull != b.hull || a.head != b.head || a.weapon_cnt != b.weapon_cnt)
+        return false;
+    for (u8 i = 0; i < a.weapon_cnt; i++) {
+        if (a.weapons[i] != b.weapons[i])
+            return false;
+    }
+    return true;
+}
+
+bool client_stack_matches(CBuildStack *stack, const BuildStackEntrySnapshot *entries, u8 count) {
+    if (stack->GetItemsCnt() != count)
+        return false;
+
+    CMatrixMapStatic *item = stack->GetTopItem();
+    for (u8 i = 0; i < count; i++) {
+        if (!item || !item->IsRobot())
+            return false;
+        if (!build_stack_entry_equal(entries[i], BuildStackEntrySnapshot::from_robot(item->AsRobot())))
+            return false;
+        item = item->m_NextStackItem;
+    }
+    return true;
+}
+
+CMatrixRobotAI *create_client_stack_robot(CMatrixBuilding *base, const BuildStackEntrySnapshot &entry) {
+    CMatrixRobotAI *robot = HNew(g_MatrixHeap) CMatrixRobotAI;
+
+    if (entry.head != 0)
+        robot->UnitInsert(0, MRT_HEAD, static_cast<ERobotUnitKind>(entry.head));
+    if (entry.hull != 0) {
+        for (int w = 0; w < entry.weapon_cnt; w++) {
+            const u8 weapon_kind = entry.weapons[entry.weapon_cnt - 1 - w];
+            robot->WeaponInsert(0, MRT_WEAPON, static_cast<ERobotUnitKind>(weapon_kind),
+                                static_cast<ERobotUnitKind>(entry.hull), w + 1);
+        }
+        robot->UnitInsert(0, MRT_ARMOR, static_cast<ERobotUnitKind>(entry.hull));
+    }
+    if (entry.chassis != 0)
+        robot->UnitInsert(0, MRT_CHASSIS, static_cast<ERobotUnitKind>(entry.chassis));
+
+    robot->m_ShadowType = g_Config.m_RobotShadow;
+    robot->m_ShadowSize = 128;
+    robot->m_Side = base->m_Side;
+    robot->RobotWeaponInit();
+    robot->m_PosX = base->m_Pos.x;
+    robot->m_PosY = base->m_Pos.y;
+    robot->CalcRobotMass();
+
+    if (base->m_Angle == 0)
+        robot->m_Forward = D3DXVECTOR3(0, 1, 0);
+    else if (base->m_Angle == 1)
+        robot->m_Forward = D3DXVECTOR3(-1, 0, 0);
+    else if (base->m_Angle == 2)
+        robot->m_Forward = D3DXVECTOR3(0, -1, 0);
+    else
+        robot->m_Forward = D3DXVECTOR3(1, 0, 0);
+    robot->m_HullForward = robot->m_Forward;
+
+    robot->m_CurrState = ROBOT_IN_SPAWN;
+    robot->SetBase(base);
+    robot->RNeed(MR_Graph);
+    robot->CreateTextures();
+    return robot;
+}
+
+}  // namespace
+
 void CBuildStack::TickTimer(int ms) {
     if (!m_Items /*|| (m_ParentBase->IsBase() && m_ParentBase->m_State != BASE_CLOSED)*/) {
         m_Timer = 0;
@@ -1970,6 +2042,86 @@ void CBuildStack::ReturnTurretResources(CMatrixCannon *turret) {
     s->AddResourceAmount(ELECTRONICS, g_Config.m_CannonsProps[turret->m_Num - 1].m_Resources[1]);
     s->AddResourceAmount(ENERGY, g_Config.m_CannonsProps[turret->m_Num - 1].m_Resources[2]);
     s->AddResourceAmount(PLASMA, g_Config.m_CannonsProps[turret->m_Num - 1].m_Resources[3]);
+}
+
+void CBuildStack::RemoveTopItemClientVisual(void) {
+    if (!m_Items)
+        return;
+
+    m_PB.KillClone(PBC_CLONE1);
+    g_IFaceList->DeleteStackIcon(1, m_ParentBase);
+
+    CMatrixMapStatic *item = m_Top;
+    LIST_DEL(item, m_Top, m_Bottom, m_PrevStackItem, m_NextStackItem);
+    m_Items--;
+
+    if (item->IsRobot()) {
+        HDelete(CMatrixRobotAI, item->AsRobot(), g_MatrixHeap);
+    } else if (item->IsCannon()) {
+        HDelete(CMatrixCannon, item->AsCannon(), g_MatrixHeap);
+    } else if (item->IsFlyer()) {
+        HDelete(CMatrixFlyer, (CMatrixFlyer *)item, g_MatrixHeap);
+    }
+}
+
+void CBuildStack::ClearStackClientVisual(void) {
+    while (m_Items)
+        RemoveTopItemClientVisual();
+
+    m_Timer = 0;
+    m_PB.KillClone(PBC_CLONE1);
+
+    CInterface *ifs = g_IFaceList->m_First;
+    while (ifs) {
+        if (ifs->m_strName == IF_MAIN) {
+            CIFaceElement *els = ifs->m_FirstElement;
+            while (els) {
+                if (IS_STACK_ICON(els->m_nId) && els->m_iParam == uintptr_t(m_ParentBase)) {
+                    els = ifs->DelElement(els);
+                    continue;
+                }
+                els = els->m_NextElement;
+            }
+            break;
+        }
+        ifs = ifs->m_NextInterface;
+    }
+}
+
+void CBuildStack::SyncClientVisualFromNetwork(const BuildStackEntrySnapshot *entries, u8 count, int build_timer_ms) {
+    if (!g_Network.is_client())
+        return;
+
+    if (!client_stack_matches(this, entries, count)) {
+        ClearStackClientVisual();
+        for (u8 i = 0; i < count; i++) {
+            CMatrixRobotAI *robot = create_client_stack_robot(m_ParentBase, entries[i]);
+            AddItem(robot);
+        }
+    }
+
+    m_Timer = build_timer_ms;
+    UpdateBuildProgressDisplay();
+}
+
+void CBuildStack::UpdateBuildProgressDisplay(void) {
+    if (!m_Items || !m_Top->IsRobot()) {
+        m_PB.KillClone(PBC_CLONE1);
+        return;
+    }
+
+    float x = g_IFaceList->GetMainX() + 283;
+    float y = g_IFaceList->GetMainY() + 71;
+
+    m_PB.Modify(100000.0f, 0);
+    if (m_Timer <= g_Config.m_Timings[UNIT_ROBOT])
+        m_PB.Modify(float(m_Timer) / float(g_Config.m_Timings[UNIT_ROBOT]));
+
+    CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
+    if (ps && ps->m_CurrSel == BASE_SELECTED && ps->m_ActiveObject == m_ParentBase)
+        m_PB.CreateClone(PBC_CLONE1, x, y, 87);
+    else
+        m_PB.KillClone(PBC_CLONE1);
 }
 
 void CBuildStack::KillBar(void) {

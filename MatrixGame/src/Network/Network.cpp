@@ -543,6 +543,8 @@ void Network::process_playback([[maybe_unused]]int ms)
 
                         if (b_to.health <= 0.f)
                         {
+                            if (building->IsBase())
+                                building->m_BS.SyncClientVisualFromNetwork(nullptr, 0, 0);
                             building->KillFromNetworkSync();
                         }
                         else
@@ -566,6 +568,20 @@ void Network::process_playback([[maybe_unused]]int ms)
                             sync_base_building_from_snapshot(building, ws_from.buildings.at(nid), b_to, k);
                         else
                             sync_base_building_from_snapshot(building, b_to, b_to, 1.f);
+
+                        if (building->IsBase()) {
+                            const BuildingSnapshot &stack_from =
+                                ws_from.buildings.contains(nid) ? ws_from.buildings.at(nid) : b_to;
+                            const BuildingSnapshot &stack_to = b_to;
+                            const BuildingSnapshot &stack_view = k < 0.5f ? stack_from : stack_to;
+                            int build_timer = stack_to.build_timer;
+                            if (ws_from.buildings.contains(nid))
+                                build_timer = static_cast<int>(
+                                    LERPFLOAT(k, static_cast<f32>(stack_from.build_timer),
+                                              static_cast<f32>(stack_to.build_timer)));
+                            building->m_BS.SyncClientVisualFromNetwork(stack_view.build_stack,
+                                                                       stack_view.build_stack_count, build_timer);
+                        }
                     }
                     else if (ws_from.buildings.contains(nid) && ws_from.buildings.at(nid).health <= 0.f)
                     {
