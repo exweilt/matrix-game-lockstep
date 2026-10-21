@@ -271,6 +271,56 @@ void MessageCommandCaptureParams::execute()
     side->PGOrderCapture(no, g_MatrixMap->find_static_with_nid(target_nid)->AsBuilding());
 }
 
+void MessageCommandAttackParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8(this->number_of_robots);
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_u32(this->target_nid);
+}
+
+MessageCommandAttackParams MessageCommandAttackParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandAttackParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.target_nid = reader.read_u32();
+
+    return result;
+}
+
+void MessageCommandAttackParams::execute_for_side(u32 side_id)
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+    CMatrixMapStatic *target = g_MatrixMap->find_static_with_nid(target_nid);
+    if (target == nullptr)
+        return;
+    side->PGOrderAttack(no, GetMapPos(target), target);
+}
+
+void MessageCommandAttackParams::execute()
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(g_MatrixMap->find_static_with_nid(robot_nid[0])->AsRobot()->GetSide());
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+    CMatrixMapStatic *target = g_MatrixMap->find_static_with_nid(target_nid);
+    if (target == nullptr)
+        return;
+    side->PGOrderAttack(no, GetMapPos(target), target);
+}
+
 // void MessageCommandBuildParams::execute()
 // {
 // }

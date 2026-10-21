@@ -29,6 +29,7 @@ enum class MessageType : u8
     COMMAND_MOVE,
     COMMAND_BUILD,
     COMMAND_CAPTURE,
+    COMMAND_ATTACK,
     INFO,
     SAY,
     JOIN,
@@ -199,6 +200,34 @@ struct MessageCommandCaptureParams
     }
 };
 
+struct MessageCommandAttackParams
+{
+    u8 number_of_robots;
+    u32 robot_nid[MAX_ROBOTS_PER_COMMAND];
+    u32 target_nid;
+
+    MessageCommandAttackParams() : number_of_robots(0), robot_nid(0), target_nid(0) {};
+    MessageCommandAttackParams(const std::vector<u32> &robots_nid, u32 target_NID)
+    {
+        assert(robots_nid.size() <= MAX_ROBOTS_PER_COMMAND);
+        number_of_robots = robots_nid.size();
+        memset(robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+        memcpy(robot_nid, robots_nid.data(), robots_nid.size() * sizeof(u32));
+        target_nid = target_NID;
+    };
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandAttackParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute_for_side(u32 side_id);
+    void execute();
+
+    template <class Archive>
+    void serialize(Archive& ar) {
+        ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_nid));
+    }
+};
+
 struct MessageChecksumParams
 {
     u32 target_frame;
@@ -266,6 +295,7 @@ struct Message
         MessageCommandBuildParams command_build;
         MessageEventsParams events;
         MessageCommandCaptureParams capture;
+        MessageCommandAttackParams attack;
         MessageGameSettingsParams game_settings;
     };
 
@@ -280,6 +310,7 @@ struct Message
     Message(MessageCommandBuildParams m)         : type(MessageType::COMMAND_BUILD),      command_build(m)     {};
     Message(MessageEventsParams e)         : type(MessageType::EVENTS),      events(e)     {};
     Message(MessageCommandCaptureParams x)         : type(MessageType::COMMAND_CAPTURE),      capture(x)     {};
+    Message(MessageCommandAttackParams x)         : type(MessageType::COMMAND_ATTACK),      attack(x)     {};
     Message(MessageGameSettingsParams x)         : type(MessageType::GAME_SETTINGS),      game_settings(x)     {};
 
     ~Message()
@@ -313,6 +344,9 @@ struct Message
             case MessageType::COMMAND_CAPTURE:
                 capture.~MessageCommandCaptureParams();
                 break;
+            case MessageType::COMMAND_ATTACK:
+                attack.~MessageCommandAttackParams();
+                break;
             case MessageType::GAME_SETTINGS:
                 game_settings.~MessageGameSettingsParams();
                 break;
@@ -337,6 +371,7 @@ struct Message
             case MessageType::STATE_REPORT:     report          .serialize_to_bitstream(writer); break;
             case MessageType::EVENTS:           events          .serialize_to_bitstream(writer); break;
             case MessageType::COMMAND_CAPTURE:  capture          .serialize_to_bitstream(writer); break;
+            case MessageType::COMMAND_ATTACK:  attack          .serialize_to_bitstream(writer); break;
             case MessageType::GAME_SETTINGS:  game_settings          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
@@ -366,6 +401,8 @@ struct Message
                 return MessageEventsParams::        deserialize_from_bitstream(reader);
             case MessageType::COMMAND_CAPTURE:
                 return MessageCommandCaptureParams::deserialize_from_bitstream(reader);
+            case MessageType::COMMAND_ATTACK:
+                return MessageCommandAttackParams::deserialize_from_bitstream(reader);
             case MessageType::GAME_SETTINGS:
                 return MessageGameSettingsParams::deserialize_from_bitstream(reader);
             default:

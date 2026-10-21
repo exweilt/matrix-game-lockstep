@@ -752,6 +752,10 @@ void Network::process_server_network_frame()
             {
                 m.capture.execute();
             }
+            else if (m.type == MessageType::COMMAND_ATTACK)
+            {
+                m.attack.execute();
+            }
 
             //
             // if (g_server_state == ServerState::BROADCASTING)
@@ -1047,15 +1051,23 @@ void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid, int l
     command.capture.execute_for_side(local_side_id);
 }
 
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
+{
+    Message command { MessageCommandAttackParams {entities_nid, target_nid} };
+    g_Network.send_message(command);
+}
+
+void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id)
+{
+    Message command { MessageCommandAttackParams {entities_nid, target_nid} };
+    g_Network.send_message(command);
+
+    command.attack.execute_for_side(local_side_id);
+}
+
 // void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)
 // {
 //     Command command { CommandCaptureParams{entities_nid, target_nid} };
-//     g_Network.add_input_for_current_input_frame(command);
-// }
-//
-// void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid)
-// {
-//     Command command { CommandAttackParams{entities_nid, target_nid} };
 //     g_Network.add_input_for_current_input_frame(command);
 // }
 //

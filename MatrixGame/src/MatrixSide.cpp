@@ -905,17 +905,25 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
         else if (IS_TRACE_STOP_OBJECT(pObject) &&
                  ((IsLiveUnit(pObject) && pObject->GetSide() != m_Id) || pObject->IsSpecial())) {
             // Attack
-            PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
-            // std::vector<u32> robots_nid{};
-            // for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
-            // {
-            //     if (go->m_Object->IsLiveRobot())
-            //     {
-            //         robots_nid.push_back(go->m_Object->m_NID);
-            //     }
-            // }
-            // NetOrderAttack(robots_nid, pObject->m_NID);
-
+            if (g_Network.is_authority())
+            {
+                PGOrderAttack(SelGroupToLogicGroup(), GetMapPos(pObject), pObject);
+            }
+            else
+            {
+                std::vector<u32> robots_nid{};
+                for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+                {
+                    if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
+                    {
+                        robots_nid.push_back(go->m_Object->m_NID);
+                    }
+                }
+                if (robots_nid.size() > 0)
+                {
+                    NetOrderAttack(robots_nid, pObject->m_NID, m_Id);
+                }
+            }
         }
         else if (pObject == TRACE_STOP_LANDSCAPE || pObject == TRACE_STOP_WATER || (IS_TRACE_STOP_OBJECT(pObject))) {
             // MoveTo
