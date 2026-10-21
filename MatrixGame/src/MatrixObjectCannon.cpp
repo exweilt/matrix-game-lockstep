@@ -500,7 +500,7 @@ void CMatrixCannon::BeforeDraw(void) {
                (g_Config.m_ShowStencilShadows ? MR_ShadowStencil : 0);
     RNeed(MR_Matrix | MR_Graph | sh);
 
-    if (m_ShowHitpointTime > 0 && m_HitPoint > 0 && m_CurrState != CANNON_DIP) {
+    if ((m_ShowHitpointTime > 0 || NeedRepair()) && m_HitPoint > 0 && m_CurrState != CANNON_DIP) {
         D3DXVECTOR3 pos(GetGeoCenter());
         if (TRACE_STOP_NONE ==
             g_MatrixMap->Trace(NULL, g_MatrixMap->m_Camera.GetFrustumCenter(), pos, TRACE_LANDSCAPE, NULL)) {

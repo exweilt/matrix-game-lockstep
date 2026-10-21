@@ -380,6 +380,12 @@ void CMatrixBuilding::OnOutScreen(void) {}
 void CMatrixBuilding::Takt(int cms) {
     DTRACE();
 
+    if (m_ShowHitpointTime > 0) {
+        m_ShowHitpointTime -= cms;
+        if (m_ShowHitpointTime < 0)
+            m_ShowHitpointTime = 0;
+    }
+
     if (m_Side == g_Network.controllable_side_id && FLAG(m_ObjectState, BUILDING_NEW_INCOME)) {
         RESETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
         switch (m_Kind) {
@@ -550,12 +556,6 @@ bool CMatrixBuilding::LogicTakt(int cms) {
         m_UnderAttackTime -= cms;
         if (m_UnderAttackTime < 0)
             m_UnderAttackTime = 0;
-
-        if (m_ShowHitpointTime > 0) {
-            m_ShowHitpointTime -= cms;
-            if (m_ShowHitpointTime < 0)
-                m_ShowHitpointTime = 0;
-        }
 
         if (m_Kind != BUILDING_BASE) {
             if (m_CaptureSeekRobotNextTime < g_MatrixMap->GetTime()) {
@@ -909,7 +909,7 @@ void CMatrixBuilding::BeforeDraw(void) {
     // if (pp > 1.0f) pp = 1.0f;
     // if (pp < 0) pp = 0;
 
-    if (m_ShowHitpointTime > 0 && m_HitPoint > 0) {
+    if ((m_ShowHitpointTime > 0 || NeedRepair()) && m_HitPoint > 0) {
         D3DXVECTOR3 pos;
         float r = GetRadius();
         if (m_Kind == BUILDING_BASE) {

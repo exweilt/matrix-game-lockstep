@@ -82,7 +82,9 @@ public:
     void KillClone(EPBCoord pbc);
     bool ClonePresent(EPBCoord pbc) const { return (m_CoordCount > pbc) && (m_Coord[pbc].present != 0); };
 
-    static void BeforeDrawAll(void) { m_Tex->Preload(); }
+    void HideScreenCoords(void);
+
+    static void BeforeDrawAll(void);
 
     static void DrawAll(void);
     static void DrawAllClones(void);

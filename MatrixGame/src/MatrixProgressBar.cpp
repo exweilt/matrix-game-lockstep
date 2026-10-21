@@ -81,6 +81,30 @@ void CMatrixProgressBar::CreateClone(EPBCoord pbc, float x, float y, float width
         m_Coord[pbc].m_Width = width;
     }
 }
+void CMatrixProgressBar::HideScreenCoords(void) {
+    // Only the primary slot tracks world-projected HP; clones are UI (build queues, etc.).
+    const float off_x = float(g_ScreenX + 1);
+    if (m_Coord[0].present) {
+        m_Coord[0].m_X = off_x;
+        m_Coord[0].m_Y = 0;
+    }
+}
+
+void CMatrixProgressBar::BeforeDrawAll(void) {
+    if (m_Tex == NULL) {
+        m_Tex = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, TEXTURE_PATH_PB);
+        m_Tex->MipmapOff();
+    }
+    m_Tex->Preload();
+
+    for (CMatrixProgressBar *pb = m_First; pb; pb = pb->m_Next) {
+        pb->HideScreenCoords();
+    }
+    for (CMatrixProgressBar *pb = m_FirstClones; pb; pb = pb->m_Next) {
+        pb->HideScreenCoords();
+    }
+}
+
 void CMatrixProgressBar::KillClone(EPBCoord pbc) {
     if (pbc < m_CoordCount) {
         m_Coord[pbc].present = false;

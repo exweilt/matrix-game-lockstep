@@ -1377,6 +1377,8 @@ void CMatrixMap::BeforeDraw(void) {
     if (FLAG(g_Config.m_DIFlags, DI_VISOBJ))
         m_DI.T(L"Visible objects", utils::format(L"%d", CMatrixMapStatic::GetVisObjCnt()).c_str());
 
+    CMatrixProgressBar::BeforeDrawAll();
+
     CMatrixMapStatic::SortEndBeforeDraw();
 
     // cannon for build before draw
@@ -1399,7 +1401,6 @@ void CMatrixMap::BeforeDraw(void) {
     for (PCMatrixEffect e = m_EffectsFirst; e != NULL; e = e->m_Next) {
         e->BeforeDraw();
     }
-    CMatrixProgressBar::BeforeDrawAll();
     m_Water->BeforeDraw();
 
     g_IFaceList->BeforeRender();

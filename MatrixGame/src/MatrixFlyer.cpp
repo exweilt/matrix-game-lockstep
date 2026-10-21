@@ -671,7 +671,7 @@ void CMatrixFlyer::BeforeDraw(void) {
         }
     }
 
-    if (m_ShowHitpointTime > 0 && m_HitPoint > 0) {
+    if ((m_ShowHitpointTime > 0 || NeedRepair()) && m_HitPoint > 0) {
         D3DXVECTOR2 p = g_MatrixMap->m_Camera.Project(GetPos(), g_MatrixMap->GetIdentityMatrix());
         m_PB.Modify(p.x - (PB_FLYER_WIDTH * 0.5f), p.y - FLYER_RADIUS * 2, m_HitPoint * m_MaxHitPointInversed);
     }
