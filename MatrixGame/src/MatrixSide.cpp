@@ -510,11 +510,6 @@ void CMatrixSideUnit::LogicTakt(int ms) {
     CalcMaxSpeed();
     DCP();
 
-    CMatrixMapStatic *object = CMatrixMapStatic::GetFirstLogic();
-    m_RobotsCnt = 0;
-    for (int i = 0; i < m_TeamCnt; i++) {
-        m_Team[i].m_RobotCnt = 0;
-    }
     // m_EnergyCnt = 0;
     // m_TitanCnt = 0;
     // m_PlasmaCnt = 0;
@@ -600,7 +595,20 @@ void CMatrixSideUnit::LogicTakt(int ms) {
         }
     }
     DCP();
-    while (object) {
+    RefreshRobotSupplyCount();
+
+    if (IsRobotMode()) {
+        m_Arcaded->AsRobot()->ShowHitpoint();
+    }
+    DCP();
+}
+
+void CMatrixSideUnit::RefreshRobotSupplyCount() {
+    m_RobotsCnt = 0;
+    for (int i = 0; i < m_TeamCnt; i++) {
+        m_Team[i].m_RobotCnt = 0;
+    }
+    for (CMatrixMapStatic *object = CMatrixMapStatic::GetFirstLogic(); object; object = object->GetNextLogic()) {
         if (object->GetObjectType() == OBJECT_TYPE_ROBOTAI && ((CMatrixRobotAI *)object)->m_Side == m_Id &&
             ((CMatrixRobotAI *)object)->m_CurrState != ROBOT_DIP) {
             m_RobotsCnt++;
@@ -609,13 +617,7 @@ void CMatrixSideUnit::LogicTakt(int ms) {
                 m_Team[((CMatrixRobotAI *)object)->GetTeam()].m_RobotCnt++;
             }
         }
-        object = object->GetNextLogic();
     }
-
-    if (IsRobotMode()) {
-        m_Arcaded->AsRobot()->ShowHitpoint();
-    }
-    DCP();
 }
 
 void CMatrixSideUnit::OnMouseMove() {

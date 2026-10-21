@@ -487,6 +487,7 @@ public:
 
     int GetSideRobots() { return m_RobotsCnt; }
     int GetMaxSideRobots();
+    void RefreshRobotSupplyCount();
 
     void LogicTakt(int ms);
 

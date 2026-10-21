@@ -19,6 +19,7 @@
 #include "Interface/CConstructor.h"
 #include "MatrixRobot.hpp"
 #include "MatrixObjectBuilding.hpp"
+#include "MatrixSide.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
@@ -546,6 +547,12 @@ void Network::process_playback([[maybe_unused]]int ms)
             }
             return deleted;
         });
+
+        for (int i = 0; i < g_MatrixMap->m_SideCnt; i++) {
+            if (g_MatrixMap->m_Side[i].GetStatus() != SS_NONE) {
+                g_MatrixMap->m_Side[i].RefreshRobotSupplyCount();
+            }
+        }
     }
 }
 
