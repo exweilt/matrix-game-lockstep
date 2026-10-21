@@ -23,6 +23,7 @@
 #include "MatrixGamePathUtils.hpp"
 
 #include "Network/Message.hpp"
+#include "3g.hpp"
 #include "Network/Network.hpp"
 
 #include <input.hpp>
@@ -300,25 +301,36 @@ void CFormMatrixGame::Draw(void) {
 
     g_MatrixMap->BeforeDraw();
 
-    if (FLAG(g_Flags, GFLAG_STENCILAVAILABLE))
-    {
+    const bool debug_clear =
 #if defined _DEBUG || defined BUILD_EXE
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL | D3DCLEAR_TARGET,
-                                D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0));
+        g_Network.show_debug_overlay;
 #else
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0));
+        false;
 #endif
 
-        if (CInterface::ClearRects_GetCount())
+    if (FLAG(g_Flags, GFLAG_STENCILAVAILABLE))
+    {
+        if (debug_clear) {
+            ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL | D3DCLEAR_TARGET,
+                                    D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0));
+        }
+        else {
+            ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0));
+        }
+
+        if (CInterface::ClearRects_GetCount()) {
+            const DWORD clear_color = debug_clear ? D3DCOLOR_XRGB(255, 0, 255) : 0;
             ASSERT_DX(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(),
-                                    D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, D3DCOLOR_XRGB(255, 0, 255), 0.0f, 0));
+                                    D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, clear_color, 0.0f, 0));
+        }
     }
     else {
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0));
+        const DWORD clear_color = debug_clear ? D3DCOLOR_XRGB(255, 0, 255) : 0;
+        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER, clear_color, 1.0f, 0));
 
         if (CInterface::ClearRects_GetCount())
             ASSERT_DX(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(), D3DCLEAR_ZBUFFER,
-                                    D3DCOLOR_XRGB(255, 0, 255), 0.0f, 0));
+                                    clear_color, 0.0f, 0));
     }
 
     ASSERT_DX(g_D3DD->BeginScene());
@@ -342,12 +354,14 @@ void CFormMatrixGame::Draw(void) {
 #endif
 
 #ifdef MEM_SPY_ENABLE
-    CDText::T("ALLOC", (int)SMemHeader::fullsize);
+    if (g_Network.show_debug_overlay) {
+        CDText::T("ALLOC", (int)SMemHeader::fullsize);
 
-    std::string buff;
-    CDText::Get(buff);
+        std::string buff;
+        CDText::Get(buff);
 
-    SetWindowTextA(g_Wnd, buff.c_str());
+        SetWindowTextA(g_Wnd, buff.c_str());
+    }
 #endif
 }
 
@@ -799,6 +813,16 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (vk == VK_F2 && down)
     {
+        g_Network.show_debug_overlay = !g_Network.show_debug_overlay;
+        g_MatrixDebugOverlayVisible = g_Network.show_debug_overlay;
+        if (!g_Network.show_debug_overlay) {
+            g_MatrixMap->m_DI.Clear();
+            g_MatrixMap->m_Console.SetActive(false);
+#if (defined _DEBUG) && !(defined _RELDEBUG)
+            CHelper::ClearAll();
+#endif
+        }
+
         // g_Network.save_commands_journal_to_file();
         //
         // u64 checksum = serialize_map(true, g_Network.isClient2 ? "client2_map.json" : "client1_map.json");
@@ -869,6 +893,15 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
         // nw::Message msg2 = nw::Message::deserialize_from_buffer(static_cast<u8*>(to));
         // nw::MessageCommandBatchParams com_batch2 = msg2.command_batch;
         // return;
+    }
+
+    if (vk == VK_TILDA && down)
+    {
+        if (g_Network.show_debug_overlay)
+        {
+            g_MatrixMap->m_Console.SetActive(!g_MatrixMap->m_Console.IsActive());
+        }
+        return;
     }
 
     if (g_MatrixMap->m_Console.IsActive())

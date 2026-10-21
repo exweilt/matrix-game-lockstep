@@ -45,6 +45,8 @@ public:
 
     void T(const wchar_t* key, const wchar_t* val, int ttl = 3000, int bttl = 0, bool add = false);
 
+    void Clear();
+
     void OnLostDevice();
     void OnResetDevice();
 };

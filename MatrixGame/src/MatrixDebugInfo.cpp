@@ -5,6 +5,7 @@
 
 #include "MatrixDebugInfo.hpp"
 #include "3g.hpp"
+#include "Network/Network.hpp"
 #include <stdexcept>
 #include <cstdint>
 
@@ -41,6 +42,11 @@ CMatrixDebugInfo::~CMatrixDebugInfo()
 
 void CMatrixDebugInfo::Draw()
 {
+    if (!g_Network.show_debug_overlay)
+    {
+        return;
+    }
+
     try
     {
         int max_value_len = 0;
@@ -121,6 +127,11 @@ void CMatrixDebugInfo::Draw()
 
 void CMatrixDebugInfo::T(const wchar_t *key, const wchar_t *val, int ttl, int bttl, bool add)
 {
+    if (!g_Network.show_debug_overlay)
+    {
+        return;
+    }
+
     if (!add)
     {
         auto iter = std::ranges::find_if(m_Items, [key](const auto& item) { return item.key == key; });
@@ -141,6 +152,11 @@ void CMatrixDebugInfo::T(const wchar_t *key, const wchar_t *val, int ttl, int bt
 
 void CMatrixDebugInfo::Takt(int ms)
 {
+    if (!g_Network.show_debug_overlay)
+    {
+        return;
+    }
+
     for (auto iter = m_Items.begin(); iter < m_Items.end();)
     {
         if (iter->bttl > 0)
@@ -163,6 +179,11 @@ void CMatrixDebugInfo::Takt(int ms)
 void CMatrixDebugInfo::SetStartPos(const CPoint& pos)
 {
     m_Pos = pos;
+}
+
+void CMatrixDebugInfo::Clear()
+{
+    m_Items.clear();
 }
 
 void CMatrixDebugInfo::OnLostDevice()

@@ -41,6 +41,7 @@ class CHelper : public Base::CMain {
 
     int m_DeleteAfterCntDraw;
     int m_Group;
+    bool m_Suppressed = false;
 
     D3DPRIMITIVETYPE m_Type;
     int m_CntPrimitive;
@@ -58,6 +59,7 @@ class CHelper : public Base::CMain {
 public:
     static void StaticInit(void);
     static CHelper *Create(int del_after_cnt_draw = 0, int group = 0);
+    static CHelper *SuppressedInstance();
     static void Destroy(CHelper *he);
     static void ClearAll(void);
     static void DrawAll(void);

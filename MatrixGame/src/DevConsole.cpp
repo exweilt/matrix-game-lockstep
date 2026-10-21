@@ -6,6 +6,7 @@
 #include "MatrixMap.hpp"
 #include "DevConsole.hpp"
 #include "MatrixSoundManager.hpp"
+#include "Network/Network.hpp"
 
 #include "CFile.hpp"
 
@@ -195,6 +196,9 @@ void CDevConsole::ShowHelp(void) {
 }
 
 void CDevConsole::SetActive(bool active) {
+    if (active && !g_Network.show_debug_overlay) {
+        return;
+    }
     INITFLAG(m_Flags, DCON_ACTIVE, active);
     if (active) {
         m_NextTime = g_MatrixMap->GetTime();

@@ -16,6 +16,16 @@ const float pi = 3.14159265358979f;
 CHelper *CHelper::m_First;
 CHelper *CHelper::m_Last;
 
+CHelper *CHelper::SuppressedInstance() {
+    static CHelper *dummy = nullptr;
+    if (!dummy) {
+        dummy = HNew(g_CacheHeap) CHelper(999999, -1);
+        LIST_DEL(dummy, m_First, m_Last, m_Prev, m_Next);
+        dummy->m_Suppressed = true;
+    }
+    return dummy;
+}
+
 void CHelper::StaticInit(void) {
     m_First = NULL;
     m_Last = NULL;
@@ -70,6 +80,10 @@ void CHelper::Clear() {
 void CHelper::Line(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, DWORD color1, DWORD color2) {
     DTRACE();
 
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
+
     Clear();
 
     m_Type = D3DPT_LINELIST;
@@ -87,6 +101,10 @@ void CHelper::Line(const D3DXVECTOR3 &start, const D3DXVECTOR3 &end, DWORD color
 
 void CHelper::BoundBox(const D3DXVECTOR3 &mins, const D3DXVECTOR3 &maxs, DWORD color) {
     DTRACE();
+
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
 
     Clear();
 
@@ -198,6 +216,10 @@ void CHelper::BoundBox(const D3DXVECTOR3 &mins, const D3DXVECTOR3 &maxs, DWORD c
 SHelperVertex *CHelper::Lines(int cnt) {
     DTRACE();
 
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return m_Vertex;
+    }
+
     Clear();
 
     m_Type = D3DPT_LINELIST;
@@ -212,6 +234,10 @@ SHelperVertex *CHelper::Lines(int cnt) {
 SHelperVertex *CHelper::LineStrip(int cnt) {
     DTRACE();
 
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return m_Vertex;
+    }
+
     Clear();
 
     m_Type = D3DPT_LINESTRIP;
@@ -225,6 +251,10 @@ SHelperVertex *CHelper::LineStrip(int cnt) {
 
 void CHelper::Sphere(const D3DXVECTOR3 &pos, float radius, int cnt_rings, DWORD color) {
     DTRACE();
+
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
 
     SetMatrixPos(pos);
     word x, y, vtx, index;
@@ -331,6 +361,10 @@ void CHelper::Cone(D3DXVECTOR3 vFrom, D3DXVECTOR3 vTo, float rFrom, float rTo, D
                    int seg_cnt) {
     DTRACE();
 
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
+
     int i, index;
 
     if (seg_cnt < 3)
@@ -372,6 +406,10 @@ void CHelper::Cone(D3DXVECTOR3 vFrom, D3DXVECTOR3 vTo, float rFrom, float rTo, D
 
 void CHelper::ConeUpdate(D3DXVECTOR3 vFrom, D3DXVECTOR3 vTo, float rFrom, float rTo, DWORD colorFrom, DWORD colorTo) {
     DTRACE();
+
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
 
     int i, segcnt;
     float a;
@@ -451,6 +489,10 @@ void CHelper::ConeUpdate(D3DXVECTOR3 vFrom, D3DXVECTOR3 vTo, float rFrom, float 
 void CHelper::Triangle(const D3DXVECTOR3 &p0, const D3DXVECTOR3 &p1, const D3DXVECTOR3 &p2, DWORD color) {
     DTRACE();
 
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
+
     this->m_CntPrimitive = 1;
     this->m_Type = D3DPT_TRIANGLELIST;
 
@@ -469,6 +511,10 @@ void CHelper::Triangle(const D3DXVECTOR3 &p0, const D3DXVECTOR3 &p1, const D3DXV
 
 void CHelper::Draw() {
     DTRACE();
+
+    if (m_Suppressed || !g_MatrixDebugOverlayVisible) {
+        return;
+    }
 
     ASSERT_DX(g_D3DD->SetTransform(D3DTS_WORLD, &m_Matrix));
 
@@ -502,11 +548,18 @@ void CHelper::DrawEnd(void) {
 
 CHelper *CHelper::Create(int del_after_cnt_draw, int group) {
     DTRACE();
+    if (!g_MatrixDebugOverlayVisible) {
+        return SuppressedInstance();
+    }
     return HNew(g_CacheHeap) CHelper(del_after_cnt_draw, group);
 }
 
 void CHelper::Destroy(CHelper *he) {
     DTRACE();
+
+    if (!he || he->m_Suppressed) {
+        return;
+    }
 
     HDelete(CHelper, he, g_CacheHeap);
 }
@@ -524,6 +577,10 @@ void CHelper::ClearAll(void) {
 
 void CHelper::DrawAll(void) {
     DTRACE();
+
+    if (!g_MatrixDebugOverlayVisible) {
+        return;
+    }
 
     DrawBegin();
 

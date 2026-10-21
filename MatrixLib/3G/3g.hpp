@@ -47,6 +47,9 @@ extern D3DPRESENT_PARAMETERS g_D3Dpp;
 // global config flags
 extern DWORD g_Flags;
 
+/** Synced with g_Network.show_debug_overlay (MatrixGame); gates debug helpers and CDText. */
+extern bool g_MatrixDebugOverlayVisible;
+
 #ifdef DO_SMART_COLOROPS
 
 struct STextureStageOp {

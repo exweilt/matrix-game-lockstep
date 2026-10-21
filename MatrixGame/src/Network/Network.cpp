@@ -59,6 +59,7 @@ void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
 }  // namespace
 
 Network g_Network{};
+bool g_MatrixDebugOverlayVisible = false;
 
 // namespace network
 // {

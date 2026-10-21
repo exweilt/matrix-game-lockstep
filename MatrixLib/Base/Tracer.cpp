@@ -52,6 +52,10 @@ CDText::CDText(const char *key, const char *text)
 
 void CDText::T(const char *key, const char *text)
 {
+    if (!g_MatrixDebugOverlayVisible) {
+        return;
+    }
+
     if (!first_dtext)
     {
         first_dtext = new CDText(key, text);

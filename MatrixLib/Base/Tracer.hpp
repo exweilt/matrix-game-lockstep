@@ -47,6 +47,8 @@ inline unsigned __int64 GetCPUTakt(void) {
 
 #ifdef _DEBUG
 
+extern bool g_MatrixDebugOverlayVisible;
+
 #define DCNT(s)                    \
     {                              \
         static int ccc = 1;        \

@@ -141,6 +141,8 @@ public:
     // bool next_frame_requested   = false; // should simulate next physics frame
 
     bool isCompactMode;
+    /** F2 toggles on-screen / 3D debug overlay (m_DI text, CHelper gizmos, etc.). */
+    bool show_debug_overlay = false;
     // The next "free" networkable ID.
     // Used for robots, turrets, factories and bases.
     u32 next_nid              = 0;
@@ -255,3 +257,5 @@ void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKi
 // namespace nw = network;
 
 extern Network g_Network;
+/** Kept in sync with g_Network.show_debug_overlay for MatrixLib debug gating. */
+extern bool g_MatrixDebugOverlayVisible;
