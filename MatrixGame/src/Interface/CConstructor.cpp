@@ -12,6 +12,7 @@
 #include "CIFaceMenu.h"
 #include "CHistory.h"
 #include "../Effects/MatrixEffectWeapon.hpp"
+#include "../Network/Network.hpp"
 
 CConstructor::CConstructor() {
     m_ViewPosX = 0;
@@ -230,45 +231,23 @@ void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
     int cfg_num = player_side->m_ConstructPanel->m_CurrentConfig;
     g_ConfigHistory->AddConfig(&player_side->m_ConstructPanel->m_Configs[cfg_num]);
 
-    if (g_Network.is_authority())
-    {
-        // // order n robots
-        // i32 robot_count = g_IFaceList->m_RCountControl->GetCounter();
-        // // for (int i = 0; i < robot_count; i++) {
-        // //     StackRobot(pObj);
-        // // }
-        // DCP();
-        // std::vector<ERobotUnitKind> weapons{};
-        // for (i32 i = 0; i < MAX_WEAPON_CNT; i++)
-        // {
-        //     weapons.emplace_back(m_Weapon[i].m_Unit.m_nKind);
-        // }
-        // DCP();
-        // NetOrderConstruct(m_Chassis.m_nKind, m_Armor.m_Unit.m_nKind, m_Head.m_nKind, weapons, robot_count, m_Base->m_NID);
-        // DCP();
+    const int robot_count = g_IFaceList->m_RCountControl->GetCounter();
+    const bool execute_locally =
+            g_Network.is_authority() || g_Network.network_mode == NetworkMode::NONE;
 
-        // m_Robot->m_Side = m_Base->m_Side;
-
-        for (int i = 0; i < g_IFaceList->m_RCountControl->GetCounter(); i++) {
+    if (execute_locally) {
+        for (int i = 0; i < robot_count; i++) {
             StackRobot(pObj);
         }
 
         int res[MAX_RESOURCES];
         GetConstructionPrice(res);
-        player_side->AddResourceAmount(TITAN, -res[TITAN] * g_IFaceList->m_RCountControl->GetCounter());
-        player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * g_IFaceList->m_RCountControl->GetCounter());
-        player_side->AddResourceAmount(ENERGY, -res[ENERGY] * g_IFaceList->m_RCountControl->GetCounter());
-        player_side->AddResourceAmount(PLASMA, -res[PLASMA] * g_IFaceList->m_RCountControl->GetCounter());
-
-        if (player_side && player_side->m_ConstructPanel) {
-            player_side->m_ConstructPanel->ResetGroupNClose();
-        }
-        g_IFaceList->m_RCountControl->Reset();
-        g_IFaceList->m_RCountControl->CheckUp();
+        player_side->AddResourceAmount(TITAN, -res[TITAN] * robot_count);
+        player_side->AddResourceAmount(ELECTRONICS, -res[ELECTRONICS] * robot_count);
+        player_side->AddResourceAmount(ENERGY, -res[ENERGY] * robot_count);
+        player_side->AddResourceAmount(PLASMA, -res[PLASMA] * robot_count);
         DCP();
-    }
-    else
-    {
+    } else {
         MessageCommandBuildParams build{};
 
         int weapon_idx = 0;
@@ -287,12 +266,18 @@ void __stdcall CConstructor::RemoteBuild([[maybe_unused]]void *pObj) {
             }
         }
 
-        build.robot_count = g_IFaceList->m_RCountControl->GetCounter();
+        build.robot_count = static_cast<u8>(robot_count);
         build.target_base_nid = m_Base->m_NID;
 
-        Message msg = Message { build };
-        g_Network.send_message( msg );
+        Message msg = Message{build};
+        g_Network.send_message(msg);
     }
+
+    if (player_side && player_side->m_ConstructPanel) {
+        player_side->m_ConstructPanel->ResetGroupNClose();
+    }
+    g_IFaceList->m_RCountControl->Reset();
+    g_IFaceList->m_RCountControl->CheckUp();
 }
 void CConstructor::BeforeRender(void) {
     // static float za = 0;
