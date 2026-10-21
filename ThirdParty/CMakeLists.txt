@@ -89,6 +89,12 @@ get_target_property(ENET_SOURCE_DIR enet SOURCE_DIR)
 
 #===============================================================
 
+add_library(tomlplusplus INTERFACE)
+target_include_directories(tomlplusplus INTERFACE ${CMAKE_CURRENT_LIST_DIR}/tomlplusplus/include)
+add_library(tomlplusplus::tomlplusplus ALIAS tomlplusplus)
+
+#===============================================================
+
 
 
 #set(XXHASH_DIR C:/opt/xxHash)

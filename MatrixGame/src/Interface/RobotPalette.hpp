@@ -1,0 +1,11 @@
+// MatrixGame - SR2 Planetary battles engine
+// Copyright (C) 2012, Elemental Games, Katauri Interactive, CHK-Games
+// Licensed under GPLv2 or any later version
+// Refer to the LICENSE file included
+
+#pragma once
+
+class CHistory;
+
+/** Loads robots.palette.toml next to the game executable into g_ConfigHistory (if present). */
+void LoadRobotPaletteFromExecutableDirectory(CHistory *history);

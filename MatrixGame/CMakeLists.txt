@@ -59,6 +59,7 @@ target_link_libraries(
         MatrixLib
         "$<$<C_COMPILER_ID:MSVC>:legacy_stdio_definitions>"
         enet
+        tomlplusplus::tomlplusplus
         # xxhash
 )
 

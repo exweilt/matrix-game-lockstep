@@ -1,2 +1,5 @@
 build*/
 bin/
+ThirdParty/imgui
+ThirdParty/cereal_backup
+.idea

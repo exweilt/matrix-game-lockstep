@@ -19,6 +19,7 @@
 #include "Interface/CIFaceMenu.h"
 #include "Interface/MatrixHint.hpp"
 #include "Interface/CHistory.h"
+#include "Interface/RobotPalette.hpp"
 #include "MatrixSampleStateManager.hpp"
 #include "MatrixMultiSelection.hpp"
 
@@ -574,6 +575,7 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
     }
 
     g_ConfigHistory = HNew(g_MatrixHeap) CHistory;
+    LoadRobotPaletteFromExecutableDirectory(g_ConfigHistory);
     CInterface *pInterface = NULL;
 
     g_LoadProgress->SetCurLPPos(10);
