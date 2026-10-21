@@ -241,6 +241,9 @@ void NetOrderMoveTo(const std::vector<u32> &entities_nid, const D3DXVECTOR3& des
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid);
 void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id);
 
+void NetOrderStop(const std::vector<u32> &entities_nid, bool break_robot_orders);
+void NetOrderStop(const std::vector<u32> &entities_nid, int local_side_id, bool break_robot_orders);
+
 void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid);
 void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid, int local_side_id);
 

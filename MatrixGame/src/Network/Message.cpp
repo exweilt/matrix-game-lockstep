@@ -321,6 +321,64 @@ void MessageCommandAttackParams::execute()
     side->PGOrderAttack(no, GetMapPos(target), target);
 }
 
+static void break_robot_orders_for_command(u32 *robot_nid, size_t number_of_robots)
+{
+    for (i32 i = 0; i < number_of_robots; i++)
+    {
+        CMatrixMapStatic *obj = g_MatrixMap->find_static_with_nid(robot_nid[i]);
+        if (obj != nullptr && obj->GetObjectType() == OBJECT_TYPE_ROBOTAI)
+            ((CMatrixRobotAI *)obj)->BreakAllOrders();
+    }
+}
+
+void MessageCommandStopParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    assert(this->number_of_robots <= MAX_ROBOTS_PER_COMMAND);
+    writer.write_u8(this->number_of_robots);
+
+    for (u32 i = 0; i < this->number_of_robots; i++)
+    {
+        writer.write_u32(this->robot_nid[i]);
+    }
+
+    writer.write_u8(this->break_robot_orders);
+}
+
+MessageCommandStopParams MessageCommandStopParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandStopParams result;
+
+    result.number_of_robots = reader.read_u8();
+
+    memset(result.robot_nid, 0, MAX_ROBOTS_PER_COMMAND * sizeof(u32));
+    for (u32 i = 0; i < result.number_of_robots; i++)
+    {
+        result.robot_nid[i] = reader.read_u32();
+    }
+
+    result.break_robot_orders = reader.read_u8();
+
+    return result;
+}
+
+void MessageCommandStopParams::execute_for_side(u32 side_id)
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(side_id);
+    int no = side->SelGroupToLogicGroup();
+    side->PGOrderStop(no);
+    if (break_robot_orders)
+        side->SelectedGroupBreakOrders();
+}
+
+void MessageCommandStopParams::execute()
+{
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(g_MatrixMap->find_static_with_nid(robot_nid[0])->AsRobot()->GetSide());
+    int no = robots_to_logic_group(side, robot_nid, number_of_robots);
+    side->PGOrderStop(no);
+    if (break_robot_orders)
+        break_robot_orders_for_command(robot_nid, number_of_robots);
+}
+
 // void MessageCommandBuildParams::execute()
 // {
 // }

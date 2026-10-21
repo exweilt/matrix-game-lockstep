@@ -1579,6 +1579,33 @@ void CMatrixSideUnit::SelectedGroupBreakOrders() {
     }
 }
 
+void CMatrixSideUnit::PlayerGroupStopOrder(bool break_robot_orders) {
+    if (GetCurGroup() == nullptr)
+        return;
+
+    if (g_Network.is_authority())
+    {
+        PGOrderStop(SelGroupToLogicGroup());
+        if (break_robot_orders)
+            SelectedGroupBreakOrders();
+    }
+    else
+    {
+        std::vector<u32> robots_nid{};
+        for (CMatrixGroupObject *go = GetCurGroup()->m_FirstObject; go != NULL; go = go->m_NextObject)
+        {
+            if (go->m_Object->IsLiveRobot() && go->m_Object->GetSide() == m_Id)
+            {
+                robots_nid.push_back(go->m_Object->m_NID);
+            }
+        }
+        if (robots_nid.size() > 0)
+        {
+            NetOrderStop(robots_nid, m_Id, break_robot_orders);
+        }
+    }
+}
+
 void CMatrixSideUnit::SetCurSelNum(int i) {
     DTRACE();
     g_IFaceList->DeletePersonal();
@@ -9699,22 +9726,38 @@ void CMatrixSideUnit::PGSetPlace(CMatrixRobotAI *robot, const CPoint &p) {
 }
 
 CPoint CMatrixSideUnit::PGCalcCenterGroup(int no) {
-    CMatrixMapStatic *obj;
-
     CPoint tp(0, 0);
     int cnt = 0;
 
-    obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
-            CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
+    if (g_Network.is_authority())
+    {
+        CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
+                CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
 
-            tp.x += robot->GetMapPosX();
-            tp.y += robot->GetMapPosY();
-            cnt++;
+                tp.x += robot->GetMapPosX();
+                tp.y += robot->GetMapPosY();
+                cnt++;
+            }
+            obj = obj->GetNextLogic();
         }
-        obj = obj->GetNextLogic();
     }
+    else
+    {
+        for (auto& [id, robot] : g_Network.robots)
+        {
+            if (robot->IsLive() && robot->GetSide() == m_Id && robot->GetGroupLogic() == no)
+            {
+                tp.x += robot->GetMapPosX();
+                tp.y += robot->GetMapPosY();
+                cnt++;
+            }
+        }
+    }
+
+    if (cnt <= 0)
+        return CPoint(0, 0);
     return CPoint(tp.x / cnt, tp.y / cnt);
 }
 
@@ -9734,29 +9777,45 @@ void CMatrixSideUnit::PGPlaceClear(int no) {
 }
 
 CPoint CMatrixSideUnit::PGCalcPlaceCenter(int no) {
-    CMatrixMapStatic *obj;
-
     CPoint tp(0, 0);
     int cnt = 0;
 
-    obj = CMatrixMapStatic::GetFirstLogic();
-    while (obj) {
-        if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
-            CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
+    if (g_Network.is_authority())
+    {
+        CMatrixMapStatic *obj = CMatrixMapStatic::GetFirstLogic();
+        while (obj) {
+            if (obj->IsLiveRobot() && (obj->AsRobot()->GetSide() == m_Id && obj->AsRobot()->GetGroupLogic() == no)) {
+                CMatrixRobotAI *robot = (CMatrixRobotAI *)obj;
 
-            CPoint tp2 = PLPlacePos(robot);
-            if (tp2.x >= 0) {
-                tp.x += tp2.x;
-                tp.y += tp2.y;
-                cnt++;
+                CPoint tp2 = PLPlacePos(robot);
+                if (tp2.x >= 0) {
+                    tp.x += tp2.x;
+                    tp.y += tp2.y;
+                    cnt++;
+                }
+            }
+            obj = obj->GetNextLogic();
+        }
+    }
+    else
+    {
+        for (auto& [id, robot] : g_Network.robots)
+        {
+            if (robot->IsLive() && robot->GetSide() == m_Id && robot->GetGroupLogic() == no)
+            {
+                CPoint tp2 = PLPlacePos(robot);
+                if (tp2.x >= 0) {
+                    tp.x += tp2.x;
+                    tp.y += tp2.y;
+                    cnt++;
+                }
             }
         }
-        obj = obj->GetNextLogic();
     }
+
     if (cnt <= 0)
         return PGCalcCenterGroup(no);
-    else
-        return CPoint(tp.x / cnt, tp.y / cnt);
+    return CPoint(tp.x / cnt, tp.y / cnt);
 }
 
 void CMatrixSideUnit::PGShowPlace(int no) {

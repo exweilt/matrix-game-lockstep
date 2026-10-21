@@ -3992,7 +3992,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
     else if (element->m_strName == IF_AORDER_FROBOT_ON) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
 
-        ps->PGOrderStop(ps->SelGroupToLogicGroup());
+        ps->PlayerGroupStopOrder();
     }
     else if (element->m_strName == IF_AORDER_FROBOT_OFF) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -4009,7 +4009,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
     if (element->m_strName == IF_AORDER_PROTECT_ON) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
 
-        ps->PGOrderStop(ps->SelGroupToLogicGroup());
+        ps->PlayerGroupStopOrder();
     }
     else if (element->m_strName == IF_AORDER_PROTECT_OFF) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -4021,7 +4021,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
     if (element->m_strName == IF_AORDER_CAPTURE_ON) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
 
-        ps->PGOrderStop(ps->SelGroupToLogicGroup());
+        ps->PlayerGroupStopOrder();
     }
     else if (element->m_strName == IF_AORDER_CAPTURE_OFF) {
         RESETFLAG(m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -4062,12 +4062,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
         ResetOrderingMode();
     }
     else if (element->m_strName == IF_ORDER_STOP) {
-        ps->PGOrderStop(ps->SelGroupToLogicGroup());
-        // if(ps->m_CurGroup->m_Tactics){
-        //    ps->m_CurGroup->DeInstallTactics();
-        //}else{
-        //    ps->SelectedGroupBreakOrders();
-        //}
+        ps->PlayerGroupStopOrder();
     }
 
     if (element->m_strName == IF_ENTER_ROBOT) {

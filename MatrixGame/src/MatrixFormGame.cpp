@@ -1037,7 +1037,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                         // a"U"to attack - Программа атаки.
                         if (FLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON)) {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
-                            ps->PGOrderStop(ps->SelGroupToLogicGroup());
+                            ps->PlayerGroupStopOrder();
                         }
                         else {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -1050,7 +1050,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                         //"C"apture - Программа захвата.
                         if (FLAG(g_IFaceList->m_IfListFlags, AUTO_CAPTURE_ON)) {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
-                            ps->PGOrderStop(ps->SelGroupToLogicGroup());
+                            ps->PlayerGroupStopOrder();
                         }
                         else {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -1063,7 +1063,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                         //"D"efender - Программа Охранять Protect
                         if (FLAG(g_IFaceList->m_IfListFlags, AUTO_PROTECT_ON)) {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
-                            ps->PGOrderStop(ps->SelGroupToLogicGroup());
+                            ps->PlayerGroupStopOrder();
                         }
                         else {
                             RESETFLAG(g_IFaceList->m_IfListFlags, AUTO_FROBOT_ON | AUTO_CAPTURE_ON | AUTO_PROTECT_ON);
@@ -1080,8 +1080,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                     else if (isKeyPressed(KA_ORDER_STOP))
                     {
                         //"S"top - Стоять
-                        ps->PGOrderStop(ps->SelGroupToLogicGroup());
-                        ps->SelectedGroupBreakOrders();
+                        ps->PlayerGroupStopOrder(true);
                     }
                     else if (isKeyPressed(KA_ORDER_CAPTURE))
                     {

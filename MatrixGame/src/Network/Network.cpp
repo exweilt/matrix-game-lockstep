@@ -756,6 +756,10 @@ void Network::process_server_network_frame()
             {
                 m.attack.execute();
             }
+            else if (m.type == MessageType::COMMAND_STOP)
+            {
+                m.command_stop.execute();
+            }
 
             //
             // if (g_server_state == ServerState::BROADCASTING)
@@ -1063,6 +1067,20 @@ void NetOrderAttack(const std::vector<u32> &entities_nid, u32 target_nid, int lo
     g_Network.send_message(command);
 
     command.attack.execute_for_side(local_side_id);
+}
+
+void NetOrderStop(const std::vector<u32> &entities_nid, bool break_robot_orders)
+{
+    Message command { MessageCommandStopParams {entities_nid, break_robot_orders} };
+    g_Network.send_message(command);
+}
+
+void NetOrderStop(const std::vector<u32> &entities_nid, int local_side_id, bool break_robot_orders)
+{
+    Message command { MessageCommandStopParams {entities_nid, break_robot_orders} };
+    g_Network.send_message(command);
+
+    command.command_stop.execute_for_side(local_side_id);
 }
 
 // void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid)

@@ -654,6 +654,7 @@ public:
     int SelGroupToLogicGroup(void);
     int RobotToLogicGroup(CMatrixRobotAI *robot);
     void PGOrderStop(int no);
+    void PlayerGroupStopOrder(bool break_robot_orders = false);
     void PGOrderMoveTo(int no, const CPoint &tp);
     void PGOrderCapture(int no, CMatrixBuilding *building);
     void PGOrderAttack(int no, const CPoint &tp, CMatrixMapStatic *terget_obj);
