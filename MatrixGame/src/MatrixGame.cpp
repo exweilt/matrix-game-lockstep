@@ -39,6 +39,12 @@ CMatrixMapLogic *g_MatrixMap;
 CRenderPipeline *g_Render;
 CLoadProgress *g_LoadProgress;
 
+void MatrixGameApplySystemCursor(void) {
+    if (g_MatrixMap) {
+        g_MatrixMap->m_Cursor.ApplySystemCursor();
+    }
+}
+
 const wchar_t* get_cmd_flag_value(const wchar_t* flag, wchar_t** args, int num_args)
 {
     size_t flag_len = wcslen(flag);

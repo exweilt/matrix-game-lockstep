@@ -90,3 +90,6 @@ public:
 private:
     static void ApplyVideoParams(SRobotsSettings &settings);
 };
+
+/** Reassert game cursor over the Win32 default (WM_SETCURSOR / after Present). */
+void MatrixGameApplySystemCursor(void);

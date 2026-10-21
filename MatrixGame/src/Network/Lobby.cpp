@@ -118,6 +118,7 @@ void Lobby::start_game()
     std::string map = get_selected_map_name();
     CGame::load_map( std::wstring(map.begin(), map.end()) );
     g_Network.game_state = GameState::GAME;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     g_Network.init_server_host();
 }
 
@@ -129,6 +130,7 @@ void Lobby::join_game()
     std::string map = g_Network.connect_to_server(input_server_ip).mapname;
     CGame::load_map( std::wstring(map.begin(), map.end()) );
     g_Network.game_state = GameState::GAME;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 }
 
 std::string side_to_colorname(u32 side)

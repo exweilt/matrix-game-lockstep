@@ -20,6 +20,7 @@
 #include "imgui_impl_dx9.h"
 
 #include "../../MatrixGame/src/Network/Network.hpp"
+#include "../../MatrixGame/src/MatrixGame.h"
 
 
 #include <utils.hpp>
@@ -708,6 +709,13 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
  */
 LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    // ImGui's WM_SETCURSOR handler forces IDC_ARROW and returns before we can run. During gameplay
+    // the Matrix cursor owns the client area — handle that before ImGui.
+    if (message == WM_SETCURSOR && LOWORD(lParam) == HTCLIENT && g_Network.game_state != GameState::LOBBY) {
+        MatrixGameApplySystemCursor();
+        return TRUE;
+    }
+
     if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
         return true;
 
@@ -760,8 +768,6 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             }
             break;
         }
-        case WM_SETCURSOR:
-            return true;  // prevent Windows from setting cursor to window class cursor
         case WM_DESTROY:
         case WM_CLOSE:
         case WM_QUIT:

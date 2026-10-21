@@ -34,7 +34,10 @@ public:
         memset(this, 0, sizeof(CMatrixCursor));
         m_OldCursor = SetCursor(NULL);
     }
-    ~CMatrixCursor(void) { Clear(); }
+    ~CMatrixCursor(void) {
+        Clear();
+        SetCursor(m_OldCursor);
+    }
 
     void Draw(void) const;
 
@@ -42,6 +45,8 @@ public:
     void Takt(int ms);
     void Clear(void);
     void SetVisible(bool flag);
+    /** Keep the OS cursor consistent with the game (call from WM_SETCURSOR / after Present). */
+    void ApplySystemCursor(void) const;
 
     const CPoint &GetPos(void) const { return m_Pos; }
     int GetPosX(void) const { return m_Pos.x; }

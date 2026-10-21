@@ -151,6 +151,7 @@ void CMatrixCursor::Select(const std::wstring& name) {
         if (FLAG(m_CursorFlags, CURSOR_VISIBLE))
             while (ShowCursor(true) < 0)
                 ;
+        ApplySystemCursor();
         DCP();
     }
 }
@@ -209,9 +210,21 @@ void CMatrixCursor::Takt(int ms) {
     }
 }
 
-void CMatrixCursor::Clear(void) {
-    SetCursor(m_OldCursor);
+void CMatrixCursor::ApplySystemCursor(void) const {
+    if (g_Config.m_SoftwareCursor || !FLAG(m_CursorFlags, CURSOR_VISIBLE)) {
+        SetCursor(NULL);
+        return;
+    }
 
+    if (m_CursorIcons != NULL && m_FramesCnt > 0) {
+        SetCursor(m_CursorIcons[m_Frame]);
+    }
+    else {
+        SetCursor(NULL);
+    }
+}
+
+void CMatrixCursor::Clear(void) {
     if (m_CursorTexture) {
         m_CursorTexture->Unload();
         m_CursorTexture = NULL;

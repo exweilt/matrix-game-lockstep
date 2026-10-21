@@ -334,6 +334,7 @@ void CFormMatrixGame::Draw(void) {
 
     ASSERT_DX(g_D3DD->EndScene());
     ASSERT_DX(g_D3DD->Present(NULL, NULL, NULL, NULL));
+    g_MatrixMap->m_Cursor.ApplySystemCursor();
 
 #ifdef _DEBUG
     RESETFLAG(g_Flags, GFLAG_RENDERINPROGRESS);
