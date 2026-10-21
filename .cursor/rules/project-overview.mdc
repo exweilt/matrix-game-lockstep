@@ -10,6 +10,7 @@ alwaysApply: true
 - **Platform**: For Windows, legacy DirectX9
 - **Goal**: Implement complete authoritative state-sync architecture for online multiplayer.
 - **Status**: The mod is already more than halfway done. Players can host a game and join a game, but there is a lot of issues needing fixes and many features are missing.
+- **Architecture**: read `@ARCHITECTURE.md` to learn more about the architecture.
 
 ## Rules for AI Agents
 
