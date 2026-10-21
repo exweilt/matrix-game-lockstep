@@ -20,6 +20,7 @@
 #include "Interface/MatrixHint.hpp"
 #include "Interface/CHistory.h"
 #include "Interface/RobotPalette.hpp"
+#include "Network/ScmSettingsApplier.hpp"
 #include "MatrixSampleStateManager.hpp"
 #include "MatrixMultiSelection.hpp"
 
@@ -355,6 +356,7 @@ void CGame::load_map(std::wstring mapname)
     {
         ERROR_S(L"Unable to load map. Error happens.");
     }
+    ApplyScmSettingsAfterMapLoad(g_MatrixMap);
     DCP();
 
     // std::wstring mapname_lowercase(g_MatrixMap->MapName()); // MapName() is actually the same as "mapname"
@@ -525,6 +527,8 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
 
     g_Config.SetDefaults();
     g_Config.ReadParams();
+    LoadScmSettingsFromExecutableDirectory();
+    ApplyScmSettingsToConfig();
 
     g_Config.ApplySettings(&settings);
     g_Sampler.ApplySettings(&settings);

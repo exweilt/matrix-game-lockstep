@@ -13,6 +13,7 @@
 #include "CHistory.h"
 #include "../Effects/MatrixEffectWeapon.hpp"
 #include "../Network/Network.hpp"
+#include "../Network/ScmSettingsApplier.hpp"
 
 CConstructor::CConstructor() {
     m_ViewPosX = 0;
@@ -143,8 +144,13 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
     //	if(!m_Base || m_Base->m_State != BASE_CLOSED)
     //		return;
-    if (!m_Base || m_Base->m_BS.GetItemsCnt() >= 6)
+    if (!m_Base) {
         return;
+    }
+    CMatrixSideUnit *stack_side = g_MatrixMap->GetSideById(m_Base->m_Side);
+    if (m_Base->m_BS.GetItemsCnt() >= ScmGetMaxBuildQueueForSide(stack_side)) {
+        return;
+    }
     if (m_nUnitCnt) {
         // m_Base->m_BusyFlag.SetBusy(m_Build);
         m_Build = HNew(g_MatrixHeap) CMatrixRobotAI;

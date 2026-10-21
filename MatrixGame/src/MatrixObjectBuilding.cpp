@@ -17,6 +17,7 @@
 #include "MatrixObjectCannon.hpp"
 #include "Interface/CInterface.h"
 #include "Network/Network.hpp"
+#include "Network/ScmSettingsApplier.hpp"
 #include "Network/Snapshot.hpp"
 
 #include "Effects/MatrixEffectSelection.hpp"
@@ -322,8 +323,9 @@ bool CMatrixBuilding::Damage(
     bool friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
     float damagek =
             (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == g_Network.controllable_side_id)
-        damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
+    if (friendly_fire) {
+        damagek *= ScmGetFriendlyFireDamageScale(m_Side);
+    }
 
     int idx = Weap2Index(weap);
     if (weap == WEAPON_REPAIR) {
@@ -409,7 +411,7 @@ void CMatrixBuilding::Takt(int cms) {
                 break;
             case BUILDING_BASE: {
                 int fu = g_MatrixMap->GetControllableSide()->GetResourceForceUp();
-                int prihod = RESOURCES_INCOME_BASE * fu / 100;
+                int prihod = ScmGetBaseIncome() * fu / 100;
                 CMatrixEffect::CreateBillboardScore(utils::format(L"a%d", prihod).c_str(), m_TopPoint, 0xFFFFFFFF);
                 // if(m_BaseRCycle == 0){
                 //    CMatrixEffect::CreateBillboardScore(L"t" + std::wstring(prihod, g_CacheHeap), m_TopPoint, 0xFFFFFF00);
@@ -624,7 +626,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                         // m_ResourceAmount += RESOURCES_INCOME;
                         SETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
                         m_ResourcePeriod = 0;
-                        su->AddResourceAmount(TITAN, RESOURCES_INCOME);
+                        su->AddResourceAmount(TITAN, ScmGetFactoryIncome(TITAN));
                     }
                     break;
                 case BUILDING_PLASMA:
@@ -632,7 +634,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                         // m_ResourceAmount += RESOURCES_INCOME;
                         SETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
                         m_ResourcePeriod = 0;
-                        su->AddResourceAmount(PLASMA, RESOURCES_INCOME);
+                        su->AddResourceAmount(PLASMA, ScmGetFactoryIncome(PLASMA));
                     }
                     break;
                 case BUILDING_ELECTRONIC:
@@ -640,7 +642,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                         // m_ResourceAmount += RESOURCES_INCOME;
                         SETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
                         m_ResourcePeriod = 0;
-                        su->AddResourceAmount(ELECTRONICS, RESOURCES_INCOME);
+                        su->AddResourceAmount(ELECTRONICS, ScmGetFactoryIncome(ELECTRONICS));
                     }
                     break;
                 case BUILDING_ENERGY:
@@ -648,7 +650,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                         // m_ResourceAmount += RESOURCES_INCOME;
                         SETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
                         m_ResourcePeriod = 0;
-                        su->AddResourceAmount(ENERGY, RESOURCES_INCOME);
+                        su->AddResourceAmount(ENERGY, ScmGetFactoryIncome(ENERGY));
                     }
                     break;
                 case BUILDING_BASE:
@@ -656,7 +658,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                         // m_BaseRCycle++;
                         // if(m_BaseRCycle > 3) m_BaseRCycle = 0;
                         int fu = su->GetResourceForceUp();
-                        int ra = RESOURCES_INCOME_BASE * fu / 100;
+                        int ra = ScmGetBaseIncome() * fu / 100;
                         SETFLAG(m_ObjectState, BUILDING_NEW_INCOME);
                         m_ResourcePeriod = 0;
 
@@ -1862,8 +1864,16 @@ void CBuildStack::TickTimer(int ms) {
     //}
 }
 
+bool CBuildStack::IsMaxItems() {
+    if (!m_ParentBase) {
+        return m_Items >= MAX_STACK_UNITS;
+    }
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(m_ParentBase->m_Side);
+    return m_Items >= ScmGetMaxBuildQueueForSide(side);
+}
+
 void CBuildStack::AddItem(CMatrixMapStatic *item) {
-    if (item && m_Items < MAX_STACK_UNITS) {
+    if (item && !IsMaxItems()) {
         LIST_ADD(item, m_Top, m_Bottom, m_PrevStackItem, m_NextStackItem);
         m_Items++;
         // STUB:

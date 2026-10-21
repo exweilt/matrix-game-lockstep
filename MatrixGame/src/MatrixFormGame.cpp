@@ -23,6 +23,7 @@
 #include "MatrixGamePathUtils.hpp"
 
 #include "Network/Message.hpp"
+#include "Network/ScmSettingsApplier.hpp"
 #include "3g.hpp"
 #include "Network/Network.hpp"
 
@@ -1568,7 +1569,8 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 while (mps) {
                     if (mps->GetSide() == side_id && mps->GetObjectType() == OBJECT_TYPE_BUILDING &&
                         mps->AsBuilding()->IsBase()) {
-                        if (mps->AsBuilding()->m_BS.GetItemsCnt() < 6) {
+                        if (mps->AsBuilding()->m_BS.GetItemsCnt() <
+                            ScmGetMaxBuildQueueForSide(g_MatrixMap->GetControllableSide())) {
                             side->m_Constructor->SetBase(mps->AsBuilding());
                             side->m_Constructor->BuildSpecialBot(sb);
                             break;
@@ -1623,7 +1625,8 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 while (mps) {
                     if (mps->GetSide() == side_id && mps->GetObjectType() == OBJECT_TYPE_BUILDING &&
                         mps->AsBuilding()->IsBase()) {
-                        if (mps->AsBuilding()->m_BS.GetItemsCnt() < 6) {
+                        if (mps->AsBuilding()->m_BS.GetItemsCnt() <
+                            ScmGetMaxBuildQueueForSide(g_MatrixMap->GetControllableSide())) {
                             side->m_Constructor->SetBase(mps->AsBuilding());
                             side->m_Constructor->BuildSpecialBot(sb);
                             break;

@@ -13,6 +13,7 @@
 #include "MatrixFlyer.hpp"
 #include "ShadowStencil.hpp"
 #include "Interface/CInterface.h"
+#include "Network/ScmSettingsApplier.hpp"
 
 #include "Effects/MatrixEffectExplosion.hpp"
 
@@ -1282,8 +1283,9 @@ bool CMatrixCannon::Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTO
     friendly_fire = (attacker_side != 0) && (attacker_side == m_Side);
     damagek =
             (friendly_fire || m_Side != g_Network.controllable_side_id) ? 1.0f : g_MatrixMap->m_Difficulty.k_damage_enemy_to_player;
-    if (friendly_fire && m_Side == g_Network.controllable_side_id)
-        damagek = damagek * g_MatrixMap->m_Difficulty.k_friendly_fire;
+    if (friendly_fire) {
+        damagek *= ScmGetFriendlyFireDamageScale(m_Side);
+    }
 
     idx = Weap2Index(weap);
     if (weap == WEAPON_REPAIR) {

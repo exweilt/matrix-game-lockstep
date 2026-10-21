@@ -5,6 +5,7 @@
 
 #include "CIFaceElement.h"
 #include "CCounter.h"
+#include "../Network/ScmSettingsApplier.hpp"
 #include "../MatrixSide.hpp"
 #include "CConstructor.h"
 #include "CInterface.h"
@@ -88,7 +89,7 @@ void CIFaceCounter::CheckUp() {
     if (ps->m_ActiveObject && ps->m_ActiveObject->IsBuilding() && ps->m_ActiveObject->IsBase()) {
         CMatrixBuilding *base = (CMatrixBuilding *)ps->m_ActiveObject;
         //
-        if ((base->m_BS.GetItemsCnt() + m_Counter + 1) > 6 /*max stack items*/) {
+        if ((base->m_BS.GetItemsCnt() + m_Counter + 1) > ScmGetMaxBuildQueueForSide(ps)) {
             if (m_ButtonUp)
                 m_ButtonUp->SetState(IFACE_DISABLED);
         }

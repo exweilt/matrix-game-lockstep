@@ -135,7 +135,7 @@ public:
 
     // void SetParentBase(CMatrixBuilding* base)                       { m_ParentBase = base; }
     CMatrixBuilding *GetParentBase() { return m_ParentBase; }
-    bool IsMaxItems() { return m_Items >= MAX_STACK_UNITS; }
+    bool IsMaxItems();
 
     void ReturnRobotResources(CMatrixRobotAI *robot); // Refund
     void ReturnTurretResources(CMatrixCannon *turret);

@@ -22,6 +22,7 @@
 #include "MatrixFlyer.hpp"
 #include "Interface/CCounter.h"
 #include "MatrixMultiSelection.hpp"
+#include "Network/ScmSettingsApplier.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -355,8 +356,8 @@ void CMatrixSideUnit::GetResourceIncome(int &base_i, int &fa_i, ERes resource_ty
     }
     int fu = GetResourceForceUp();
 
-    fa_i = (fa_cnt * RESOURCES_INCOME) /* * 60000 / g_Config.m_Timings[tim]*/;
-    base_i = (base_cnt * RESOURCES_INCOME_BASE * fu / 100) /* * 15000 / g_Config.m_Timings[RESOURCE_BASE]*/;
+    fa_i = (fa_cnt * ScmGetFactoryIncome(resource_type)) /* * 60000 / g_Config.m_Timings[tim]*/;
+    base_i = (base_cnt * ScmGetBaseIncome() * fu / 100) /* * 15000 / g_Config.m_Timings[RESOURCE_BASE]*/;
 }
 
 int CMatrixSideUnit::GetIncomePerTime(
@@ -385,10 +386,19 @@ int CMatrixSideUnit::GetIncomePerTime(
 
     int fu = GetResourceForceUp();
 
-    if (building != int(BUILDING_BASE))
-        return (RESOURCES_INCOME) /* * ms / g_Config.m_Timings[tim]*/;
+    if (building != int(BUILDING_BASE)) {
+        ERes res = TITAN;
+        if (building == int(BUILDING_ELECTRONIC)) {
+            res = ELECTRONICS;
+        } else if (building == int(BUILDING_ENERGY)) {
+            res = ENERGY;
+        } else if (building == int(BUILDING_PLASMA)) {
+            res = PLASMA;
+        }
+        return ScmGetFactoryIncome(res) /* * ms / g_Config.m_Timings[tim]*/;
+    }
 
-    return (RESOURCES_INCOME_BASE * fu / 100) /* * (ms/4) / g_Config.m_Timings[RESOURCE_BASE]*/;
+    return (ScmGetBaseIncome() * fu / 100) /* * (ms/4) / g_Config.m_Timings[RESOURCE_BASE]*/;
 }
 
 void CMatrixSideUnit::BufPrepare() {
@@ -1855,7 +1865,12 @@ int CMatrixSideUnit::GetMaxSideRobots() {
         os = os->GetNextLogic();
     }
 
-    return (bases * ROBOTS_BY_BASE) + (bases == 0 ? 0 : ROBOTS_BY_MAIN) + factories /**ROBOT_BY_FACTORY*/;
+    if (ScmSettingsActive()) {
+        return bases * g_ScmSettings.robot_capacity_bonus_per_base +
+               factories * g_ScmSettings.robot_capacity_bonus_per_factory;
+    }
+
+    return (bases * ROBOTS_BY_BASE) + (bases == 0 ? 0 : ROBOTS_BY_MAIN) + factories;
 }
 
 int CMatrixSideUnit::GetRobotsInStack() {
@@ -6578,8 +6593,8 @@ void CMatrixSideUnit::BuildRobot(void) {
                 }
                 waitend =
                         std::max(waitend, Float2Int(float(k * g_Config.m_Timings[r]) /
-                                               float(wr[r] * RESOURCES_INCOME +
-                                                     (RESOURCES_INCOME_BASE * GetResourceForceUp() / 100 * basecnt))));
+                                               float(wr[r] * ScmGetFactoryIncome((ERes)r) +
+                                                     (ScmGetBaseIncome() * GetResourceForceUp() / 100 * basecnt))));
             }
         }
     }
@@ -6594,7 +6609,7 @@ void CMatrixSideUnit::BuildRobot(void) {
         //        if(m_Resources[r]<mr) {  // Не ждем то чего слишком мало
         //            wr[r]=m_Resources[r];
         //        } else {
-        wr[r] = (RESOURCES_INCOME * wr[r] + (RESOURCES_INCOME_BASE * GetResourceForceUp() / 100 * basecnt)) *
+        wr[r] = (ScmGetFactoryIncome((ERes)r) * wr[r] + (ScmGetBaseIncome() * GetResourceForceUp() / 100 * basecnt)) *
                         (waittime / g_Config.m_Timings[r]) +
                 m_Resources[r];
         //        }
@@ -6685,7 +6700,7 @@ void CMatrixSideUnit::BuildRobot(void) {
             if (list[i] == m_WaitResForBuildRobot)
                 break;
         if (i < cnt) {
-            if (base->m_BS.GetItemsCnt() < 6) {
+            if (base->m_BS.GetItemsCnt() < ScmGetMaxBuildQueueForSide(this)) {
                 for (r = 0; r < MAX_RESOURCES; r++)
                     m_Resources[r] = std::max(0, m_Resources[r] - SSpecialBot::m_AIRobotTypeList[list[i]].m_Resources[r]);
                 m_Constructor->SetBase(base);
@@ -6858,7 +6873,7 @@ void CMatrixSideUnit::BuildRobot(void) {
         if (i >= cnt)
             ERROR_E;
 
-        if (base->m_BS.GetItemsCnt() < 6) {
+        if (base->m_BS.GetItemsCnt() < ScmGetMaxBuildQueueForSide(this)) {
             for (r = 0; r < MAX_RESOURCES; r++)
                 m_Resources[r] = std::max(0, m_Resources[r] - SSpecialBot::m_AIRobotTypeList[list[i]].m_Resources[r]);
 

@@ -22,6 +22,7 @@
 #include "CIFaceMenu.h"
 #include "CCounter.h"
 #include "CHistory.h"
+#include "../Network/ScmSettingsApplier.hpp"
 #include "MatrixHint.hpp"
 #include "../MatrixFormGame.hpp"
 
@@ -2056,7 +2057,7 @@ void CInterface::Init(void) {
         while (pElement) {
             pElement->SetVisibility(false);
             if (building->IsBase()) {
-                bool bld = building->m_BS.GetItemsCnt() < MAX_STACK_UNITS;
+                bool bld = building->m_BS.GetItemsCnt() < ScmGetMaxBuildQueueForSide(player_side);
                 int common_weapon =
                         g_MatrixMap
                                 ->m_RobotWeaponMatrix
