@@ -128,6 +128,7 @@ public:
     void AddItem(CMatrixMapStatic *item);
     int DeleteItem(int no); // Refund
     void DeleteItem(CMatrixMapStatic *item);
+    bool DetachItem(CMatrixMapStatic *item);
     void ClearStack();
     CMatrixMapStatic *GetTopItem() { return m_Top; }
     void TickTimer(int ms);

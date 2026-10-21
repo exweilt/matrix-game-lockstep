@@ -107,7 +107,8 @@ public:
     void delete_robot(CMatrixRobotAI * robot);
 
     void process_playback(int ms);
-    void populate_robot(RobotSnapshot &rs);
+    void populate_robot(const RobotSnapshot &rs);
+    void populate_turret(const TurretSnapshot &ts);
     void add_event_to_current_tick(EventFire e);
     void clear_events_for_current_tick();
     void play_fire_event(const EventFire &event);
@@ -135,6 +136,9 @@ public:
     f32 playback_speed = 1.0f;
 
     std::map<u32, CMatrixRobotAI*> robots;
+    std::map<u32, CMatrixCannon *> turrets;
+
+    void delete_turret(CMatrixCannon *cannon);
 
     Lobby lobby;
 
@@ -210,6 +214,12 @@ public:
         return network_mode == NetworkMode::SERVER;
     }
 
+    /** True on host and offline play; false on multiplayer clients (view/interpolate only). */
+    bool loads_map_dynamics() const
+    {
+        return network_mode != NetworkMode::CLIENT;
+    }
+
     void set_network_mode(NetworkMode new_network_mode)
     {
         network_mode = new_network_mode;
@@ -253,6 +263,8 @@ void NetOrderCapture(const std::vector<u32> &entities_nid, u32 target_nid, int l
 // Places an order to construct a robot
 void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
                         const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base);
+
+void NetOrderBuildTurret(u8 turret_type, u32 parent_building_nid, i32 place, f32 pos_x, f32 pos_y, u8 angle_packed);
 
 // namespace nw = network;
 

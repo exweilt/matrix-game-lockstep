@@ -50,6 +50,16 @@ public:
         return true;
     }
 
+    bool get_lerp_target_ptrs(const T*& outPast, const T*& outFuture) const
+    {
+        if (count < 2)
+            return false;
+
+        outPast = &data[tail % N];
+        outFuture = &data[(tail + 1) % N];
+        return true;
+    }
+
     void pop_front()
     {
         if (count == 0) return;

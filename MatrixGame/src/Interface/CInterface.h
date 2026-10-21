@@ -14,6 +14,9 @@ class CIFaceStatic;
 class CIFaceCounter;
 class CMatrixHint;
 
+// Air reinforcements UI (callhell) — off in this multiplayer mod build.
+inline constexpr bool kAirReinforcementsEnabled = false;
+
 #define HINT_OTSTUP     2
 #define RADAR_RADIUS    85
 #define IS_VISIBLE      255
@@ -314,6 +317,9 @@ public:
             m_BuildCa->SetState(IFACE_NORMAL);
         }
         ResetOrderingMode();
+        if (g_MatrixMap) {
+            g_MatrixMap->m_Cursor.SetVisible(true);
+        }
     }
     void SetMainPos(const float &x, const float &y) {
         m_MainX = x;

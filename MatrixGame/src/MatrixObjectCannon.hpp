@@ -136,6 +136,9 @@ public:
     int m_LastDelayDamageSide;
     int m_MiniMapFlashTime;
 
+    bool is_processed_by_network = false;
+    u32 last_shot_frame = 0;
+
     void ReleaseMe();
 
     void BeginFireAnimation(void);
@@ -145,7 +148,7 @@ public:
     CMatrixCannon(void);
     ~CMatrixCannon();
 
-    void DIPTakt(float ms);
+    bool DIPTakt(float ms);
 
     void ShowHitpoint(void) { m_ShowHitpointTime = HITPOINT_SHOW_TIME; }
     float GetHitPoint(void) const { return m_HitPoint; }
@@ -157,6 +160,12 @@ public:
     }
     void SetHitPoint(float hp) { m_HitPoint = hp; }
     float GetMaxHitPointInversed() { return m_MaxHitPointInversed; }
+    void ApplyNetworkHealth(float hp, float max_hp) {
+        InitMaxHitpoint(max_hp);
+        SetHitPoint(hp);
+        if (m_HitPointMax > 0.f)
+            m_PB.Modify(m_HitPoint * m_MaxHitPointInversed);
+    }
     float GetSeekRadius(void);
     float GetFireRadius(void) {
         if (m_Weapons[0] == NULL)

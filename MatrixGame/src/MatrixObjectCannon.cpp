@@ -651,7 +651,7 @@ bool CMatrixCannon::CalcBounds(D3DXVECTOR3 &minv, D3DXVECTOR3 &maxv) {
         return false;*/
 }
 
-void CMatrixCannon::DIPTakt(float ms) {
+bool CMatrixCannon::DIPTakt(float ms) {
     DTRACE();
 
     D3DXVECTOR3 *pos;
@@ -737,7 +737,9 @@ void CMatrixCannon::DIPTakt(float ms) {
 
     if (del) {
         g_MatrixMap->StaticDelete(this);
+        return true;
     }
+    return false;
 }
 
 struct FTData {
@@ -827,8 +829,7 @@ bool CMatrixCannon::LogicTakt(int takt) {
     SetPBOutOfScreen();
 
     if (m_CurrState == CANNON_DIP) {
-        DIPTakt(float(takt));
-        return false;
+        return DIPTakt(float(takt));
     }
 
     if (m_MiniMapFlashTime > 0) {
@@ -1218,6 +1219,11 @@ bool CMatrixCannon::LogicTakt(int takt) {
 
     for (int i = 0; i < m_WeaponCnt; ++i) {
         if (m_Weapons[i]) {
+            if (m_TargetCore) {
+                m_Weapons[i]->m_Target = m_TargetCore->m_GeoCenter + m_TargetDisp;
+            } else {
+                m_Weapons[i]->m_Target = m_FireFrom[i] + m_FireDir[i] * m_Weapons[i]->GetWeaponDist();
+            }
             m_Weapons[i]->FireBegin(D3DXVECTOR3(0, 0, 0), this);
         }
     }

@@ -23,6 +23,8 @@
 #include "Interface/CCounter.h"
 #include "MatrixMultiSelection.hpp"
 #include "Network/ScmSettingsApplier.hpp"
+#include "Network/Network.hpp"
+#include "Network/Snapshot.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -441,6 +443,77 @@ void CMatrixSideUnit::BuildCrazyBot(void) {
     m_Constructor->BuildSpecialBot(bot);
 }
 
+void CMatrixSideUnit::UpdateTurretBuildPreview(int ms) {
+    if (m_CurrentAction != BUILDING_TURRET || !m_CannonForBuild.m_Cannon || !m_CannonForBuild.m_ParentBuilding)
+        return;
+
+    if (m_CurrSel == BUILDING_SELECTED && m_ActiveObject) {
+        if (((CMatrixBuilding *)m_ActiveObject)->m_Side != m_Id) {
+            m_CurrentAction = NOTHING_SPECIAL;
+            m_CannonForBuild.m_CanBuildFlag = 0;
+            m_CannonForBuild.m_Cannon = NULL;
+            m_CannonForBuild.m_ParentBuilding = NULL;
+            g_MatrixMap->m_Cursor.SetVisible(true);
+            return;
+        }
+    }
+
+    bool build_flag =
+            (m_CannonForBuild.m_ParentBuilding->m_TurretsHave < m_CannonForBuild.m_ParentBuilding->m_TurretsMax);
+
+    if (g_IFaceList->m_InFocus == UNKNOWN) {
+        g_MatrixMap->m_Cursor.SetVisible(false);
+    }
+    else if (g_IFaceList->m_InFocus == INTERFACE) {
+        g_MatrixMap->m_Cursor.SetVisible(true);
+        g_MatrixMap->m_Cursor.Select(CURSOR_ARROW);
+    }
+
+    CPoint places[MAX_PLACES];
+    int places_cnt = m_CannonForBuild.m_ParentBuilding->GetPlacesForTurrets(places);
+
+    D3DXVECTOR3 pos = g_MatrixMap->m_TraceStopPos;
+    g_MatrixMap->Trace(&pos, g_MatrixMap->m_Camera.GetFrustumCenter(),
+                       g_MatrixMap->m_Camera.GetFrustumCenter() + (g_MatrixMap->m_MouseDir * 10000.0f),
+                       TRACE_LANDSCAPE | TRACE_WATER);
+
+    int can_bld_flg = IsInPlaces(places, places_cnt, Float2Int(pos.x * INVERT(GLOBAL_SCALE_MOVE)),
+                                 Float2Int(pos.y * INVERT(GLOBAL_SCALE_MOVE)));
+
+    if (build_flag && can_bld_flg >= 0) {
+        m_CannonForBuild.m_Cannon->SetTerainColor(0xFF00FF00);
+        m_CannonForBuild.m_CanBuildFlag = 1;
+    }
+    else {
+        m_CannonForBuild.m_Cannon->SetTerainColor(0xFFFF0000);
+        m_CannonForBuild.m_CanBuildFlag = 0;
+    }
+    if (can_bld_flg >= 0) {
+        m_CannonForBuild.m_Cannon->m_Pos.x = places[can_bld_flg].x * GLOBAL_SCALE_MOVE;
+        m_CannonForBuild.m_Cannon->m_Pos.y = places[can_bld_flg].y * GLOBAL_SCALE_MOVE;
+        m_CannonForBuild.m_Cannon->m_Place = g_MatrixMap->m_RN.FindInPL(places[can_bld_flg]);
+    }
+    else {
+        m_CannonForBuild.m_Cannon->m_Pos.x = pos.x;
+        m_CannonForBuild.m_Cannon->m_Pos.y = pos.y;
+        m_CannonForBuild.m_Cannon->m_Place = -1;
+    }
+
+    if (can_bld_flg >= 0) {
+        for (int i = 0; i < m_CannonForBuild.m_ParentBuilding->m_TurretsMax; i++) {
+            if (m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Coord == places[can_bld_flg]) {
+                float dang = (float)AngleDist(double(m_CannonForBuild.m_Cannon->m_Angle),
+                                                float(m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Angle));
+
+                m_CannonForBuild.m_Cannon->m_Angle += float(dang * (1.0 - pow(0.99, double(ms))));
+                m_CannonForBuild.m_Cannon->SetMustBeAngle(m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Angle);
+                break;
+            }
+        }
+    }
+    m_CannonForBuild.m_Cannon->RChange(MR_Matrix);
+}
+
 void CMatrixSideUnit::LogicTakt(int ms) {
     DTRACE();
 
@@ -541,66 +614,7 @@ void CMatrixSideUnit::LogicTakt(int ms) {
                 g_MatrixMap->m_Cursor.SetVisible(true);
                 break;
             case BUILDING_TURRET:
-                if (m_CannonForBuild.m_Cannon) {
-                    bool build_flag = (m_CannonForBuild.m_ParentBuilding->m_TurretsHave <
-                                       m_CannonForBuild.m_ParentBuilding->m_TurretsMax);
-
-                    if (g_IFaceList->m_InFocus == UNKNOWN) {
-                        /*g_MatrixMap->m_Cursor.Select(CURSOR_EMPTY);*/
-                        g_MatrixMap->m_Cursor.SetVisible(false);
-                    }
-                    else if (g_IFaceList->m_InFocus == INTERFACE) {
-                        g_MatrixMap->m_Cursor.SetVisible(true);
-                        g_MatrixMap->m_Cursor.Select(CURSOR_ARROW);
-                    }
-
-                    CPoint places[MAX_PLACES];
-                    int places_cnt = m_CannonForBuild.m_ParentBuilding->GetPlacesForTurrets(places);
-                    // places->x, places+1->y
-
-                    D3DXVECTOR3 pos = g_MatrixMap->m_TraceStopPos;
-                    g_MatrixMap->Trace(&pos, g_MatrixMap->m_Camera.GetFrustumCenter(),
-                                       g_MatrixMap->m_Camera.GetFrustumCenter() + (g_MatrixMap->m_MouseDir * 10000.0f),
-                                       TRACE_LANDSCAPE | TRACE_WATER);
-
-                    int can_bld_flg = IsInPlaces(places, places_cnt, Float2Int(pos.x * INVERT(GLOBAL_SCALE_MOVE)),
-                                                 Float2Int(pos.y * INVERT(GLOBAL_SCALE_MOVE)));
-
-                    if (build_flag && can_bld_flg >= 0) {
-                        m_CannonForBuild.m_Cannon->SetTerainColor(0xFF00FF00);
-                        m_CannonForBuild.m_CanBuildFlag = 1;
-                    }
-                    else {
-                        m_CannonForBuild.m_Cannon->SetTerainColor(0xFFFF0000);
-                        m_CannonForBuild.m_CanBuildFlag = 0;
-                    }
-                    if (can_bld_flg >= 0) {
-                        m_CannonForBuild.m_Cannon->m_Pos.x = places[can_bld_flg].x * GLOBAL_SCALE_MOVE;
-                        m_CannonForBuild.m_Cannon->m_Pos.y = places[can_bld_flg].y * GLOBAL_SCALE_MOVE;
-                        m_CannonForBuild.m_Cannon->m_Place = g_MatrixMap->m_RN.FindInPL(places[can_bld_flg]);
-                    }
-                    else {
-                        m_CannonForBuild.m_Cannon->m_Pos.x = pos.x;
-                        m_CannonForBuild.m_Cannon->m_Pos.y = pos.y;
-                        m_CannonForBuild.m_Cannon->m_Place = -1;
-                    }
-
-                    if (can_bld_flg >= 0) {
-                        for (int i = 0; i < m_CannonForBuild.m_ParentBuilding->m_TurretsMax; i++) {
-                            if (m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Coord == places[can_bld_flg]) {
-                                float dang = (float)AngleDist(
-                                        double(m_CannonForBuild.m_Cannon->m_Angle),
-                                        float(m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Angle));
-
-                                m_CannonForBuild.m_Cannon->m_Angle += float(dang * (1.0 - pow(0.99, double(ms))));
-                                m_CannonForBuild.m_Cannon->SetMustBeAngle(
-                                        m_CannonForBuild.m_ParentBuilding->m_TurretsPlaces[i].m_Angle);
-                                break;
-                            }
-                        }
-                    }
-                    m_CannonForBuild.m_Cannon->RChange(MR_Matrix);
-                }
+                UpdateTurretBuildPreview(ms);
                 break;
         }
     }
@@ -650,43 +664,34 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
     if (pObject == TRACE_STOP_NONE && !IS_PREORDERING)
         return;
 
-    if(m_CurrentAction == BUILDING_TURRET && m_CannonForBuild.m_Cannon && m_CannonForBuild.m_CanBuildFlag/* && (m_CannonForBuild.m_ParentBuilding->m_TurretsHave < m_CannonForBuild.m_ParentBuilding->m_TurretsMax)*/){
+    if (m_CurrentAction == BUILDING_TURRET && m_CannonForBuild.m_Cannon && m_CannonForBuild.m_CanBuildFlag) {
         if (g_MatrixMap->IsPaused())
             return;
-        CMatrixCannon *ca = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
-        ca->m_CurrState = CANNON_UNDER_CONSTRUCTION;
 
-        ca->SetInvulnerability();
-        ca->m_Pos.x = m_CannonForBuild.m_Cannon->m_Pos.x;  // g_MatrixMap->m_TraceStopPos.x;
-        ca->m_Pos.y = m_CannonForBuild.m_Cannon->m_Pos.y;  // g_MatrixMap->m_TraceStopPos.y;
-        ca->m_Place = m_CannonForBuild.m_Cannon->m_Place;
-        ca->SetSide(m_Id);
-        ca->UnitInit(m_CannonForBuild.m_Cannon->m_Num);
+        CMatrixBuilding *parent = (CMatrixBuilding *)m_ActiveObject;
+        const int turret_num = m_CannonForBuild.m_Cannon->m_Num;
+        const float pos_x = m_CannonForBuild.m_Cannon->m_Pos.x;
+        const float pos_y = m_CannonForBuild.m_Cannon->m_Pos.y;
+        const int place = m_CannonForBuild.m_Cannon->m_Place;
+        const float angle = m_CannonForBuild.m_Cannon->GetMustBeAngle();
+        const u8 angle_packed = pack_rotation(angle);
 
-        ca->m_Angle = m_CannonForBuild.m_Cannon->GetMustBeAngle();
-        ca->m_AddH = 0;
+        const bool execute_locally =
+            g_Network.is_authority() || g_Network.network_mode == NetworkMode::NONE;
 
-        ca->m_ShadowType = SHADOW_STENCIL;
-        ca->m_ShadowSize = 128;
-
-        ca->RNeed(MR_Matrix | MR_Graph);
-        ca->m_ParentBuilding = (CMatrixBuilding *)m_ActiveObject;
-        ca->JoinToGroup();
-
-        m_CannonForBuild.m_ParentBuilding->m_TurretsHave++;
-        ca->SetHitPoint(0);
-        ((CMatrixBuilding *)m_ActiveObject)->m_BS.AddItem(ca);
-
-        AddResourceAmount(TITAN, -g_Config.m_CannonsProps[m_CannonForBuild.m_Cannon->m_Num - 1].m_Resources[TITAN]);
-        AddResourceAmount(ELECTRONICS,
-                          -g_Config.m_CannonsProps[m_CannonForBuild.m_Cannon->m_Num - 1].m_Resources[ELECTRONICS]);
-        AddResourceAmount(ENERGY, -g_Config.m_CannonsProps[m_CannonForBuild.m_Cannon->m_Num - 1].m_Resources[ENERGY]);
-        AddResourceAmount(PLASMA, -g_Config.m_CannonsProps[m_CannonForBuild.m_Cannon->m_Num - 1].m_Resources[PLASMA]);
+        if (execute_locally) {
+            if (!PlaceTurretOnBuilding(parent, turret_num, pos_x, pos_y, place, angle))
+                return;
+        } else {
+            NetOrderBuildTurret(turret_num, parent->m_NID, place, pos_x, pos_y, angle_packed);
+        }
 
         m_CurrentAction = NOTHING_SPECIAL;
         m_CannonForBuild.Delete();
-        CSound::Play(S_TURRET_BUILD_START, SL_ALL);
+        if (execute_locally)
+            CSound::Play(S_TURRET_BUILD_START, SL_ALL);
         g_IFaceList->ResetBuildCaMode();
+        g_MatrixMap->m_Cursor.SetVisible(true);
         return;
     }
 
@@ -851,9 +856,9 @@ void CMatrixSideUnit::OnRButtonDown(const CPoint &) {
     DCP();
     if (IS_PREORDERING && m_CurrentAction == BUILDING_TURRET) {
         DCP();
-        g_IFaceList->ResetOrderingMode();
         m_CannonForBuild.Delete();
         m_CurrentAction = NOTHING_SPECIAL;
+        g_IFaceList->ResetBuildCaMode();
         return;
     }
     DCP();
@@ -6892,6 +6897,42 @@ void CMatrixSideUnit::BuildRobot(void) {
     }
 
     HFree(list, g_MatrixHeap);
+}
+
+bool CMatrixSideUnit::PlaceTurretOnBuilding(CMatrixBuilding *building, int turret_num, float pos_x, float pos_y,
+                                            int place, float angle) {
+    if (building == nullptr || turret_num < 1 || turret_num > CANNON_TYPE_CNT)
+        return false;
+    if (building->HaveMaxTurrets() || building->m_BS.IsMaxItems())
+        return false;
+    if (!IsEnoughResources(g_Config.m_CannonsProps[turret_num - 1].m_Resources))
+        return false;
+
+    CMatrixCannon *ca = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
+    ca->m_CurrState = CANNON_UNDER_CONSTRUCTION;
+    ca->SetInvulnerability();
+    ca->m_Pos.x = pos_x;
+    ca->m_Pos.y = pos_y;
+    ca->m_Place = place;
+    ca->SetSide(m_Id);
+    ca->UnitInit(turret_num);
+    ca->m_Angle = angle;
+    ca->m_AddH = 0;
+    ca->m_ShadowType = SHADOW_STENCIL;
+    ca->m_ShadowSize = 128;
+    ca->RNeed(MR_Matrix | MR_Graph);
+    ca->m_ParentBuilding = building;
+    ca->JoinToGroup();
+
+    building->m_TurretsHave++;
+    ca->SetHitPoint(0);
+    building->m_BS.AddItem(ca);
+
+    AddResourceAmount(TITAN, -g_Config.m_CannonsProps[turret_num - 1].m_Resources[TITAN]);
+    AddResourceAmount(ELECTRONICS, -g_Config.m_CannonsProps[turret_num - 1].m_Resources[ELECTRONICS]);
+    AddResourceAmount(ENERGY, -g_Config.m_CannonsProps[turret_num - 1].m_Resources[ENERGY]);
+    AddResourceAmount(PLASMA, -g_Config.m_CannonsProps[turret_num - 1].m_Resources[PLASMA]);
+    return true;
 }
 
 void CMatrixSideUnit::BuildCannon(void) {

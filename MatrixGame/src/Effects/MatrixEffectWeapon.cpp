@@ -272,35 +272,42 @@ void CMatrixEffectWeapon::Fire(void) {
     DTRACE();
 
 
-    if (!g_Network.is_authority() && owning_weapon->m_Unit->m_Graph->SetAnimByNameNoBegin(ANIMATION_NAME_FIRELOOP)) {
+    if (!g_Network.is_authority() && owning_weapon != nullptr &&
+        owning_weapon->m_Unit->m_Graph->SetAnimByNameNoBegin(ANIMATION_NAME_FIRELOOP)) {
         // not looped
         owning_weapon->m_Unit->m_Graph->SetAnimByName(ANIMATION_NAME_FIRE, 0);
     }
 
-    // EventFire sync is only for robot-mounted weapons (owning_weapon is set in SBotWeapon::CreateEffect).
-    // Building/Terron BIGBOOM and turrets use CreateWeapon with user=0 or m_Core — not networkable robots.
-    if (g_Network.is_authority() && owning_weapon != nullptr && m_User != 0)
-    {
-        CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
-
-        bool already_fired = false;
-        int sz = g_Network.this_tick_event_pool.size();
-        // Check last 4 events if already fired.
-        for (int i = sz - 1; i >= sz - 4 && i >= 0; i--)
-        {
-            auto past_event = g_Network.this_tick_event_pool.at(i);
-            if (past_event.nid == robot->m_NID && past_event.frame == g_Network.physics_frame && past_event.weapons == GetWeaponType())
-            {
-                already_fired = true;
-                break;
-            }
+    if (g_Network.is_authority()) {
+        u32 owner_nid = 0;
+        if (owning_weapon != nullptr && m_User != 0) {
+            CMatrixRobotAI *robot = reinterpret_cast<CMatrixRobotAI *>(m_User);
+            owner_nid = robot->m_NID;
+        } else if (CMatrixMapStatic *owner = GetOwner()) {
+            if (owner->IsCannon())
+                owner_nid = owner->m_NID;
         }
 
-        if (!already_fired)
-        {
-            EventFire e = EventFire(robot->m_NID, m_Target, GetWeaponType(), g_Network.physics_frame, 1.0);
-            g_Network.add_event_to_current_tick(e);
-            // std::cout << "Registering shot from " << robot->m_NID << " at " << g_Network.physics_frame << std::endl;
+        if (owner_nid != 0) {
+            bool already_fired = false;
+            const int sz = static_cast<int>(g_Network.this_tick_event_pool.size());
+            for (int i = sz - 1; i >= sz - 4 && i >= 0; i--) {
+                const auto &past_event = g_Network.this_tick_event_pool.at(i);
+                if (past_event.nid == owner_nid && past_event.frame == g_Network.physics_frame &&
+                    past_event.weapons == GetWeaponType()) {
+                    already_fired = true;
+                    break;
+                }
+            }
+
+            if (!already_fired) {
+                D3DXVECTOR3 target = m_Pos + m_Dir * GetWeaponDist();
+                auto to_target = m_Target - m_Pos;
+                if (D3DXVec3LengthSq(&to_target) > 1e-4f)
+                    target = m_Target;
+                EventFire e = EventFire(owner_nid, target, GetWeaponType(), g_Network.physics_frame, 1);
+                g_Network.add_event_to_current_tick(e);
+            }
         }
     }
 

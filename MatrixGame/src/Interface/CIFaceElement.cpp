@@ -175,7 +175,7 @@ void CIFaceElement::Render(BYTE alpha) {
 
     CInstDraw::BeginDraw(IDFVF_V4_UV);
 
-    if (m_nId == IF_CALLHELL_ID && GetState() == IFACE_DISABLED) {
+    if (m_nId == IF_CALLHELL_ID && GetState() == IFACE_DISABLED && kAirReinforcementsEnabled) {
         m_StateImages[GetState()].pImage->Prepare();
 
         SVert_V4_UV geom[8];

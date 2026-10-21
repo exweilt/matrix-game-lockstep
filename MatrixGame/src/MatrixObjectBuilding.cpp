@@ -1975,6 +1975,31 @@ void CBuildStack::DeleteItem(CMatrixMapStatic *item) {
     }
 }
 
+bool CBuildStack::DetachItem(CMatrixMapStatic *item) {
+    if (!m_Items || !item)
+        return false;
+
+    CMatrixMapStatic *i = m_Top;
+    int cnt = 0;
+    while (i) {
+        cnt++;
+        if (i == item) {
+            if (cnt == 1) {
+                m_Timer = 0;
+                m_PB.KillClone(PBC_CLONE1);
+            }
+            if (m_ParentBase->GetSide() == g_Network.controllable_side_id) {
+                g_IFaceList->DeleteStackIcon(cnt, m_ParentBase);
+            }
+            LIST_DEL(item, m_Top, m_Bottom, m_PrevStackItem, m_NextStackItem);
+            m_Items--;
+            return true;
+        }
+        i = i->m_NextStackItem;
+    }
+    return false;
+}
+
 int CBuildStack::GetRobotsCnt(void) const {
     CMatrixMapStatic *objects = m_Top;
     int robots = 0;

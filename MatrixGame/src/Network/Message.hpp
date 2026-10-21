@@ -31,6 +31,7 @@ enum class MessageType : u8
     COMMAND_CAPTURE,
     COMMAND_ATTACK,
     COMMAND_STOP,
+    COMMAND_BUILD_TURRET,
     INFO,
     SAY,
     JOIN,
@@ -128,6 +129,28 @@ struct MessageCommandMoveParams
     void serialize(Archive& ar) {
         ar(CEREAL_NVP(number_of_robots), CEREAL_NVP(robot_nid), CEREAL_NVP(target_pos));
     }
+};
+
+struct MessageCommandBuildTurretParams
+{
+    u8 turret_type;
+    u32 parent_building_nid;
+    i32 place;
+    f32 pos_x;
+    f32 pos_y;
+    u8 angle_packed;
+
+    MessageCommandBuildTurretParams()
+        : turret_type(0), parent_building_nid(0), place(-1), pos_x(0), pos_y(0), angle_packed(0) {}
+
+    MessageCommandBuildTurretParams(u8 type, u32 building_nid, i32 place_id, f32 x, f32 y, u8 angle)
+        : turret_type(type), parent_building_nid(building_nid), place(place_id), pos_x(x), pos_y(y),
+          angle_packed(angle) {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageCommandBuildTurretParams deserialize_from_bitstream(BitReader &reader);
+
+    void execute();
 };
 
 struct MessageCommandBuildParams
@@ -341,6 +364,7 @@ struct Message
         MessageCommandCaptureParams capture;
         MessageCommandAttackParams attack;
         MessageCommandStopParams command_stop;
+        MessageCommandBuildTurretParams command_build_turret;
         MessageGameSettingsParams game_settings;
     };
 
@@ -357,6 +381,7 @@ struct Message
     Message(MessageCommandCaptureParams x)         : type(MessageType::COMMAND_CAPTURE),      capture(x)     {};
     Message(MessageCommandAttackParams x)         : type(MessageType::COMMAND_ATTACK),      attack(x)     {};
     Message(MessageCommandStopParams x)         : type(MessageType::COMMAND_STOP),      command_stop(x)     {};
+    Message(MessageCommandBuildTurretParams x)  : type(MessageType::COMMAND_BUILD_TURRET), command_build_turret(x) {};
     Message(MessageGameSettingsParams x)         : type(MessageType::GAME_SETTINGS),      game_settings(x)     {};
 
     ~Message()
@@ -396,6 +421,9 @@ struct Message
             case MessageType::COMMAND_STOP:
                 command_stop.~MessageCommandStopParams();
                 break;
+            case MessageType::COMMAND_BUILD_TURRET:
+                command_build_turret.~MessageCommandBuildTurretParams();
+                break;
             case MessageType::GAME_SETTINGS:
                 game_settings.~MessageGameSettingsParams();
                 break;
@@ -422,6 +450,9 @@ struct Message
             case MessageType::COMMAND_CAPTURE:  capture          .serialize_to_bitstream(writer); break;
             case MessageType::COMMAND_ATTACK:  attack          .serialize_to_bitstream(writer); break;
             case MessageType::COMMAND_STOP:  command_stop          .serialize_to_bitstream(writer); break;
+            case MessageType::COMMAND_BUILD_TURRET:
+                command_build_turret.serialize_to_bitstream(writer);
+                break;
             case MessageType::GAME_SETTINGS:  game_settings          .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
@@ -455,6 +486,8 @@ struct Message
                 return MessageCommandAttackParams::deserialize_from_bitstream(reader);
             case MessageType::COMMAND_STOP:
                 return MessageCommandStopParams::deserialize_from_bitstream(reader);
+            case MessageType::COMMAND_BUILD_TURRET:
+                return MessageCommandBuildTurretParams::deserialize_from_bitstream(reader);
             case MessageType::GAME_SETTINGS:
                 return MessageGameSettingsParams::deserialize_from_bitstream(reader);
             default:

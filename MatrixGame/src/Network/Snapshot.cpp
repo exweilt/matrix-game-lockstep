@@ -214,6 +214,69 @@ static BuildStackEntrySnapshot read_build_stack_entry(BitReader &reader)
     return result;
 }
 
+void TurretSnapshot::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(nid);
+    writer.write_f32(x);
+    writer.write_f32(y);
+    writer.write_f32(health);
+    writer.write_f32(maxhealth);
+    writer.write_u8(type);
+    writer.write_u8(side);
+    writer.write_u8(cannon_state);
+    writer.write_u32(parent_building_nid);
+    writer.write_u32(static_cast<u32>(place));
+    writer.write_u8(rotation);
+    writer.write_u8(turret_yaw);
+    writer.write_u8(pitch);
+}
+
+TurretSnapshot TurretSnapshot::deserialize_from_bitstream(BitReader &reader)
+{
+    TurretSnapshot result{};
+    result.nid = reader.read_u32();
+    result.x = reader.read_f32();
+    result.y = reader.read_f32();
+    result.health = reader.read_f32();
+    result.maxhealth = reader.read_f32();
+    result.type = reader.read_u8();
+    result.side = reader.read_u8();
+    result.cannon_state = reader.read_u8();
+    result.parent_building_nid = reader.read_u32();
+    result.place = static_cast<i32>(reader.read_u32());
+    result.rotation = reader.read_u8();
+    result.turret_yaw = reader.read_u8();
+    result.pitch = reader.read_u8();
+    return result;
+}
+
+static float cannon_snapshot_turret_yaw(CMatrixCannon *cannon) {
+    for (int i = 0; i < cannon->m_UnitCnt; ++i) {
+        if (cannon->m_Unit[i].m_Type == CUT_TURRET)
+            return cannon->m_Unit[i].u1.s1.m_Angle;
+    }
+    return 0.f;
+}
+
+TurretSnapshot TurretSnapshot::from_cannon(CMatrixCannon *cannon)
+{
+    TurretSnapshot result{};
+    result.nid = cannon->m_NID;
+    result.x = cannon->m_Pos.x;
+    result.y = cannon->m_Pos.y;
+    result.health = cannon->GetHitPoint();
+    result.maxhealth = cannon->GetMaxHitPoint();
+    result.type = static_cast<u8>(cannon->m_Num);
+    result.side = static_cast<u8>(cannon->GetSide());
+    result.cannon_state = static_cast<u8>(cannon->m_CurrState);
+    result.parent_building_nid = cannon->m_ParentBuilding ? cannon->m_ParentBuilding->m_NID : 0u;
+    result.place = cannon->m_Place;
+    result.rotation = pack_rotation(cannon->m_Angle);
+    result.turret_yaw = pack_rotation(cannon_snapshot_turret_yaw(cannon));
+    result.pitch = pack_rotation(cannon->m_AngleX);
+    return result;
+}
+
 void BuildingSnapshot::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(nid);
@@ -281,7 +344,23 @@ void WorldSnapshot::serialize_to_bitstream(BitWriter &writer) const
     for (const auto& [Id, b_snapshot] : buildings) {
         b_snapshot.serialize_to_bitstream(writer);
     }
+
+    writer.write_u32(turrets.size());
+    for (const auto& [Id, t_snapshot] : turrets) {
+        t_snapshot.serialize_to_bitstream(writer);
+    }
 }
+
+namespace {
+
+constexpr u32 kMaxSnapshotSides = 16;
+constexpr u32 kMaxSnapshotRobots = 512;
+constexpr u32 kMaxSnapshotBuildings = 512;
+constexpr u32 kMaxSnapshotTurrets = 512;
+
+u32 clamp_snapshot_count(u32 count, u32 max_count) { return count > max_count ? max_count : count; }
+
+}  // namespace
 
 WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
 {
@@ -412,6 +491,12 @@ Stopwatch cws_stopwatch;
                 robot->m_NID,
                 RobotSnapshot::from_robot(robot)
             );
+        }
+        else if (obj->IsCannon())
+        {
+            CMatrixCannon *cannon = obj->AsCannon();
+            if (cannon->m_CurrState != CANNON_DIP)
+                result.turrets.emplace(cannon->m_NID, TurretSnapshot::from_cannon(cannon));
         }
     }
 

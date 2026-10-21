@@ -734,9 +734,11 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
     }
 
     if (g_Network.is_authority() && step == RS_CANNONS) {
-        return 0; // ATTENTION: temporary measure, no cannons
+        // return 0; // ATTENTION: temporary measure, no cannons
         // loading cannons
         CDataBuf *c0 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_X, ST_FLOAT);
+        // if (!c0)
+        //     return 0;
         CDataBuf *c1 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_Y, ST_FLOAT);
         CDataBuf *c2 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_SIDE, ST_BYTE);
         CDataBuf *c3 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_KIND, ST_BYTE);

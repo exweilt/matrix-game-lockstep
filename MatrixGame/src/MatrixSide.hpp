@@ -490,6 +490,7 @@ public:
     void RefreshRobotSupplyCount();
 
     void LogicTakt(int ms);
+    void UpdateTurretBuildPreview(int ms);
 
     // Player
     CConstructorPanel *m_ConstructPanel;
@@ -545,6 +546,10 @@ public:
     void OnRButtonDown(const CPoint &mouse);
     void OnRButtonDouble(const CPoint &mouse); // Unused
     void OnLButtonDown(const CPoint &mouse);
+
+    /** Authority-only: places a turret on a building slot and starts construction. Returns false if invalid. */
+    bool PlaceTurretOnBuilding(CMatrixBuilding *building, int turret_num, float pos_x, float pos_y, int place,
+                               float angle);
     void OnLButtonDouble(const CPoint &mouse);
     void OnRButtonUp(const CPoint &mouse); // Unused
     void OnLButtonUp(const CPoint &mouse); // Unused

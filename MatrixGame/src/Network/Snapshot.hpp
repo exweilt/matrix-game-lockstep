@@ -11,6 +11,7 @@
 #include "BitStream.hpp"
 
 class CMatrixRobotAI;
+class CMatrixCannon;
 enum ERobotUnitKind : unsigned int;
 enum ESideStatus : u32;
 
@@ -81,6 +82,35 @@ struct BuildStackEntrySnapshot
     static BuildStackEntrySnapshot from_robot(CMatrixRobotAI *robot);
 };
 
+struct TurretSnapshot
+{
+    u32 nid;
+    f32 x;
+    f32 y;
+    f32 health;
+    f32 maxhealth;
+    u8 type;
+    u8 side;
+    u8 cannon_state;
+    u32 parent_building_nid;
+    i32 place;
+    u8 rotation;
+    u8 turret_yaw;
+    u8 pitch;
+
+    template <class Archive>
+    void serialize(Archive &ar) {
+        ar(CEREAL_NVP(nid), CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(health), CEREAL_NVP(maxhealth),
+           CEREAL_NVP(type), CEREAL_NVP(side), CEREAL_NVP(cannon_state), CEREAL_NVP(parent_building_nid),
+           CEREAL_NVP(place), CEREAL_NVP(rotation), CEREAL_NVP(turret_yaw), CEREAL_NVP(pitch));
+    }
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static TurretSnapshot deserialize_from_bitstream(BitReader &reader);
+
+    static TurretSnapshot from_cannon(CMatrixCannon *cannon);
+};
+
 struct BuildingSnapshot
 {
     u32 nid;
@@ -112,12 +142,13 @@ struct WorldSnapshot
     std::map<u8, SideSnapshot>        sides;
     std::map<u32, RobotSnapshot>      robots;
     std::map<u32, BuildingSnapshot>   buildings;
+    std::map<u32, TurretSnapshot>     turrets;
 
     std::string to_json_string() const;
 
     template <class Archive>
     void serialize(Archive& ar) {
-        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots), CEREAL_NVP(buildings));
+        ar(CEREAL_NVP(frame), CEREAL_NVP(sides), CEREAL_NVP(robots), CEREAL_NVP(buildings), CEREAL_NVP(turrets));
     }
 
     void serialize_to_bitstream(BitWriter &writer) const;

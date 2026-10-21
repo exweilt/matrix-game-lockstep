@@ -1161,11 +1161,13 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                         CPoint pl[MAX_PLACES];
                         bool cant_build_tu = false;
 
+                        const bool stack_full_on_authority =
+                            g_Network.is_authority() && bld->m_BS.IsMaxItems();
                         if ((ps->IsEnoughResources(g_Config.m_CannonsProps[0].m_Resources) ||
                              ps->IsEnoughResources(g_Config.m_CannonsProps[1].m_Resources) ||
                              ps->IsEnoughResources(g_Config.m_CannonsProps[2].m_Resources) ||
                              ps->IsEnoughResources(g_Config.m_CannonsProps[3].m_Resources)) &&
-                            (bld->GetPlacesForTurrets(pl) > 0) && (!bld->m_BS.IsMaxItems())) {
+                            (bld->GetPlacesForTurrets(pl) > 0) && !stack_full_on_authority) {
                             ps->m_ConstructPanel->ResetGroupNClose();
                             SETFLAG(g_IFaceList->m_IfListFlags, ORDERING_MODE);
                             SETFLAG(g_IFaceList->m_IfListFlags, PREORDER_BUILD_TURRET);
@@ -1310,7 +1312,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                         ps->m_CannonForBuild.Delete();
                         ps->m_CurrentAction = NOTHING_SPECIAL;
                     }
-                    g_IFaceList->ResetOrderingMode();
+                    g_IFaceList->ResetBuildCaMode();
                 }
             }
             //Общее для стратегического режима
@@ -1396,7 +1398,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
                 ps->m_CurrentAction = NOTHING_SPECIAL;
             }
 
-            g_IFaceList->ResetOrderingMode();
+            g_IFaceList->ResetBuildCaMode();
 
             if (Input::isVKeyPressed(VK_CONTROL)) {
                 CMatrixMapStatic *o = CMatrixMapStatic::GetFirstLogic();

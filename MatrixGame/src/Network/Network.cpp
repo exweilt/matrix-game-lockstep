@@ -19,6 +19,7 @@
 #include "Interface/CConstructor.h"
 #include "MatrixRobot.hpp"
 #include "MatrixObjectBuilding.hpp"
+#include "MatrixObjectCannon.hpp"
 #include "MatrixSide.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
@@ -87,6 +88,70 @@ void sync_base_building_from_snapshot(CMatrixBuilding *building, const BuildingS
         building->ResetSpawningBot();
 
     building->ApplyBaseFloorGraphics();
+}
+
+CMatrixCannon *find_live_cannon_by_nid(u32 nid) {
+    for (CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic(); ms; ms = ms->GetNextLogic()) {
+        if (ms->m_NID == nid && ms->IsCannon())
+            return ms->AsCannon();
+    }
+    return nullptr;
+}
+
+void detach_cannon_from_all_build_stacks(CMatrixCannon *cannon) {
+    for (CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic(); ms; ms = ms->GetNextLogic()) {
+        if (ms->IsLiveBuilding())
+            ms->AsBuilding()->m_BS.DetachItem(cannon);
+    }
+}
+
+void kill_turret_from_network_sync(CMatrixCannon *cannon) {
+    if (cannon == nullptr || cannon->m_CurrState == CANNON_DIP)
+        return;
+    // ReleaseMe() -> DeleteItem(this) would StaticDelete while still inside Damage/ReleaseMe.
+    if (g_Network.is_client())
+        detach_cannon_from_all_build_stacks(cannon);
+    cannon->Damage(WEAPON_INSTANT_DEATH, D3DXVECTOR3(0, 0, 0), D3DXVECTOR3(0, 0, 0), 0, NULL);
+}
+
+bool snapshot_turret_is_dead(const TurretSnapshot &ts) {
+    const ECannonState state = static_cast<ECannonState>(ts.cannon_state);
+    if (state == CANNON_DIP)
+        return true;
+    // Turrets being built report 0 HP until construction finishes.
+    if (state == CANNON_UNDER_CONSTRUCTION)
+        return false;
+    return ts.health <= 0.f;
+}
+
+void apply_cannon_turret_yaw(CMatrixCannon *cannon, float yaw) {
+    for (int i = 0; i < cannon->m_UnitCnt; ++i) {
+        if (cannon->m_Unit[i].m_Type == CUT_TURRET || cannon->m_Unit[i].m_Type == CUT_SHAFT)
+            cannon->m_Unit[i].u1.s1.m_Angle = yaw;
+    }
+}
+
+void apply_turret_snapshot(CMatrixCannon *cannon, const TurretSnapshot &ts, f32 health_lerp, float base_angle,
+                           float turret_yaw, float pitch) {
+    cannon->m_Pos.x = ts.x;
+    cannon->m_Pos.y = ts.y;
+    cannon->SetSide(ts.side);
+    cannon->m_CurrState = static_cast<ECannonState>(ts.cannon_state);
+    cannon->m_Angle = base_angle;
+    cannon->m_AngleX = pitch;
+    apply_cannon_turret_yaw(cannon, turret_yaw);
+    cannon->m_Place = ts.place;
+
+    if (CMatrixBuilding *parent = find_building_by_nid(ts.parent_building_nid))
+        cannon->m_ParentBuilding = parent;
+
+    const float max_hp = ts.maxhealth * 10.f;
+    const float hp = health_lerp * 10.f;
+    if (hp < cannon->GetHitPoint())
+        cannon->ShowHitpoint();
+    cannon->ApplyNetworkHealth(hp, max_hp);
+
+    cannon->RChange(MR_Matrix);
 }
 
 void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
@@ -344,6 +409,11 @@ void Network::delete_robot(CMatrixRobotAI *robot)
 {
     robot->Damage(WEAPON_INSTANT_DEATH, D3DXVECTOR3(0, 0, 0), D3DXVECTOR3(0, 0, 0), 0, NULL);
     // robots.erase(robot->m_NID);
+}
+
+void Network::delete_turret(CMatrixCannon *cannon)
+{
+    kill_turret_from_network_sync(cannon);
 }
 
 float lerp_angle(float t, float a, float b)
@@ -632,7 +702,28 @@ void Network::process_playback([[maybe_unused]]int ms)
     }
 }
 
-void Network::populate_robot(RobotSnapshot& rs)
+void Network::populate_turret(const TurretSnapshot &ts)
+{
+    CMatrixCannon *c = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
+    c->m_NID = ts.nid;
+    if (ts.nid >= next_nid)
+        next_nid = ts.nid + 1;
+
+    c->UnitInit(ts.type);
+    c->m_ShadowType = SHADOW_STENCIL;
+    c->m_ShadowSize = 128;
+    c->RNeed(MR_Matrix | MR_Graph);
+    c->JoinToGroup();
+    apply_turret_snapshot(c, ts, ts.health, unpack_rotation(ts.rotation), unpack_rotation(ts.turret_yaw),
+                        unpack_rotation(ts.pitch));
+
+    if (c->m_CurrState == CANNON_UNDER_CONSTRUCTION && c->m_ParentBuilding != nullptr)
+        c->m_ParentBuilding->m_BS.AddItem(c);
+
+    turrets.emplace(ts.nid, c);
+}
+
+void Network::populate_robot(const RobotSnapshot &rs)
 {
     // g_Network.
     // D3DXVECTOR3 pos = g_MatrixMap->m_TraceStopPos;
@@ -889,6 +980,10 @@ void Network::process_server_network_frame()
             else if (m.type == MessageType::COMMAND_STOP)
             {
                 m.command_stop.execute();
+            }
+            else if (m.type == MessageType::COMMAND_BUILD_TURRET)
+            {
+                m.command_build_turret.execute();
             }
 
             //
@@ -1227,6 +1322,12 @@ void NetOrderStop(const std::vector<u32> &entities_nid, int local_side_id, bool 
 //     g_Network.add_input_for_current_input_frame(command);
 // }
 //
+void NetOrderBuildTurret(u8 turret_type, u32 parent_building_nid, i32 place, f32 pos_x, f32 pos_y, u8 angle_packed)
+{
+    Message msg{MessageCommandBuildTurretParams(turret_type, parent_building_nid, place, pos_x, pos_y, angle_packed)};
+    g_Network.send_message(msg);
+}
+
 // void NetOrderConstruct(ERobotUnitKind chassis, ERobotUnitKind hull, ERobotUnitKind head,
 //                         const std::vector<ERobotUnitKind> &weapons, u8 robot_count, u32 base)
 // {

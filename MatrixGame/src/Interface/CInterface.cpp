@@ -23,6 +23,7 @@
 #include "CCounter.h"
 #include "CHistory.h"
 #include "../Network/ScmSettingsApplier.hpp"
+#include "../Network/Network.hpp"
 #include "MatrixHint.hpp"
 #include "../MatrixFormGame.hpp"
 
@@ -1773,23 +1774,31 @@ void CInterface::Init(void) {
                         }
                     }
                     else if (pElement->m_strName == IF_BUILD_CA && !bld_tu) {
+                        // IF_BUILD_CA / "buca" — build turret (not IF_CALL_FROM_HELL reinforcements).
                         pElement->SetVisibility(true);
-                        if (!bld->GetPlacesForTurrets(pl) || cant_build_tu || bld->m_BS.IsMaxItems()) {
-                            pElement->SetState(IFACE_DISABLED);
-                        }
-                        else if (bld->GetPlacesForTurrets(pl) && !cant_build_tu && !bld->m_BS.IsMaxItems() &&
-                                 pElement->GetState() == IFACE_DISABLED) {
-                            pElement->SetState(IFACE_NORMAL);
-                        }
-                    }
-                    else if (pElement->m_strName == IF_CALL_FROM_HELL && !bld_tu) {
-                        pElement->SetVisibility(true);
-                        if (g_MatrixMap->MaintenanceDisabled() || g_MatrixMap->BeforeMaintenanceTime() > 0) {
+                        const int free_places = bld->GetPlacesForTurrets(pl);
+                        const bool stack_full_on_authority =
+                            g_Network.is_authority() && bld->m_BS.IsMaxItems();
+                        const bool can_order_turret = bld->m_Side == g_Network.controllable_side_id &&
+                                                      free_places > 0 && !cant_build_tu &&
+                                                      !stack_full_on_authority;
+                        if (!can_order_turret) {
                             pElement->SetState(IFACE_DISABLED);
                         }
                         else if (pElement->GetState() == IFACE_DISABLED) {
                             pElement->SetState(IFACE_NORMAL);
                         }
+                    }
+                    else if (pElement->m_strName == IF_CALL_FROM_HELL && !bld_tu) {
+                        pElement->SetVisibility(true);
+                        // if (g_MatrixMap->MaintenanceDisabled() || g_MatrixMap->BeforeMaintenanceTime() > 0) {
+                        //     pElement->SetState(IFACE_DISABLED);
+                        // }
+                        // else if (pElement->GetState() == IFACE_DISABLED) {
+                        //     pElement->SetState(IFACE_NORMAL);
+                        // }
+                        pElement->m_DefState = IFACE_DISABLED;
+                        pElement->SetState(IFACE_DISABLED);
                     }
                     else if (bld->m_TurretsMax == 1 && pElement->m_strName == IF_PODL1) {
                         pElement->SetVisibility(true);
@@ -4064,6 +4073,7 @@ void __stdcall CIFaceList::PlayerAction(void *object) {
         if (ps->m_CurrentAction == BUILDING_TURRET) {
             ps->m_CannonForBuild.Delete();
             ps->m_CurrentAction = NOTHING_SPECIAL;
+            g_MatrixMap->m_Cursor.SetVisible(true);
         }
         ResetOrderingMode();
     }
@@ -5139,7 +5149,7 @@ void CIFaceList::AddHintReplacements(const std::wstring &element_name) {
         repl->ParSetAdd(L"_ch_time_min", L"");
         repl->ParSetAdd(L"_ch_time_sec", L"");
 
-        if (g_MatrixMap->MaintenanceDisabled()) {
+        if (!kAirReinforcementsEnabled || g_MatrixMap->MaintenanceDisabled()) {
             repl->ParSetAdd(L"_ch_cant", L"1");
         }
         else {

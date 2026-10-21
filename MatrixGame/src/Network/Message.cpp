@@ -6,6 +6,10 @@
 #include "MatrixMap.hpp"
 #include "MatrixRobot.hpp"
 #include "MatrixSide.hpp"
+#include "MatrixObjectBuilding.hpp"
+#include "MatrixObjectCannon.hpp"
+#include "Network/Network.hpp"
+#include "Network/Snapshot.hpp"
 #include "Interface/CConstructor.h"
 
 // namespace network
@@ -132,6 +136,42 @@ MessageJoinParams MessageJoinParams::deserialize_from_bitstream(BitReader &reade
     {
         host_player_side, username
     };
+}
+
+void MessageCommandBuildTurretParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u8(turret_type);
+    writer.write_u32(parent_building_nid);
+    writer.write_u32(static_cast<u32>(place));
+    writer.write_f32(pos_x);
+    writer.write_f32(pos_y);
+    writer.write_u8(angle_packed);
+}
+
+MessageCommandBuildTurretParams MessageCommandBuildTurretParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageCommandBuildTurretParams result{};
+    result.turret_type = reader.read_u8();
+    result.parent_building_nid = reader.read_u32();
+    result.place = static_cast<i32>(reader.read_u32());
+    result.pos_x = reader.read_f32();
+    result.pos_y = reader.read_f32();
+    result.angle_packed = reader.read_u8();
+    return result;
+}
+
+void MessageCommandBuildTurretParams::execute()
+{
+    CMatrixMapStatic *building_static = g_MatrixMap->find_static_with_nid(parent_building_nid);
+    if (building_static == nullptr || !building_static->IsLiveBuilding())
+        return;
+
+    CMatrixBuilding *building = building_static->AsBuilding();
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(building->m_Side);
+    if (side == nullptr)
+        return;
+
+    side->PlaceTurretOnBuilding(building, turret_type, pos_x, pos_y, place, unpack_rotation(angle_packed));
 }
 
 void MessageCommandBuildParams::serialize_to_bitstream(BitWriter &writer) const

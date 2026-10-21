@@ -1381,15 +1381,22 @@ void CMatrixMap::BeforeDraw(void) {
 
     CMatrixMapStatic::SortEndBeforeDraw();
 
-    // cannon for build before draw
-    // player_side = GetPlayerSide();
-    if (player_side->m_CannonForBuild.m_Cannon) {
+    // Turret placement preview is client-local; matrix refresh happens in BeforeDraw via RNeed.
+    CMatrixSideUnit *controllable_side = GetControllableSide();
+    if (controllable_side && controllable_side->m_CurrentAction == BUILDING_TURRET) {
+        controllable_side->UpdateTurretBuildPreview(16);
+    }
+    else if (controllable_side && g_IFaceList->m_InFocus == UNKNOWN) {
+        m_Cursor.SetVisible(true);
+    }
+
+    if (controllable_side && controllable_side->m_CannonForBuild.m_Cannon) {
         if (g_IFaceList->m_InFocus == UNKNOWN) {
-            player_side->m_CannonForBuild.m_Cannon->SetVisible(true);
-            player_side->m_CannonForBuild.m_Cannon->BeforeDraw();
+            controllable_side->m_CannonForBuild.m_Cannon->SetVisible(true);
+            controllable_side->m_CannonForBuild.m_Cannon->BeforeDraw();
         }
         else {
-            player_side->m_CannonForBuild.m_Cannon->SetVisible(false);
+            controllable_side->m_CannonForBuild.m_Cannon->SetVisible(false);
         }
     }
 
