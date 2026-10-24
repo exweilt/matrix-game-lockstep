@@ -155,3 +155,7 @@ extern SMGDRangersInterface *g_RangersInterface;
 // 4-cancel
 // +100-with error
 extern int g_ExitState;
+
+/** Append one line to MatrixGame_dll.log beside this DLL. Flushed immediately. */
+void MatrixGameDllTrace(const char* text);
+void MatrixGameDllTracef(const char* fmt, ...);

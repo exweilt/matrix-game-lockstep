@@ -212,9 +212,12 @@ void MessageCommandBuildParams::execute_for_side()
 {
     DTRACE();
     CMatrixMapStatic *base_static = g_MatrixMap->find_static_with_nid(target_base_nid);
-    CMatrixSideUnit *side = g_MatrixMap->GetSideById(base_static->GetSide());
     if (base_static == nullptr || !base_static->IsBase())
         return; // some scheisse
+
+    CMatrixSideUnit *side = g_MatrixMap->GetSideById(base_static->GetSide());
+    if (side == nullptr || side->m_Constructor == nullptr)
+        return;
 
     CMatrixBuilding *base = base_static->AsBuilding();
 

@@ -266,10 +266,39 @@ static void static_init(void) {
     g_Flags = 0;  // GFLAG_FORMACCESS;
 }
 
+static std::wstring g_ConfigLang;
+
+static bool TryLoadInterfaceFromDat(CBlockPar& bpi)
+{
+    std::wstring conf_file{FILE_CONFIGURATION_LOCATION};
+    if (!g_ConfigLang.empty())
+    {
+        conf_file += g_ConfigLang;
+        conf_file += L"\\";
+    }
+    conf_file += FILE_CONFIGURATION;
+
+    std::wstring stor_cfg_name;
+    if (!CFile::FileExist(stor_cfg_name, conf_file.c_str()))
+        return false;
+
+    CStorage stor_cfg(g_MatrixHeap);
+    stor_cfg.Load(conf_file.c_str());
+    stor_cfg.RestoreBlockPar(L"if", bpi);
+    MatrixGameDllTracef("load_map: interface from %s", utils::from_wstring(conf_file).c_str());
+    return true;
+}
+
 void CGame::load_map(std::wstring mapname)
 {
     CBlockPar bpi;
-    bpi.LoadFromTextFile(IF_PATH);
+    // The DLL host keeps this block inside cfg\<lang>\robots.dat. The loose
+    // cfg\robots\iface.txt is only the executable's unpacked copy.
+    if (!TryLoadInterfaceFromDat(bpi))
+    {
+        MatrixGameDllTrace("load_map: interface from cfg\\robots\\iface.txt");
+        bpi.LoadFromTextFile(IF_PATH);
+    }
 
     CInterface *pInterface = NULL;
     bool iface_save = false;
@@ -348,10 +377,12 @@ void CGame::load_map(std::wstring mapname)
     //     mapname = g_MatrixData->BlockGet(L"Config")->ParGet(L"Map");
     // }
     mapname = L"Matrix\\Map\\" + mapname;
+    MatrixGameDllTrace("load_map: open storage");
     CStorage stor;
     stor.Load(mapname.c_str());
     DCP();
 
+    MatrixGameDllTrace("load_map: PrepareMap");
     if (0 > g_MatrixMap->PrepareMap(stor, mapname))
     {
         ERROR_S(L"Unable to load map. Error happens.");
@@ -367,15 +398,20 @@ void CGame::load_map(std::wstring mapname)
     // }
     // DCP();
 
+    MatrixGameDllTrace("load_map: cannon places");
     g_MatrixMap->CalcCannonPlace();
 
+    MatrixGameDllTrace("load_map: pool resources");
     g_MatrixMap->CreatePoolDefaultResources(true);
     g_MatrixMap->InitObjectsLights();
 
+    MatrixGameDllTrace("load_map: select side");
     g_MatrixMap->GetControllableSide()->Select(BUILDING, g_MatrixMap->GetControllableSide()->m_ActiveObject);
 
 
+    MatrixGameDllTrace("load_map: AI robot types");
     SSpecialBot::LoadAIRobotType(*g_MatrixData->BlockGet(L"AIRobotType"));
+    MatrixGameDllTrace("load_map: done");
 
 }
 
@@ -384,6 +420,7 @@ void CGame::Init(HINSTANCE inst, [[maybe_unused]] HWND wnd, const wchar *map,uin
                 const wchar *planet)
 {
     random::seed(seed);
+    g_ConfigLang = lang != nullptr ? lang : L"";
     static_init();
 
     DTRACE();
@@ -759,8 +796,13 @@ void CGame::ApplyVideoParams(SRobotsSettings &set) {
     g_D3Dpp.BackBufferFormat = (set.m_BPP == 16) ? D3DFMT_R5G6B5 : D3DFMT_A8R8G8B8;
     g_D3Dpp.EnableAutoDepthStencil = TRUE;
     g_D3Dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
+#ifdef BUILD_EXE
     g_D3Dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-    // g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+#else
+    // Host (Space Rangers) passes m_VSync in SRobotsSettings. Reset must honor it;
+    // L3GInitAsDLL does not set a present interval of its own.
+    g_D3Dpp.PresentationInterval = set.m_VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+#endif
     g_D3Dpp.FullScreen_RefreshRateInHz = refresh_rate_required;
     g_D3Dpp.BackBufferWidth = set.m_ResolutionX;
     g_D3Dpp.BackBufferHeight = set.m_ResolutionY;
@@ -969,8 +1011,32 @@ void CGame::RunGameLoop(CFormMatrixGame *formgame) {
         RESETFLAG(g_Flags, GFLAG_EXITLOOP);
 
         L3GRun();
+        MatrixGameDllTracef(
+            "RunGameLoop: L3GRun returned flags=0x%lX exit=%d",
+            static_cast<unsigned long>(g_Flags),
+            g_ExitState);
     }
-    catch (... /*ExceptionHandler(GetExceptionInformation())*/) {
+    catch (const CException& ex)
+    {
+        std::string info = "CException";
+        try {
+            info = utils::from_wstring(ex.Info());
+        }
+        catch (...) {
+        }
+        MatrixGameDllTracef("RunGameLoop: CException: %s", info.c_str());
+        SETFLAG(g_Flags, GFLAG_EXITLOOP);
+        g_ExitState += 100;
+    }
+    catch (const std::exception& ex)
+    {
+        MatrixGameDllTracef("RunGameLoop: std::exception: %s", ex.what());
+        SETFLAG(g_Flags, GFLAG_EXITLOOP);
+        g_ExitState += 100;
+    }
+    catch (...)
+    {
+        MatrixGameDllTrace("RunGameLoop: unknown C++ exception");
         SETFLAG(g_Flags, GFLAG_EXITLOOP);
         g_ExitState += 100;
     }

@@ -269,7 +269,11 @@ void CMatrixRobot::WeaponSelectMatrix(void) {
 }
 
 float CMatrixRobot::GetChassisHeight(void) const {
+    if (m_UnitCnt <= 0 || m_Unit[0].m_Graph == nullptr)
+        return 0.0f;
     const D3DXMATRIX *tm = m_Unit[0].m_Graph->GetMatrixById(1);
+    if (tm == nullptr)
+        return 0.0f;
     return tm->_43;
 }
 
@@ -1003,7 +1007,10 @@ void CMatrixRobot::BeforeDraw(void) {
 }
 
 void CMatrixRobot::Draw(void) {
-    uintptr_t coltex = (uintptr_t)g_MatrixMap->GetSideColorTexture(m_Side)->Tex();
+    if (m_Core == nullptr)
+        return;
+    CTexture *side_tex = g_MatrixMap->GetSideColorTexture(m_Side);
+    uintptr_t coltex = side_tex != nullptr ? (uintptr_t)side_tex->Tex() : 0;
     // g_D3DD->SetRenderState( D3DRS_NORMALIZENORMALS,  TRUE );
 
     for (int i = 0; i < 4; i++) {

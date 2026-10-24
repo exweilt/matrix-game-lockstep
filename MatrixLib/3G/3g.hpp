@@ -307,6 +307,9 @@ void L3GDeinit(void);
  */
 int L3GRun(void);
 
+/** Dispatch queued window messages. True when the window was closed or the loop was asked to stop. */
+bool L3GProcessWindowMessages(void);
+
 void S3D_Default(void);
 
 #include "Texture.hpp"

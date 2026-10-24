@@ -244,6 +244,14 @@ void CFormMatrixGame::Leave(void) {
     DTRACE();
 }
 
+static bool D3DDeviceStillReady(HRESULT hr) {
+    if (hr == D3D_OK)
+        return true;
+    if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+        return false;
+    throw CExceptionD3D(__FILE__, __LINE__, hr);
+}
+
 void CFormMatrixGame::Draw(void) {
     DTRACE();
 
@@ -312,29 +320,35 @@ void CFormMatrixGame::Draw(void) {
     if (FLAG(g_Flags, GFLAG_STENCILAVAILABLE))
     {
         if (debug_clear) {
-            ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL | D3DCLEAR_TARGET,
-                                    D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0));
+            if (!D3DDeviceStillReady(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL | D3DCLEAR_TARGET,
+                                                   D3DCOLOR_XRGB(255, 0, 255), 1.0f, 0)))
+                return;
         }
         else {
-            ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0));
+            if (!D3DDeviceStillReady(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0)))
+                return;
         }
 
         if (CInterface::ClearRects_GetCount()) {
             const DWORD clear_color = debug_clear ? D3DCOLOR_XRGB(255, 0, 255) : 0;
-            ASSERT_DX(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(),
-                                    D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, clear_color, 0.0f, 0));
+            if (!D3DDeviceStillReady(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(),
+                                                   D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, clear_color, 0.0f, 0)))
+                return;
         }
     }
     else {
         const DWORD clear_color = debug_clear ? D3DCOLOR_XRGB(255, 0, 255) : 0;
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER, clear_color, 1.0f, 0));
+        if (!D3DDeviceStillReady(g_D3DD->Clear(0, NULL, D3DCLEAR_ZBUFFER, clear_color, 1.0f, 0)))
+            return;
 
         if (CInterface::ClearRects_GetCount())
-            ASSERT_DX(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(), D3DCLEAR_ZBUFFER,
-                                    clear_color, 0.0f, 0));
+            if (!D3DDeviceStillReady(g_D3DD->Clear(CInterface::ClearRects_GetCount(), CInterface::ClearRects_Get(),
+                                                   D3DCLEAR_ZBUFFER, clear_color, 0.0f, 0)))
+                return;
     }
 
-    ASSERT_DX(g_D3DD->BeginScene());
+    if (!D3DDeviceStillReady(g_D3DD->BeginScene()))
+        return;
 
 #ifdef _DEBUG
     if (!FLAG(g_Flags, GFLAG_EXTRAFREERES)) {
@@ -345,9 +359,8 @@ void CFormMatrixGame::Draw(void) {
     g_MatrixMap->Draw();
 
 
-    ASSERT_DX(g_D3DD->EndScene());
-    ASSERT_DX(g_D3DD->Present(NULL, NULL, NULL, NULL));
-    g_MatrixMap->m_Cursor.ApplySystemCursor();
+    const HRESULT end_hr = g_D3DD->EndScene();
+    const HRESULT present_hr = end_hr == D3D_OK ? g_D3DD->Present(NULL, NULL, NULL, NULL) : end_hr;
 
 #ifdef _DEBUG
     RESETFLAG(g_Flags, GFLAG_RENDERINPROGRESS);
@@ -364,17 +377,21 @@ void CFormMatrixGame::Draw(void) {
         SetWindowTextA(g_Wnd, buff.c_str());
     }
 #endif
+
+    if (!D3DDeviceStillReady(present_hr))
+        return;
+    g_MatrixMap->m_Cursor.ApplySystemCursor();
 }
 
 void CFormMatrixGame::Takt(int step) {
     DTRACE();
 
-    if (g_MatrixMap->CheckLostDevice())
-    {
-        return;
-    }
+    const bool device_lost = g_MatrixMap->CheckLostDevice();
 
     g_MatrixMap->Takt(step);
+
+    if (device_lost)
+        return;
 
 
     if (!g_Network.isCompactMode)

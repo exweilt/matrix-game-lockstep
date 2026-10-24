@@ -338,6 +338,21 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
     for (int i = 0; i < n; rt[i++].tex = NULL)
         ;
 
+    // A build order for the local side renders this icon immediately. The robot is not
+    // queued yet, and a client playing this side can assemble one whose graph or transform
+    // is not ready. Bail out before any device work so the caller can still queue it.
+    if (m_Core == nullptr || !IsRobot())
+        return false;
+
+    RNeed(MR_Graph | MR_Matrix);
+
+    CMatrixRobotAI *r = AsRobot();
+    if (r->m_UnitCnt <= 0 || r->m_Unit[0].m_Graph == nullptr)
+        return false;
+    const D3DXMATRIX *chassis_tm = r->m_Unit[0].m_Graph->GetMatrixById(1);
+    if (chassis_tm == nullptr)
+        return false;
+
     IDirect3DSurface9 *newTarget;
     if (D3D_OK !=
         g_D3DD->CreateRenderTarget(RENDSZ, RENDSZ, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &newTarget, 0)) {
@@ -411,11 +426,7 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
         ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0));
     }
 
-    ASSERT(IsRobot());
-
-    RNeed(MR_Graph | MR_Matrix);
-
-    float h = AsRobot()->GetChassisHeight();
+    float h = chassis_tm->_43;
     float ra = h;
     /*
         if (fff)
@@ -427,7 +438,6 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
         }
     */
 
-    CMatrixRobotAI *r = AsRobot();
     for (int i = 0; i < r->m_UnitCnt; ++i) {
         if (r->m_Unit[i].m_Type == MRT_CHASSIS) {
             switch (r->m_Unit[i].u1.s1.m_Kind) {

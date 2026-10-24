@@ -133,6 +133,25 @@ std::wstring CExceptionD3D::Info() const
                DXGetErrorDescriptionW(m_Error)).c_str();
 }
 
+static void L3GInitImGui()
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplWin32_Init(g_Wnd);
+    ImGui_ImplDX9_Init(g_D3DD);
+}
+
+static void L3GShutdownImGui()
+{
+    if (ImGui::GetCurrentContext() == nullptr)
+        return;
+
+    ImGui_ImplDX9_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+}
+
 void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const wchar* captionname) {
     RECT tr;
 
@@ -292,17 +311,8 @@ void L3GInitAsEXE(HINSTANCE hinst, CBlockPar& bpcfg, const wchar* sysname, const
             &g_D3DD
         );
 
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io; // Used for tweaking fonts/settings later
-
-    // Setup Dear ImGui style (Dark is default)
-    ImGui::StyleColorsDark();
-
-    // Setup Platform/Renderer backends
-    ImGui_ImplWin32_Init(g_Wnd);        // Pass your existing Win32 HWND
-    ImGui_ImplDX9_Init(g_D3DD);       // Pass your existing DX9 Device
+    // Font texture is created lazily on the first NewFrame, after ApplyVideoParams() resets the device.
+    L3GInitImGui();
 
     switch(cd_res)
     {
@@ -438,9 +448,13 @@ void L3GInitAsDLL(
         ASSERT_DX(g_D3DD->SetTextureStageState(i, D3DTSS_ALPHAARG2, D3DTA_CURRENT));
     }
 #endif
+
+    L3GInitImGui();
 }
 
 void L3GDeinit() {
+    L3GShutdownImGui();
+
     if (FLAG(g_Flags, GFLAG_GAMMA)) {
         g_D3DD->SetGammaRamp(0, D3DSGR_NO_CALIBRATION, &g_StoreRamp0);
         g_D3DD->SetGammaRamp(1, D3DSGR_NO_CALIBRATION, &g_StoreRamp1);
@@ -481,6 +495,17 @@ void L3GDeinit() {
 
 bool processInput(UINT message, WPARAM wParam, LPARAM lParam);
 
+bool L3GProcessWindowMessages()
+{
+    MSG msg;
+    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return FLAG(g_Flags, GFLAG_APPCLOSE) || FLAG(g_Flags, GFLAG_EXITLOOP);
+}
+
 int L3GRun()
 {
     using clock = std::chrono::steady_clock;
@@ -494,7 +519,7 @@ int L3GRun()
     //     smooth[i] = 10;
 
     fps_counter<100> fps;
-    MSG msg;
+    bool logged_game_frame = false;
 
     auto prev_takt = clock::now();
 
@@ -508,13 +533,11 @@ int L3GRun()
         // Stopwatch sw_event;
         // std::cout << "===== curr: " << g_Network.physics_frame << ", logs: " << g_SyncLogs.next_free << std::endl;
 
-        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        if (L3GProcessWindowMessages())
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg); // Effectively calls L3GWndProc() handler
-        }
-        if (FLAG(g_Flags, GFLAG_APPCLOSE) || FLAG(g_Flags, GFLAG_EXITLOOP))
-        {
+            MatrixGameDllTracef(
+                "L3GRun: stop on message flags=0x%lX",
+                static_cast<unsigned long>(g_Flags));
             break;
         }
 
@@ -555,6 +578,12 @@ int L3GRun()
         }
         else
         {
+            if (!logged_game_frame)
+            {
+                //MatrixGameDllTrace("L3GRun: first gameplay frame");
+                logged_game_frame = true;
+            }
+
             if (FLAG(g_Flags, GFLAG_4SPEED))
             {
                 delta_time *= 4;
@@ -702,6 +731,25 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
     return propagate;
 }
 
+static LRESULT L3GCallPrevWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    // The DLL subclasses Space Rangers' window. Alt-tab and the taskbar only work if that
+    // original procedure still sees activation. The EXE owns its window, so DefWindowProc is enough.
+    if (g_WndExtern && g_WndOldProg != 0)
+        return CallWindowProc(reinterpret_cast<WNDPROC>(g_WndOldProg), hWnd, message, wParam, lParam);
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+static void L3GLeaveForeground(void)
+{
+    // The match keeps simulating. This only stops the fullscreen window from holding the
+    // mouse and from treating itself as the active app, which is what blocks Alt-Tab.
+    RESETFLAG(g_Flags, GFLAG_APPACTIVE);
+    ClipCursor(NULL);
+    if (g_FormCur)
+        g_FormCur->SystemEvent(SYSEV_DEACTIVATING);
+}
+
 /**
  * @brief Window message callback handler.
  *
@@ -709,6 +757,12 @@ bool processInput(UINT message, WPARAM wParam, LPARAM lParam)
  */
 LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    const bool shell_switch =
+            (message == WM_SYSKEYDOWN && wParam == VK_TAB) ||
+            (message == WM_KEYDOWN && (wParam == VK_LWIN || wParam == VK_RWIN));
+    if (shell_switch)
+        ClipCursor(NULL);
+
     // ImGui's WM_SETCURSOR handler forces IDC_ARROW and returns before we can run. During gameplay
     // the Matrix cursor owns the client area — handle that before ImGui.
     if (message == WM_SETCURSOR && LOWORD(lParam) == HTCLIENT && g_Network.game_state != GameState::LOBBY) {
@@ -716,61 +770,36 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         return TRUE;
     }
 
-    if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+    if (!shell_switch && message != WM_ACTIVATE && message != WM_ACTIVATEAPP &&
+        ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
         return true;
 
     switch (message)
     {
         case WM_PAINT:
             break;
-        // case WM_ACTIVATE:
-        case WM_ACTIVATEAPP:
-        {
-            // if (FLAG(g_Flags, GFLAG_KEEPALIVE))
-            // {
-            //     // don't minimize or pause the game when keepalive flag is set
-            //     break;
-            // }
-            if (wParam != 0)
-            {
+        case WM_ACTIVATE:
+            if (LOWORD(wParam) == WA_INACTIVE)
+                L3GLeaveForeground();
+            else {
                 SETFLAG(g_Flags, GFLAG_APPACTIVE);
-                if (FLAG(g_Flags, GFLAG_FULLSCREEN))
-                {
-                    ShowWindow(g_Wnd, SW_MAXIMIZE);
-                }
-                else
-                {
-                    ShowWindow(g_Wnd, SW_RESTORE);
-                }
-                // if (g_D3DD->TestCooperativeLevel() == D3DERR_DEVICENOTRESET) {g_D3DD->Reset(&g_D3Dpp);}
                 if (g_FormCur)
-                {
                     g_FormCur->SystemEvent(SYSEV_ACTIVATED);
-                }
-            }
-            else
-            {
-                // Always keep alive (for multiplayer purposes)!
-                if (true || FLAG(g_Flags, GFLAG_KEEPALIVE))
-                {
-                    // don't minimize or pause the game when keepalive flag is set
-                    break;
-                }
-
-                RESETFLAG(g_Flags, GFLAG_APPACTIVE);
-                if (g_FormCur)
-                {
-                    g_FormCur->SystemEvent(SYSEV_DEACTIVATING);
-                }
-
-                ShowWindow(g_Wnd, SW_MINIMIZE);
-                ClipCursor(NULL);
             }
             break;
-        }
+        case WM_ACTIVATEAPP:
+            if (wParam != 0) {
+                SETFLAG(g_Flags, GFLAG_APPACTIVE);
+                if (g_FormCur)
+                    g_FormCur->SystemEvent(SYSEV_ACTIVATED);
+            }
+            else
+                L3GLeaveForeground();
+            break;
         case WM_DESTROY:
         case WM_CLOSE:
         case WM_QUIT:
+            ClipCursor(NULL);
             SETFLAG(g_Flags, GFLAG_APPCLOSE);
             //          PostQuitMessage(0);
             return 0;
@@ -785,7 +814,7 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         }
     }
 
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return L3GCallPrevWndProc(hWnd, message, wParam, lParam);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

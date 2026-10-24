@@ -1,5 +1,7 @@
 #include "Network.hpp"
 
+#include "3g.hpp"
+
 #include <cereal/archives/json.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
@@ -1346,28 +1348,41 @@ MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
         exit (EXIT_FAILURE);
     }
 
+    // Short waits so WM_CLOSE is dispatched while no server is answering.
+    int waited_ms = 0;
     while (true)
     {
-        if (enet_host_service (host, &event, 1000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+        if (L3GProcessWindowMessages())
+        {
+            enet_peer_reset(peer);
+            return MessageGameSettingsParams("");
+        }
+
+        if (enet_host_service (host, &event, 50) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
         {
             std::cout << "Connected to the server!\n";
             break;
         }
-        else
+
+        waited_ms += 50;
+        if (waited_ms >= 1000)
         {
+            waited_ms = 0;
             std::cout << "Could not connect to the server.\n";
-            // exit(1);
             std::cout << "Attempting to reconnect...\n";
-            Sleep(1000);
-            // enet_peer_reset(peer);
-            continue;
         }
     }
 
     // Waiting for game settings
     while (true)
     {
-        if (enet_host_service (host, &event, 300) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
+        if (L3GProcessWindowMessages())
+        {
+            enet_peer_reset(peer);
+            return MessageGameSettingsParams("");
+        }
+
+        if (enet_host_service (host, &event, 50) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
         {
             BitReader reader = BitReader(event.packet->data);
             Message m { Message::deserialize_from_bitstream(reader) };
@@ -1377,7 +1392,6 @@ MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
                 return m.game_settings;
             }
         }
-        Sleep(50);
     }
 }
 
@@ -1397,6 +1411,7 @@ void Network::init_server_host()
 
     if (host == nullptr)
     {
+        MatrixGameDllTrace("init_server_host: enet_host_create failed on port 1234");
         fprintf (stderr, "An error occurred while trying to create an ENet server host.\n");
         std::terminate();
     }

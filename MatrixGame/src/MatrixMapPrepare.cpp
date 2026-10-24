@@ -2031,6 +2031,21 @@ void CMatrixMap::ReleasePoolDefaultResources(void) {
     RESETFLAG(m_Flags, MMFLAG_VIDEO_RESOURCES_READY);
 }
 
+static void RestoreLostDeviceAsWindow(void) {
+    if (g_D3Dpp.Windowed)
+        return;
+
+    // The other process (Space Rangers hosting the DLL) owns the adapter in exclusive
+    // fullscreen. Coming back the same way would take it away from that process.
+    g_D3Dpp.Windowed = TRUE;
+    g_D3Dpp.FullScreen_RefreshRateInHz = 0;
+    RESETFLAG(g_Flags, GFLAG_FULLSCREEN);
+    SetWindowLong(g_Wnd, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_VISIBLE);
+    SetWindowPos(g_Wnd, HWND_NOTOPMOST, 80, 80, g_D3Dpp.BackBufferWidth, g_D3Dpp.BackBufferHeight,
+                 SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    ClipCursor(NULL);
+}
+
 bool CMatrixMap::CheckLostDevice(void) {
     DTRACE();
 
@@ -2052,6 +2067,7 @@ bool CMatrixMap::CheckLostDevice(void) {
                 ReleasePoolDefaultResources();
             }
 
+            RestoreLostDeviceAsWindow();
             //        D3DResource::Dump(D3DRESTYPE_VB);
             hr = g_D3DD->Reset(&g_D3Dpp);
             if (hr != D3D_OK) {

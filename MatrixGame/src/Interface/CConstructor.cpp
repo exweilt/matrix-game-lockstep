@@ -155,6 +155,7 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
     if (m_nUnitCnt) {
         // m_Base->m_BusyFlag.SetBusy(m_Build);
         m_Build = HNew(g_MatrixHeap) CMatrixRobotAI;
+        g_Network.assign_network_id(m_Build);
 
         if (crazy_bot) {
             m_Build->MarkCrazy();
@@ -210,7 +211,8 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
         //        RESETFLAG(g_Flags, SETBIT(22));
         //#endif
 
-        m_Build->RNeed(MR_Graph);
+        m_Build->SetBase(m_Base);
+        m_Build->RNeed(MR_Graph | MR_Matrix);
 
         // if (!FLAG(g_Flags, SETBIT(22)))
         //{
@@ -218,9 +220,10 @@ void CConstructor::StackRobot([[maybe_unused]] void *pObject, int team) {
 
         //}
 
-        if (m_Base->m_Side == g_Network.controllable_side_id)
+        // The queue icon is drawn for whichever side this machine controls. A client
+        // playing that same side sends the build here; a missing icon must not drop the robot.
+        if (m_Base->m_Side == g_Network.controllable_side_id && !m_Build->IsMustDie())
             m_Build->CreateTextures();
-        m_Build->SetBase(m_Base);
         GetConstructionName((CMatrixRobotAI *)m_Build);
         m_Base->m_BS.AddItem(m_Build);
     }

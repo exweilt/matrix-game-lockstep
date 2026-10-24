@@ -3046,7 +3046,10 @@ void CMatrixMapLogic::Takt(int step) {
     // Other logic?!
     m_Time += step;
     g_IFaceList->LogicTakt(step); // ATTENTION
-    CMatrixMap::Takt(step);  // graphic takts after logic takt
+    // GPU resources are released while another DirectX process owns the adapter.
+    // Logic above keeps the server running; the graphic takt uses those resources.
+    if (FLAG(m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
+        CMatrixMap::Takt(step);
 
     m_Camera.Takt(float(step));
 
