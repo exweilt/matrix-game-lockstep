@@ -16,6 +16,7 @@
 #include "ShadowStencil.hpp"
 #include "Interface/CConstructor.h"
 #include "Network/Network.hpp"
+#include "Network/ScmSettingsApplier.hpp"
 
 #include <new>
 #include <algorithm>
@@ -791,6 +792,11 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
 
                 // if(prop==0) c->SetSide(0);
 
+                if (prop == 0 && !ScmShouldLoadStartingTurrets()) {
+                    StaticDelete(c);
+                    continue;
+                }
+
                 while (prop == 1 || prop == 2) {
                     // Ищем ближайший завод или базу
                     CMatrixBuilding *building = NULL;
@@ -816,8 +822,9 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                     }
 
                     c->m_ParentBuilding = building;
-                    if (prop == 1)
+                    if (prop == 1 && ScmShouldLoadStartingTurrets()) {
                         building->m_TurretsHave++;
+                    }
                     c->SetSide(building->m_Side);
 
                     building->m_TurretsPlaces[building->m_TurretsPlacesCnt].m_Coord.x =
@@ -826,8 +833,9 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                             Float2Int(c->m_Pos.y / GLOBAL_SCALE_MOVE);
                     building->m_TurretsPlaces[building->m_TurretsPlacesCnt].m_Angle = c->m_Angle;
                     building->m_TurretsPlaces[building->m_TurretsPlacesCnt].m_CannonType = -1;
-                    if (prop == 1)
+                    if (prop == 1 && ScmShouldLoadStartingTurrets()) {
                         building->m_TurretsPlaces[building->m_TurretsPlacesCnt].m_CannonType = c->m_Num;
+                    }
                     // building->m_TurretsPlaces[building->m_TurretsPlacesCnt].m_AddH=c->m_AddH;
                     building->m_TurretsPlacesCnt++;
 
@@ -843,9 +851,17 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
                     }
                     goto skip_this_cannon;
                 }
+
+                if (prop == 1 && !ScmShouldLoadStartingTurrets()) {
+                    StaticDelete(c);
+                    continue;
+                }
             }
             else {
-                int prop = 0;  // single cannon
+                if (!ScmShouldLoadStartingTurrets()) {
+                    StaticDelete(c);
+                    continue;
+                }
             }
 
             if (!keep_cannon_entities) {

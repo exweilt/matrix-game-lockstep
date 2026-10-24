@@ -98,6 +98,13 @@ bool ScmSettingsActive() {
     return g_ScmSettings.file_present && g_ScmSettings.enabled;
 }
 
+bool ScmShouldLoadStartingTurrets() {
+    if (!ScmSettingsActive()) {
+        return true;
+    }
+    return g_ScmSettings.starting_turrets;
+}
+
 int ScmGetFactoryIncome(ERes resource) {
     if (!ScmSettingsActive()) {
         return RESOURCES_INCOME;
@@ -207,6 +214,8 @@ void LoadScmSettingsFromExecutableDirectory() {
 
     ReadOptional(*game, "base_health", g_ScmSettings.base_health);
     ReadOptional(*game, "factory_health", g_ScmSettings.factory_health);
+
+    ReadOptional(*game, "starting_turrets", g_ScmSettings.starting_turrets);
 }
 
 void ApplyBuildingHealthToConfig() {

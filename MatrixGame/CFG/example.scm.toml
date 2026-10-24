@@ -34,6 +34,9 @@ base_robot_queue_capacity = 6
 base_health = 50000
 factory_health = 30000
 
+# Map-placed starting turrets (standalone and building-mounted). Vanilla: true.
+starting_turrets = true
+
 starting_titanium = 0
 starting_electronics = 0
 starting_energy = 0

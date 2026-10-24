@@ -44,6 +44,9 @@ struct ScmSettingsState {
     /** Internal hitpoint units (same as data.txt Building HITPOINT). Vanilla: base 50000, factory 30000. */
     int base_health = 50000;
     int factory_health = 30000;
+
+    /** If false, map starting turrets (prop 0/1) are not spawned; building slots remain empty. Vanilla: true. */
+    bool starting_turrets = true;
 };
 
 extern ScmSettingsState g_ScmSettings;
@@ -58,6 +61,8 @@ void ApplyScmSettingsToConfig();
 void ApplyScmSettingsAfterMapLoad(CMatrixMapLogic *map);
 
 bool ScmSettingsActive();
+
+bool ScmShouldLoadStartingTurrets();
 
 int ScmGetFactoryIncome(ERes resource);
 int ScmGetBaseIncome();
