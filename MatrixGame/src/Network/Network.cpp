@@ -214,6 +214,27 @@ void apply_turret_snapshot(CMatrixCannon *cannon, const TurretSnapshot &ts, f32 
     cannon->RNeed(MR_Matrix);
 }
 
+void draw_client_turret_marker_at(float x, float y) {
+    if (!g_Network.is_client())
+        return;
+
+    // Core matrix Z is rv/cnt inside RNeed. A missed terrain sample makes that NaN and the
+    // helper line is dropped. The snapshot position is the turret slot either way.
+    float z = g_MatrixMap->GetZ(x, y);
+    if (z < -500.f)
+        z = 0.f;
+
+    // const D3DXVECTOR3 pos(x, y, z);
+    // const D3DXVECTOR3 top = pos + D3DXVECTOR3(0, 0, 2000.f);
+
+}
+
+void draw_client_turret_marker(const CMatrixCannon *cannon) {
+    if (cannon == nullptr)
+        return;
+    draw_client_turret_marker_at(cannon->m_Pos.x, cannon->m_Pos.y);
+}
+
 void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
     if (r->m_Unit[0].u1.s1.m_Kind != RUK_CHASSIS_PNEUMATIC)
         return;
@@ -696,10 +717,15 @@ void Network::process_playback([[maybe_unused]]int ms)
                     drop_stale_turret_map_entry(id);
                 } else {
                     apply_turret_snapshot(c, ts_apply, health, base_angle, turret_yaw, pitch);
+                    // Emit before erase_if. That pass can drop the map entry; the helper
+                    // vertices are already stored by then.
+                    //draw_client_turret_marker_at(ts_apply.x, ts_apply.y);
 
                     if (event_treshold_frame - c->last_shot_frame > 20)
                         stop_cannon_weapon_vfx(c);
                 }
+            } else {
+                //draw_client_turret_marker(c);
             }
         }
 
@@ -892,8 +918,8 @@ void Network::populate_turret(const TurretSnapshot &ts)
     apply_turret_snapshot(c, ts, ts.health, unpack_rotation(ts.rotation), unpack_rotation(ts.turret_yaw),
                         unpack_rotation(ts.pitch));
 
-    if (c->m_CurrState == CANNON_UNDER_CONSTRUCTION && c->m_ParentBuilding != nullptr)
-        c->m_ParentBuilding->m_BS.AddItem(c);
+    // if (c->m_CurrState == CANNON_UNDER_CONSTRUCTION && c->m_ParentBuilding != nullptr)
+    //     c->m_ParentBuilding->m_BS.AddItem(c);
 
     turrets.emplace(ts.nid, c);
 }
