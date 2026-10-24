@@ -25,6 +25,7 @@
 #include "Effects/MatrixEffectWeapon.hpp"
 #include "MatrixSide.hpp"
 #include "MatrixMapStatic.hpp"
+#include "MatrixSoundManager.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
@@ -310,19 +311,62 @@ void Network::send_message(Message &msg)
 
 void Network::send_message(Message &msg, ENetPeer *peer)
 {
+    if (peer == nullptr || host == nullptr)
+        return;
+
     BitWriter writer;
     msg.serialize_to_bitstream(writer);
 
-    // Create the packet
-    ENetPacket* packet = enet_packet_create(
-        writer.get_buffer(), writer.get_buffer_size(), 0
-    );
+    ENetPacket *packet = enet_packet_create(
+        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE);
 
-    // Broadcast to all connected peers on Channel 0
-    enet_host_broadcast(host, 0, packet);
+    if (packet == nullptr)
+        return;
 
-    // Send the data immediately
+    if (enet_peer_send(peer, 0, packet) < 0)
+        enet_packet_destroy(packet);
+
     enet_host_flush(host);
+}
+
+void Network::register_side_peer(u8 side, ENetPeer *peer)
+{
+    if (peer == nullptr || side < 1 || side > 4)
+        return;
+
+    unregister_peer(peer);
+    side_peers[side].push_back(peer);
+}
+
+void Network::unregister_peer(ENetPeer *peer)
+{
+    if (peer == nullptr)
+        return;
+
+    for (int side = 1; side <= 4; ++side)
+    {
+        std::vector<ENetPeer *> &peers = side_peers[side];
+        peers.erase(std::remove(peers.begin(), peers.end(), peer), peers.end());
+    }
+}
+
+void Network::emit_side_sound(u8 side, int sound)
+{
+    if (side == controllable_side_id)
+        CSound::Play(static_cast<ESound>(sound), SL_ALL);
+
+    if (!is_authority() || side < 1 || side > 4)
+        return;
+
+    const Event sound_event = Event::Sound(static_cast<u16>(sound), physics_frame, 1);
+    Message msg{MessageEventsParams{std::vector<Event>{sound_event}}};
+
+    for (ENetPeer *peer : side_peers[side])
+    {
+        if (peer == nullptr || peer->state != ENET_PEER_STATE_CONNECTED)
+            continue;
+        send_message(msg, peer);
+    }
 }
 
 void Network::approve_final_input(u32 target_frame)
@@ -383,16 +427,16 @@ void Network::process_incoming_message(const Message &msg)
     {
         if (msg.events.events.size() == 0) return;
 
-        EventFireComparator compare;
-        for (EventFire event_fire : msg.events.events)
+        EventComparator compare;
+        for (const Event &incoming : msg.events.events)
         {
-            if (!events_queue.empty() && compare(events_queue.top(), event_fire))
+            if (!events_queue.empty() && compare(events_queue.top(), incoming))
             {
                 std::cout << "Dropping the event, because it is from the past" << std::endl;
             }
             else
             {
-                events_queue.push(event_fire);
+                events_queue.push(incoming);
             }
         }
 
@@ -624,8 +668,8 @@ void Network::process_playback([[maybe_unused]]int ms)
 
         while (!events_queue.empty() && events_queue.top().frame <= event_treshold_frame)
         {
-            EventFire e = events_queue.top();
-            play_fire_event(e);
+            Event e = events_queue.top();
+            play_event(e);
             events_queue.pop();
         }
 
@@ -961,7 +1005,7 @@ void Network::populate_robot(const RobotSnapshot &rs)
     robots.emplace(rs.nid, r);
 }
 
-void Network::add_event_to_current_tick(EventFire e)
+void Network::add_event_to_current_tick(Event e)
 {
     this_tick_event_pool.push_back(e);
 }
@@ -971,14 +1015,37 @@ void Network::clear_events_for_current_tick()
     this_tick_event_pool.clear();
 }
 
-void Network::play_fire_event(const EventFire &event)
+void Network::play_event(const Event &event)
 {
-    if (robots.contains(event.nid)) {
-        CMatrixRobotAI *robot = robots.at(event.nid);
+    switch (event.type)
+    {
+        case EventType::FIRE:  play_fire_event(event); break;
+        case EventType::SOUND: play_sound_event(event); break;
+        default: break;
+    }
+}
+
+void Network::play_sound_event(const Event &event)
+{
+    const SoundEvent &sound = event.sound;
+    const ESound snd = static_cast<ESound>(sound.sound);
+    const ESoundLayer layer = static_cast<ESoundLayer>(sound.layer);
+    if (sound.positional)
+        CSound::Play(snd, sound.pos, layer);
+    else
+        CSound::Play(snd, layer);
+}
+
+void Network::play_fire_event(const Event &event)
+{
+    const EventFire &fire = event.fire;
+
+    if (robots.contains(fire.nid)) {
+        CMatrixRobotAI *robot = robots.at(fire.nid);
         robot->last_shot_frame = event.frame;
 
         for (int i = 0; i < robot->m_WeaponsCnt; i++) {
-            if (robot->m_Weapons[i].GetWeaponType() != event.weapons || !robot->m_Weapons[i].m_Weapon)
+            if (robot->m_Weapons[i].GetWeaponType() != fire.weapons || !robot->m_Weapons[i].m_Weapon)
                 continue;
 
             D3DXMATRIX m =
@@ -988,27 +1055,27 @@ void Network::play_fire_event(const EventFire &event)
             robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
 
             if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
-                robot->m_Weapons[i].m_Weapon->m_Dir = event.target_pos;
+                robot->m_Weapons[i].m_Weapon->m_Dir = fire.target_pos;
             else {
-                D3DXVECTOR3 dir = event.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
+                D3DXVECTOR3 dir = fire.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
                 D3DXVec3Normalize(&dir, &dir);
                 robot->m_Weapons[i].m_Weapon->m_Dir = dir;
             }
 
-            robot->m_Weapons[i].m_Weapon->m_Target = event.target_pos;
-            robot->m_Weapons[i].m_Weapon->m_Speed = event.target_pos;
+            robot->m_Weapons[i].m_Weapon->m_Target = fire.target_pos;
+            robot->m_Weapons[i].m_Weapon->m_Speed = fire.target_pos;
             robot->m_Weapons[i].m_Weapon->m_Skip = robot;
             robot->m_Weapons[i].m_Weapon->Fire();
         }
         return;
     }
 
-    if (!turrets.contains(event.nid))
+    if (!turrets.contains(fire.nid))
         return;
 
-    CMatrixCannon *cannon = turrets.at(event.nid);
+    CMatrixCannon *cannon = turrets.at(fire.nid);
     if (!turret_map_entry_is_live(cannon)) {
-        drop_stale_turret_map_entry(event.nid);
+        drop_stale_turret_map_entry(fire.nid);
         return;
     }
 
@@ -1017,21 +1084,21 @@ void Network::play_fire_event(const EventFire &event)
 
     for (int i = 0; i < cannon->m_WeaponCnt; ++i) {
         CMatrixEffectWeapon *weapon = cannon->m_Weapons[i];
-        if (!weapon || weapon->GetWeaponType() != event.weapons)
+        if (!weapon || weapon->GetWeaponType() != fire.weapons)
             continue;
 
         weapon->Modify(cannon->m_FireFrom[i], cannon->m_FireDir[i], D3DXVECTOR3(0, 0, 0));
         weapon->m_Pos = cannon->m_FireFrom[i];
 
-        D3DXVECTOR3 dir = event.target_pos - weapon->m_Pos;
+        D3DXVECTOR3 dir = fire.target_pos - weapon->m_Pos;
         if (D3DXVec3LengthSq(&dir) > 1e-4f)
             D3DXVec3Normalize(&dir, &dir);
         else
             dir = cannon->m_FireDir[i];
 
         weapon->m_Dir = dir;
-        weapon->m_Target = event.target_pos;
-        weapon->m_Speed = event.target_pos;
+        weapon->m_Target = fire.target_pos;
+        weapon->m_Speed = fire.target_pos;
         weapon->m_Skip = cannon;
         weapon->Fire();
         cannon->BeginFireAnimation();
@@ -1176,7 +1243,7 @@ void Network::process_server_network_frame()
             // }
 
             break;
-        case ENET_EVENT_TYPE_RECEIVE:
+        case ENET_EVENT_TYPE_RECEIVE: {
             std::cout << "Got new packet from " << event.peer->connectID << ":\n";
             // if (g_server_host->connectedPeers < 2)
             // {
@@ -1213,6 +1280,10 @@ void Network::process_server_network_frame()
             else if (m.type == MessageType::COMMAND_BUILD_TURRET)
             {
                 m.command_build_turret.execute();
+            }
+            else if (m.type == MessageType::JOIN)
+            {
+                register_side_peer(m.join.player_side, event.peer);
             }
 
             //
@@ -1306,6 +1377,12 @@ void Network::process_server_network_frame()
             enet_packet_destroy(event.packet);
             break;
         }
+
+        case ENET_EVENT_TYPE_DISCONNECT:
+            unregister_peer(event.peer);
+            event.peer->data = nullptr;
+            break;
+        }
     }
 }
 
@@ -1389,6 +1466,8 @@ MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
 
             if (m.type == MessageType::GAME_SETTINGS)
             {
+                Message join{MessageJoinParams(controllable_side_id, std::string(lobby.input_username))};
+                send_message(join, peer);
                 return m.game_settings;
             }
         }

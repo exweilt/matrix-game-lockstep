@@ -103,15 +103,21 @@ public:
 
     void broadcast_world_snapshot();
     void broadcast_events();
+    /** Play for the local side, and on the host send the stinger only to peers registered for @p side. */
+    void emit_side_sound(u8 side, int sound);
+    void register_side_peer(u8 side, ENetPeer *peer);
+    void unregister_peer(ENetPeer *peer);
 
     void delete_robot(CMatrixRobotAI * robot);
 
     void process_playback(int ms);
     void populate_robot(const RobotSnapshot &rs);
     void populate_turret(const TurretSnapshot &ts);
-    void add_event_to_current_tick(EventFire e);
+    void add_event_to_current_tick(Event e);
     void clear_events_for_current_tick();
-    void play_fire_event(const EventFire &event);
+    void play_event(const Event &event);
+    void play_fire_event(const Event &event);
+    void play_sound_event(const Event &event);
 
     ENetHost* host;
 
@@ -132,7 +138,9 @@ public:
     bool desync_happened = false;
     bool has_physics_frame_run = false;
     u32 code_logic_frame = 1;
-    std::vector<EventFire> this_tick_event_pool;
+    std::vector<Event> this_tick_event_pool;
+    /** Remote players, keyed by side id (1..4). The host's own side is not in this list. */
+    std::vector<ENetPeer *> side_peers[5];
     f32 playback_speed = 1.0f;
 
     std::map<u32, CMatrixRobotAI*> robots;
@@ -163,7 +171,7 @@ public:
 
     RingBuffer<WorldSnapshot, INTERPOLATION_BUFFER_SIZE> interpolation_buffer;
 
-    std::priority_queue<EventFire, std::vector<EventFire>, EventFireComparator> events_queue;
+    std::priority_queue<Event, std::vector<Event>, EventComparator> events_queue;
 
     // RingBuffer<WorldSnapshot, INPUT_BUFFER_SIZE> history_game_states;
 

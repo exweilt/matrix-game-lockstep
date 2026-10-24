@@ -3,6 +3,7 @@
 // #include <xxhash.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cereal/archives/binary.hpp>
 
 #include "MatrixRobot.hpp"
@@ -112,9 +113,7 @@ void EventFire::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u32(nid);
     writer.write_vec3(target_pos);
-    writer.write_u32(frame);
     writer.write_u8(weapons);
-    writer.write_u8(precise_time);
 }
 
 EventFire EventFire::deserialize_from_bitstream(BitReader &reader)
@@ -122,10 +121,58 @@ EventFire EventFire::deserialize_from_bitstream(BitReader &reader)
     EventFire result{};
     result.nid = reader.read_u32();
     result.target_pos = reader.read_vec3();
-    result.frame = reader.read_u32();
     result.weapons = reader.read_u8();
-    result.precise_time = reader.read_u8();
     return result;
+}
+
+void SoundEvent::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u16(sound);
+    writer.write_u8(positional);
+    writer.write_u8(layer);
+    writer.write_vec3(pos);
+}
+
+SoundEvent SoundEvent::deserialize_from_bitstream(BitReader &reader)
+{
+    SoundEvent result{};
+    result.sound = reader.read_u16();
+    result.positional = reader.read_u8();
+    result.layer = reader.read_u8();
+    result.pos = reader.read_vec3();
+    return result;
+}
+
+void Event::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u8(static_cast<u8>(type));
+    writer.write_u32(frame);
+    writer.write_u8(precise_time);
+
+    switch (type)
+    {
+        case EventType::FIRE:  fire.serialize_to_bitstream(writer); break;
+        case EventType::SOUND: sound.serialize_to_bitstream(writer); break;
+        default: assert(false);
+    }
+}
+
+Event Event::deserialize_from_bitstream(BitReader &reader)
+{
+    const auto type = static_cast<EventType>(reader.read_u8());
+    const u32 frame = reader.read_u32();
+    const u8 precise_time = reader.read_u8();
+
+    switch (type)
+    {
+        case EventType::FIRE:
+            return Event(EventFire::deserialize_from_bitstream(reader), frame, precise_time);
+        case EventType::SOUND:
+            return Event(SoundEvent::deserialize_from_bitstream(reader), frame, precise_time);
+        default:
+            assert(false);
+            return Event();
+    }
 }
 
 

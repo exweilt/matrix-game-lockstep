@@ -295,10 +295,14 @@ void CMatrixEffectWeapon::Fire(void) {
         if (owner_nid != 0) {
             bool already_fired = false;
             const int sz = static_cast<int>(g_Network.this_tick_event_pool.size());
-            for (int i = sz - 1; i >= sz - 4 && i >= 0; i--) {
-                const auto &past_event = g_Network.this_tick_event_pool.at(i);
-                if (past_event.nid == owner_nid && past_event.frame == g_Network.physics_frame &&
-                    past_event.weapons == GetWeaponType()) {
+            int checked = 0;
+            for (int i = sz - 1; i >= 0 && checked < 4; --i) {
+                const Event &past_event = g_Network.this_tick_event_pool.at(i);
+                if (past_event.type != EventType::FIRE)
+                    continue;
+                ++checked;
+                if (past_event.fire.nid == owner_nid && past_event.frame == g_Network.physics_frame &&
+                    past_event.fire.weapons == static_cast<u8>(GetWeaponType())) {
                     already_fired = true;
                     break;
                 }
@@ -309,8 +313,8 @@ void CMatrixEffectWeapon::Fire(void) {
                 auto to_target = m_Target - m_Pos;
                 if (D3DXVec3LengthSq(&to_target) > 1e-4f)
                     target = m_Target;
-                EventFire e = EventFire(owner_nid, target, GetWeaponType(), g_Network.physics_frame, 1);
-                g_Network.add_event_to_current_tick(e);
+                g_Network.add_event_to_current_tick(Event::Fire(
+                    owner_nid, target, static_cast<u8>(GetWeaponType()), g_Network.physics_frame, 1));
             }
         }
     }

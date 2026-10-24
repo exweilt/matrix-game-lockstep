@@ -1155,8 +1155,7 @@ ECaptureStatus CMatrixBuilding::Capture(CMatrixRobotAI *by) {
 
                 if (m_TrueColor.m_ColoredCnt == MAX_ZAHVAT_POINTS) {
                     int side = by->GetSide();
-                    if (side == g_Network.controllable_side_id)
-                        CSound::Play(S_ENEMY_FACTORY_CAPTURED);
+                    g_Network.emit_side_sound(static_cast<u8>(side), S_ENEMY_FACTORY_CAPTURED);
                     m_Side = side;
                     m_BS.ClearStack();
                     RChange(MR_MiniMap);
@@ -1716,13 +1715,9 @@ void CBuildStack::TickTimer(int ms) {
             m_PB.KillClone(PBC_CLONE1);
         }
         if (m_Timer >= g_Config.m_Timings[UNIT_ROBOT] && m_ParentBase->m_State == BASE_CLOSED) {
-            if (m_Top->GetSide() == g_Network.controllable_side_id && !FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE)) {
-                if (g_MatrixMap->Rnd(0, 1)) {
-                    CSound::Play(S_ROBOT_BUILD_END, SL_ALL);
-                }
-                else {
-                    CSound::Play(S_ROBOT_BUILD_END_ALT, SL_ALL);
-                }
+            if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE)) {
+                const ESound built = g_MatrixMap->Rnd(0, 1) ? S_ROBOT_BUILD_END : S_ROBOT_BUILD_END_ALT;
+                g_Network.emit_side_sound(static_cast<u8>(m_Top->GetSide()), built);
             }
 
             m_Timer = 0;

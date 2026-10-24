@@ -161,25 +161,81 @@ uint8_t pack_rotation(float radians);
 
 f32 unpack_rotation(uint8_t quantized);
 
+enum class EventType : u8
+{
+    NONE = 0,
+    FIRE = 1,
+    SOUND = 2,
+};
+
+// Shot payload. Frame and precise_time live on Event, which is what the queue orders by.
 struct EventFire
 {
     u32 nid;
     D3DXVECTOR3 target_pos;
-    u32 frame;
     u8 weapons;
-    u8 precise_time; // exact moment between 2 frames event happened.
 
-    EventFire(): nid(0), frame(0), weapons(0), precise_time(0) {}
-
-    EventFire(u32 n, D3DXVECTOR3 d, u8 w, u32 f, u8 p) : nid(n), target_pos(d), weapons(w), frame(f), precise_time(p) {}
+    EventFire() : nid(0), target_pos(0, 0, 0), weapons(0) {}
+    EventFire(u32 n, const D3DXVECTOR3 &d, u8 w) : nid(n), target_pos(d), weapons(w) {}
 
     void serialize_to_bitstream(BitWriter &writer) const;
     static EventFire deserialize_from_bitstream(BitReader &reader);
 };
 
-struct EventFireComparator
+// sound is an ESound stored as u16. positional == 0 plays it as a global stinger.
+struct SoundEvent
 {
-    bool operator()(const EventFire& a, const EventFire& b) const
+    u16 sound;
+    u8 positional;
+    u8 layer;
+    D3DXVECTOR3 pos;
+
+    SoundEvent() : sound(0), positional(0), layer(0), pos(0, 0, 0) {}
+    SoundEvent(u16 s, u8 l = 0) : sound(s), positional(0), layer(l), pos(0, 0, 0) {}
+    SoundEvent(u16 s, const D3DXVECTOR3 &p, u8 l = 0) : sound(s), positional(1), layer(l), pos(p) {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static SoundEvent deserialize_from_bitstream(BitReader &reader);
+};
+
+struct Event
+{
+    EventType type;
+    u32 frame;
+    u8 precise_time; // exact moment between 2 frames the event happened
+    union
+    {
+        EventFire fire;
+        SoundEvent sound;
+    };
+
+    Event() : type(EventType::NONE), frame(0), precise_time(0), fire() {}
+    Event(const EventFire &payload, u32 f, u8 p) : type(EventType::FIRE), frame(f), precise_time(p), fire(payload) {}
+    Event(const SoundEvent &payload, u32 f, u8 p)
+        : type(EventType::SOUND), frame(f), precise_time(p), sound(payload) {}
+
+    static Event Fire(u32 nid, const D3DXVECTOR3 &target, u8 weapons, u32 frame, u8 precise_time)
+    {
+        return Event(EventFire(nid, target, weapons), frame, precise_time);
+    }
+
+    static Event Sound(u16 sound, u32 frame, u8 precise_time, u8 layer = 0)
+    {
+        return Event(SoundEvent(sound, layer), frame, precise_time);
+    }
+
+    static Event SoundAt(u16 sound, const D3DXVECTOR3 &pos, u32 frame, u8 precise_time, u8 layer = 0)
+    {
+        return Event(SoundEvent(sound, pos, layer), frame, precise_time);
+    }
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static Event deserialize_from_bitstream(BitReader &reader);
+};
+
+struct EventComparator
+{
+    bool operator()(const Event &a, const Event &b) const
     {
         if (a.frame != b.frame)
             return a.frame > b.frame;

@@ -100,25 +100,22 @@ MessageGameSettingsParams MessageGameSettingsParams::deserialize_from_bitstream(
 
 void MessageEventsParams::serialize_to_bitstream(BitWriter &writer) const
 {
-    writer.write_u32(events.size());
+    writer.write_u32(static_cast<u32>(events.size()));
 
-    for (int i = 0; i < events.size(); i++)
-    {
-        events[i].serialize_to_bitstream(writer);
-    }
+    for (const Event &event : events)
+        event.serialize_to_bitstream(writer);
 }
 
 MessageEventsParams MessageEventsParams::deserialize_from_bitstream(BitReader &reader)
 {
-    std::vector<EventFire> events{};
-    events.reserve(reader.read_u32());
+    const u32 count = reader.read_u32();
+    std::vector<Event> events;
+    events.reserve(count);
 
-    for (int i = 0; i < events.capacity(); i++)
-    {
-        events.push_back(EventFire::deserialize_from_bitstream(reader));
-    }
+    for (u32 i = 0; i < count; i++)
+        events.push_back(Event::deserialize_from_bitstream(reader));
 
-    return MessageEventsParams( events );
+    return MessageEventsParams(events);
 }
 
 void MessageJoinParams::serialize_to_bitstream(BitWriter &writer) const

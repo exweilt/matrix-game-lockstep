@@ -59,11 +59,11 @@ struct MessageGameSettingsParams
 struct MessageEventsParams
 {
     // u32 target_frame;
-    std::vector<EventFire> events;
+    std::vector<Event> events;
     // std::vector<RobotSnapshot> robots;
 
     MessageEventsParams(): events() {}
-    MessageEventsParams(const std::vector<EventFire> &e) : events(e) {}
+    MessageEventsParams(const std::vector<Event> &e) : events(e) {}
     ~MessageEventsParams() {}
 
 

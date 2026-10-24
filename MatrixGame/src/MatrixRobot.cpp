@@ -1314,13 +1314,10 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                                 factory->Close();
                             }
                             else if (factory->m_State == BASE_CLOSED) {
-                                if (m_Side == g_Network.controllable_side_id) {
-                                    CSound::Play(S_ENEMY_BASE_CAPTURED);
-                                }
-                                else {
-                                    if (factory->m_Side == g_Network.controllable_side_id)
-                                        CSound::Play(S_PLAYER_BASE_CAPTURED);
-                                }
+                                g_Network.emit_side_sound(static_cast<u8>(m_Side), S_ENEMY_BASE_CAPTURED);
+                                if (m_Side != g_Network.controllable_side_id &&
+                                    factory->m_Side == g_Network.controllable_side_id)
+                                    CSound::Play(S_PLAYER_BASE_CAPTURED);
 
                                 factory->m_Side = m_Side;
                                 factory->m_BS.ClearStack();
@@ -4884,8 +4881,8 @@ void CMatrixRobotAI::Fire(const D3DXVECTOR3 &fire_pos, int type) {
 
     // if (g_Network.is_authority())
     // {
-    //     EventFire e = EventFire(m_NID, fire_pos, type);
-    //     g_Network.add_event_to_current_tick(e);
+    //     g_Network.add_event_to_current_tick(
+    //         Event::Fire(m_NID, fire_pos, static_cast<u8>(type), g_Network.physics_frame, 1));
     // }
 
     RemoveOrder(ROT_FIRE);
