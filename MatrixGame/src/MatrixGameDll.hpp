@@ -159,3 +159,6 @@ extern int g_ExitState;
 /** Append one line to MatrixGame_dll.log beside this DLL. Flushed immediately. */
 void MatrixGameDllTrace(const char* text);
 void MatrixGameDllTracef(const char* fmt, ...);
+
+/** One client logic-frame delta, in milliseconds, as its own line. The file stays open and is not flushed per line. */
+void MatrixGameDllTraceFrameDelta(int delta_ms);

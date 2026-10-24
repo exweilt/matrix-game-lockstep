@@ -597,6 +597,8 @@ int L3GRun()
             // g_Network.lgr.debug("Network time      : {:.3f} ms")(sw_net.elapsed_ms());
 
             int delta = std::min(100LL, to_milliseconds(delta_time).count());
+            // if (g_WndExtern && g_Network.is_client())
+            //     MatrixGameDllTraceFrameDelta(delta);
 
             // TODO: bring smoothness back?
             // smooths -= smooth[smp];
@@ -653,8 +655,18 @@ int L3GRun()
 
         }
 
-        next_tick += dt;
-        std::this_thread::sleep_until(next_tick);
+        // A client with VSync is paced by Present waiting for the vertical blank.
+        // Sleeping on top of that drifts against the blank and skips frames.
+        // The server does not use VSync, so it keeps this cap. A client with
+        // VSync off has no blank to wait on, and keeps the cap too.
+        const bool client_paced_by_vsync =
+                g_Network.is_client() &&
+                g_D3Dpp.PresentationInterval != D3DPRESENT_INTERVAL_IMMEDIATE;
+        if (!client_paced_by_vsync)
+        {
+            next_tick += dt;
+            std::this_thread::sleep_until(next_tick);
+        }
 
         fps++;
 

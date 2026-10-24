@@ -18,9 +18,8 @@ SMGDRobotInterface g_RobotInterface;
 SMGDRangersInterface *g_RangersInterface = nullptr;
 int g_ExitState = 0;
 
-void MatrixGameDllTrace(const char* text)
+static void MatrixGameDllLogPath(wchar_t path[MAX_PATH])
 {
-    wchar_t path[MAX_PATH];
     HMODULE module = nullptr;
     GetModuleHandleExW(
         GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -33,6 +32,12 @@ void MatrixGameDllTrace(const char* text)
         lstrcpynW(slash + 1, L"MatrixGame_dll.log", static_cast<int>(MAX_PATH - (slash + 1 - path)));
     else
         lstrcpynW(path, L"MatrixGame_dll.log", MAX_PATH);
+}
+
+void MatrixGameDllTrace(const char* text)
+{
+    wchar_t path[MAX_PATH];
+    MatrixGameDllLogPath(path);
 
     HANDLE file = CreateFileW(
         path,
@@ -72,6 +77,38 @@ void MatrixGameDllTrace(const char* text)
     WriteFile(file, line, static_cast<DWORD>(prefix + len + 2), &written, nullptr);
     FlushFileBuffers(file);
     CloseHandle(file);
+}
+
+void MatrixGameDllTraceFrameDelta(int delta_ms)
+{
+    static HANDLE file = INVALID_HANDLE_VALUE;
+    if (file == INVALID_HANDLE_VALUE)
+    {
+        wchar_t path[MAX_PATH];
+        MatrixGameDllLogPath(path);
+        file = CreateFileW(
+            path,
+            FILE_APPEND_DATA,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            nullptr,
+            OPEN_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+        if (file == INVALID_HANDLE_VALUE)
+            return;
+
+        const char header[] = "client logic dt\r\n";
+        DWORD written = 0;
+        WriteFile(file, header, sizeof(header) - 1, &written, nullptr);
+    }
+
+    char line[16];
+    int n = snprintf(line, sizeof(line), "%d\r\n", delta_ms);
+    if (n <= 0)
+        return;
+
+    DWORD written = 0;
+    WriteFile(file, line, static_cast<DWORD>(n), &written, nullptr);
 }
 
 void MatrixGameDllTracef(const char* fmt, ...)
