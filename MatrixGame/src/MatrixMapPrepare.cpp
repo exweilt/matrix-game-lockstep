@@ -735,9 +735,9 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         return n;
     }
 
-    if (g_Network.is_authority() && step == RS_CANNONS) {
+    if (step == RS_CANNONS) {
         // return 0; // ATTENTION: temporary measure, no cannons
-        // loading cannons
+        // loading cannons (clients only keep building turret slot geometry; live cannons come from snapshots)
         CDataBuf *c0 = stor.GetBuf(DATA_CANNONS, DATA_CANNONS_X, ST_FLOAT);
         // if (!c0)
         //     return 0;
@@ -761,10 +761,13 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         float *addh = c8 ? c8->GetFirst<float>(0) : NULL;
 
         int n = c0->GetArrayLength(0);
+        const bool keep_cannon_entities =
+            g_Network.is_authority() || g_Network.network_mode == NetworkMode::NONE;
         for (int i = 0; i < n; ++i) {
             CMatrixCannon *c;
             c = StaticAdd<CMatrixCannon>();
-            g_Network.assign_network_id(c);
+            if (keep_cannon_entities)
+                g_Network.assign_network_id(c);
 
         skip_this_cannon:
 
@@ -843,6 +846,11 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
             }
             else {
                 int prop = 0;  // single cannon
+            }
+
+            if (!keep_cannon_entities) {
+                StaticDelete(c);
+                continue;
             }
 
             c->OnLoad();
