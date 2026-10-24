@@ -63,6 +63,7 @@ SNewBorn *CConstructor::ProduceRobot(void *) {
     if (m_nUnitCnt) {
         // m_Base->m_BusyFlag.SetBusy(m_Build); // !SETBUSY
         m_Build = g_MatrixMap->StaticAdd<CMatrixRobotAI>();
+        g_Network.assign_network_id(m_Build);
 
         if (m_Head.m_nKind != 0) {
             m_Build->UnitInsert(0, MRT_HEAD, m_Head.m_nKind);
@@ -1483,6 +1484,8 @@ CMatrixRobotAI *SSpecialBot::GetRobot(const D3DXVECTOR3 &pos, int side_id) {
     robot->SetBase(NULL);
 
     robot->ResetMustDie();
+
+    g_Network.assign_network_id(robot);
 
     return robot;
 }

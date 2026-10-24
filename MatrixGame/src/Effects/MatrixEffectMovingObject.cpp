@@ -13,6 +13,7 @@
 #include "MatrixEffectShleif.hpp"
 #include "MatrixEffectPointLight.hpp"
 #include "MatrixEffectExplosion.hpp"
+#include "../Network/Network.hpp"
 
 void UnloadObject(CVectorObjectAnim *o, CHeap *heap);
 
@@ -61,10 +62,9 @@ CMatrixEffectMovingObject::~CMatrixEffectMovingObject() {
 
     // if (m_Props.attacker) m_Props.attacker->Release();
 
-    if (m_Props.handler == MO_Homing_Missile_Takt) {
-        if (m_Props.common.hm.target != NULL) {
-            m_Props.common.hm.target->Release();
-        }
+    if (m_Props.handler == MO_Homing_Missile_Takt && m_Props.common.hm.target != NULL) {
+        m_Props.common.hm.target->Release();
+        m_Props.common.hm.target = NULL;
     }
     else if (m_Props.handler == MO_Bomb_Takt) {
         if (m_Props.common.bomb.trajectory != NULL) {
@@ -139,6 +139,13 @@ struct HMData {
     bool found;
 };
 
+static void hm_release_target(SMOProps &props) {
+    SObjectCore *oc = props.common.hm.target;
+    props.common.hm.target = NULL;
+    if (oc)
+        oc->Release();
+}
+
 static bool HMEnum(
     [[maybe_unused]] const D3DXVECTOR3 &fpos,
     CMatrixMapStatic *ms,
@@ -178,10 +185,12 @@ static bool HMEnum(
         CMatrixMapStatic *t = g_MatrixMap->Trace(NULL, hmd->props->curpos, *p + (*p - hmd->props->curpos) * 0.1f,
                                                  TRACE_ALL, hmd->props->skip);
         if ((t == TRACE_STOP_NONE) || (t == ms)) {
-            if (hmd->props->common.hm.target != NULL)
-                hmd->props->common.hm.target->Release();
-            hmd->props->common.hm.target = oc;
-            oc->RefInc();
+            if (hmd->props->common.hm.target != oc) {
+                if (hmd->props->common.hm.target != NULL)
+                    hmd->props->common.hm.target->Release();
+                hmd->props->common.hm.target = oc;
+                oc->RefInc();
+            }
 
             hmd->to_tgt = to_dir;
             hmd->maxcos = cc;
@@ -202,8 +211,106 @@ static bool MOEnum(const D3DXVECTOR3 &center, CMatrixMapStatic *ms, uintptr_t us
     return true;
 }
 
+static void MO_Homing_Missile_Cosmetic_Takt(D3DXMATRIX &m, SMOProps &props, float takt) {
+    const float dtime = 0.1f * float(takt);
+
+    D3DXVECTOR3 to_tgt = props.target - props.curpos;
+    if (D3DXVec3LengthSq(&to_tgt) > 1e-4f) {
+        D3DXVECTOR3 steer;
+        D3DXVec3Normalize(&steer, &to_tgt);
+        props.velocity += steer * (0.1f * dtime);
+    }
+
+    float vel = D3DXVec3Length(&props.velocity);
+    float k = vel > 1e-4f ? float(1.0 / vel) : 1.f;
+    if (vel > 1000.f)
+        vel *= k * 1000.f;
+
+    D3DXVECTOR3 newpos = props.curpos + props.velocity * dtime;
+
+    if (g_MatrixMap->m_Camera.IsInFrustum(newpos)) {
+        if (props.common.hm.in_frustum_count <= 0)
+            props.common.hm.next_fire_time = props.time;
+        props.common.hm.in_frustum_count = 10;
+    } else {
+        --props.common.hm.in_frustum_count;
+    }
+
+    if (props.common.hm.in_frustum_count > 0) {
+        float t, dt;
+        if (props.time > props.common.hm.next_fire_time) {
+            t = 0;
+            dt = MISSILE_FIRE_PERIOD / float(props.time - props.common.hm.next_fire_time);
+            while (props.time > props.common.hm.next_fire_time) {
+                props.common.hm.next_fire_time += MISSILE_FIRE_PERIOD;
+
+                D3DXVECTOR3 p = (newpos - props.curpos) * t + props.curpos;
+                t += dt;
+
+                if (props.time < 200) {
+                    if (props.shleif->effect)
+                        ((CMatrixEffectShleif *)props.shleif->effect)->AddSmoke(p, 300, 300, 400, 0xFFFFFFFF, true, 0);
+                } else {
+                    if (props.shleif->effect) {
+                        ((CMatrixEffectShleif *)props.shleif->effect)->AddSmoke(p, 300, 600, 800, 0xFFFFFFFF, true, 0);
+                        ((CMatrixEffectShleif *)props.shleif->effect)->AddFire(p, 300, 300, 800, 1, true, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    D3DXVECTOR3 hitpos = newpos;
+    bool hit = false;
+    CMatrixMapStatic *hito = g_MatrixMap->Trace(&hitpos, props.curpos, newpos, props.hitmask, props.skip);
+    if (hito != TRACE_STOP_NONE)
+        hit = true;
+
+    props.curpos = hitpos;
+    VecToMatrixY(m, props.curpos, props.velocity * k);
+
+    auto dist_sq = props.curpos - props.target;
+    const float distance = D3DXVec3LengthSq(&dist_sq);
+    if (hit || distance < MISSILE_IMPACT_RADIUS_SQ) {
+        hit |= g_MatrixMap->FindObjects(props.curpos, MISSILE_IMPACT_RADIUS, 1, props.hitmask, props.skip, MOEnum,
+                                        (uintptr_t)&props);
+
+        if (hit) {
+            bool fire = false;
+            if (hito == TRACE_STOP_LANDSCAPE) {
+                CMatrixEffect::CreateLandscapeSpot(NULL, D3DXVECTOR2(hitpos.x, hitpos.y), FSRND(M_PI), FRND(3) + 6,
+                                                   SPOT_VORONKA);
+                hitpos.z = g_MatrixMap->GetZ(hitpos.x, hitpos.y) + 10;
+                fire = true;
+            }
+            CMatrixEffect::CreateExplosion(hitpos, ExplosionMissile, fire);
+        }
+
+        props.endoflife = true;
+        if (props.endhandler) {
+            auto tmp = props.curpos - props.startpos;
+            CMatrixEffect::m_Dist2 = D3DXVec3LengthSq(&tmp);
+            props.endhandler(TRACE_STOP_NONE, props.curpos, props.uservalue, FEHF_LASTHIT);
+            props.endhandler = NULL;
+        }
+    } else if (props.time > 10000) {
+        props.endoflife = true;
+        if (props.endhandler) {
+            auto tmp = props.curpos - props.startpos;
+            CMatrixEffect::m_Dist2 = D3DXVec3LengthSq(&tmp);
+            props.endhandler(hito, hit ? hitpos : props.curpos, props.uservalue, FEHF_LASTHIT);
+            props.endhandler = NULL;
+        }
+    }
+}
+
 void MO_Homing_Missile_Takt(D3DXMATRIX &m, SMOProps &props, float takt) {
     DTRACE();
+
+    if (!g_Network.is_authority()) {
+        MO_Homing_Missile_Cosmetic_Takt(m, props, takt);
+        return;
+    }
 
     float dtime = 0.1f * float(takt);
 
@@ -240,11 +347,8 @@ void MO_Homing_Missile_Takt(D3DXMATRIX &m, SMOProps &props, float takt) {
     g_MatrixMap->FindObjects(seekcenter, HOMING_RADIUS, 1, TRACE_BUILDING | TRACE_ROBOT | TRACE_CANNON | TRACE_FLYER,
                              props.skip, HMEnum, (uintptr_t)&data);
 
-    if (data.found == false) {
-        if (props.common.hm.target)
-            props.common.hm.target->Release();
-        props.common.hm.target = NULL;
-    }
+    if (data.found == false)
+        hm_release_target(props);
     else if (props.common.hm.target != NULL) {
         props.target = props.common.hm.target->m_GeoCenter;
     }
@@ -339,10 +443,7 @@ skip_obj_seek:
             props.endhandler(TRACE_STOP_NONE, props.curpos, props.uservalue, FEHF_LASTHIT);
             props.endhandler = NULL;
         }
-        if (props.common.hm.target) {
-            props.common.hm.target->Release();
-            props.common.hm.target = NULL;
-        }
+        hm_release_target(props);
     }
     else if (props.time > 10000) {
         // time to die...
@@ -353,10 +454,7 @@ skip_obj_seek:
             props.endhandler(hito, hit ? hitpos : props.curpos, props.uservalue, FEHF_LASTHIT);
             props.endhandler = NULL;
         }
-        if (props.common.hm.target) {
-            props.common.hm.target->Release();
-            props.common.hm.target = NULL;
-        }
+        hm_release_target(props);
     }
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <utility>
 
 #include "Types.hpp"
 
@@ -23,6 +24,19 @@ public:
         if (count == N) {
             tail = (tail + 1) % N;
             // std::cout << "Out of space in ring buffer." << std::endl;
+        } else {
+            count++;
+        }
+
+        head = (head + 1) % N;
+    }
+
+    void push(T&& item)
+    {
+        data[head] = std::move(item);
+
+        if (count == N) {
+            tail = (tail + 1) % N;
         } else {
             count++;
         }

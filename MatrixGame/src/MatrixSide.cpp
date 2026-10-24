@@ -6909,6 +6909,7 @@ bool CMatrixSideUnit::PlaceTurretOnBuilding(CMatrixBuilding *building, int turre
         return false;
 
     CMatrixCannon *ca = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
+    g_Network.assign_network_id(ca);
     ca->m_CurrState = CANNON_UNDER_CONSTRUCTION;
     ca->SetInvulnerability();
     ca->m_Pos.x = pos_x;
@@ -7032,6 +7033,7 @@ void CMatrixSideUnit::BuildCannon(void) {
     CPoint pcannon = plist[g_MatrixMap->Rnd(0, plistcnt - 1)];
 
     CMatrixCannon *cannon = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
+    g_Network.assign_network_id(cannon);
     cannon->m_CurrState = CANNON_UNDER_CONSTRUCTION;
     cannon->SetInvulnerability();
 

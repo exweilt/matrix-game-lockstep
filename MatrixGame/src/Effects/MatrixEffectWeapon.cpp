@@ -19,6 +19,12 @@
 #include "MatrixEffectPointLight.hpp"
 #include "MatrixEffectMovingObject.hpp"
 #include "MatrixEffectExplosion.hpp"
+#include "../Network/Network.hpp"
+
+void CMatrixEffectWeapon::CallFireHandlerIfAuthority(CMatrixMapStatic *hiti, const D3DXVECTOR3 &pos, DWORD flags) {
+    if (m_Handler != nullptr && g_Network.is_authority())
+        m_Handler(hiti, pos, m_User, flags);
+}
 
 void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &pos, uintptr_t user, DWORD flags) {
     DTRACE();
@@ -37,15 +43,14 @@ void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &p
 
     DWORD flags_add = 0;
 
-    if (give_damage && IS_TRACE_STOP_OBJECT(hiti)) {
+    if (give_damage && IS_TRACE_STOP_OBJECT(hiti) && g_Network.is_authority()) {
         if (w->m_Type == WEAPON_BIGBOOM) {
             D3DXVECTOR3 dir(pos - w->m_Pos);
             D3DXVec3Normalize(&dir, &dir);
             odead = hiti->Damage(w->m_Type, pos, dir, w->GetSideStorage(), w->GetOwner());
         }
         else {
-            // if (g_Network.is_authority())
-                odead = hiti->Damage(w->m_Type, pos, w->m_Dir, w->GetSideStorage(), w->GetOwner());
+            odead = hiti->Damage(w->m_Type, pos, w->m_Dir, w->GetSideStorage(), w->GetOwner());
         }
         if (!odead) {
             if (hiti->IsRobot()) {
@@ -61,8 +66,7 @@ void CMatrixEffectWeapon::WeaponHit(CMatrixMapStatic *hiti, const D3DXVECTOR3 &p
     if (odead)
         hiti = TRACE_STOP_NONE;
 
-    if (w->m_Handler)
-        w->m_Handler(hiti, pos, w->m_User, flags | flags_add);
+    w->CallFireHandlerIfAuthority(hiti, pos, flags | flags_add);
 
     if (FLAG(flags, FEHF_LASTHIT)) {
         w->Release();
@@ -357,7 +361,9 @@ void CMatrixEffectWeapon::Fire(void) {
             if (s == TRACE_STOP_NONE)
                 break;
             if (IS_TRACE_STOP_OBJECT(s)) {
-                bool dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
+                bool dead = false;
+                if (g_Network.is_authority())
+                    dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
                 SETFLAG(m_Flags, WEAPFLAGS_HITWAS);
                 if (dead) {
                     s = TRACE_STOP_NONE;
@@ -386,8 +392,7 @@ void CMatrixEffectWeapon::Fire(void) {
                                                    m_BBTextures[BBT_TRASSA].tex);
             }
 
-            if (m_Handler)
-                m_Handler(s, hitpos, m_User, FEHF_LASTHIT);
+            CallFireHandlerIfAuthority(s, hitpos, FEHF_LASTHIT);
 
             break;
         }
@@ -397,7 +402,10 @@ void CMatrixEffectWeapon::Fire(void) {
             // return;
             SMOProps mo;
             mo.startpos = m_Pos;
-            mo.target = m_Pos + m_Dir * 1500;
+            mo.target = m_Target;
+            const D3DXVECTOR3 to_target = mo.target - mo.startpos;
+            if (D3DXVec3LengthSq(&to_target) < 1e-4f)
+                mo.target = m_Pos + m_Dir * 1500;
             mo.curpos = mo.startpos;
             mo.velocity = m_Dir;
             mo.object = LoadObject(OBJECT_PATH_ROCKET, m_Heap);
@@ -576,12 +584,14 @@ void CMatrixEffectWeapon::Fire(void) {
             // CHelper::Create(10,0)->Line(hitpos, hitpos + D3DXVECTOR3(0,0,100));
 
             if (IS_TRACE_STOP_OBJECT(s)) {
-                bool dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
+                bool dead = false;
+                if (g_Network.is_authority())
+                    dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
                 SETFLAG(m_Flags, WEAPFLAGS_HITWAS);
                 if (dead) {
                     s = TRACE_STOP_NONE;
                 }
-                else {
+                else if (g_Network.is_authority()) {
                     if (!s->IsFlyer()) {
                         D3DXVECTOR3 pos1(hitpos.x + FSRND(20), hitpos.y + FSRND(20), 0);
                         pos1.z = g_MatrixMap->GetZ(pos1.x, pos1.y);
@@ -605,8 +615,7 @@ void CMatrixEffectWeapon::Fire(void) {
                 CMatrixEffect::CreateLightening(&m_Effect, m_Pos, hitpos, 1600, 3, LIGHTENING_WIDTH);
             }
 
-            if (m_Handler)
-                m_Handler(s, hitpos, m_User, FEHF_LASTHIT);
+            CallFireHandlerIfAuthority(s, hitpos, FEHF_LASTHIT);
 
             break;
         }
@@ -617,7 +626,9 @@ void CMatrixEffectWeapon::Fire(void) {
             CMatrixMapStatic *s = g_MatrixMap->Trace(&hitpos, m_Pos, hitpos, TRACE_ALL, m_Skip);
 
             if (IS_TRACE_STOP_OBJECT(s)) {
-                bool dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
+                bool dead = false;
+                if (g_Network.is_authority())
+                    dead = s->Damage(m_Type, hitpos, m_Dir, GetSideStorage(), GetOwner());
                 SETFLAG(m_Flags, WEAPFLAGS_HITWAS);
                 if (dead) {
                     s = TRACE_STOP_NONE;
@@ -632,8 +643,7 @@ void CMatrixEffectWeapon::Fire(void) {
 
                 CMatrixEffect::CreateExplosion(hitpos, ExplosionLaserHit);
 
-                if (m_Handler)
-                    m_Handler(s, hitpos, m_User, FEHF_LASTHIT);
+                CallFireHandlerIfAuthority(s, hitpos, FEHF_LASTHIT);
             }
             else if (s == TRACE_STOP_LANDSCAPE) {
                 CMatrixEffect::CreateLandscapeSpot(NULL, D3DXVECTOR2(hitpos.x, hitpos.y), FSRND(M_PI), FRND(1) + 0.5f,
@@ -653,8 +663,7 @@ void CMatrixEffectWeapon::Fire(void) {
                     m_Laser = NULL;
             }
 
-            if (m_Handler)
-                m_Handler(s, hitpos, m_User, FEHF_LASTHIT);
+            CallFireHandlerIfAuthority(s, hitpos, FEHF_LASTHIT);
 
             break;
         }
@@ -698,14 +707,13 @@ void CMatrixEffectWeapon::Fire(void) {
             if (m_Repair) {
                 CMatrixMapStatic *ms = m_Repair->GetTarget();
                 if (ms) {
-                    if (m_Handler)
-                        m_Handler(ms, ms->GetGeoCenter(), m_User, FEHF_LASTHIT);
+                    CallFireHandlerIfAuthority(ms, ms->GetGeoCenter(), FEHF_LASTHIT);
                     SETFLAG(m_Flags, WEAPFLAGS_HITWAS);
-                    ms->Damage(m_Type, ms->GetGeoCenter(), m_Dir, GetSideStorage(), GetOwner());
+                    if (g_Network.is_authority())
+                        ms->Damage(m_Type, ms->GetGeoCenter(), m_Dir, GetSideStorage(), GetOwner());
                 }
                 else {
-                    if (m_Handler)
-                        m_Handler(TRACE_STOP_NONE, m_Pos, m_User, FEHF_LASTHIT);
+                    CallFireHandlerIfAuthority(TRACE_STOP_NONE, m_Pos, FEHF_LASTHIT);
                 }
             }
 

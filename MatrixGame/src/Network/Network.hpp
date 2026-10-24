@@ -140,6 +140,16 @@ public:
 
     void delete_turret(CMatrixCannon *cannon);
 
+    /** Host-only counter for the next gameplay entity NID (robots, turrets, buildings). */
+    u32 allocate_nid();
+    /** After receiving an authoritative NID (snapshot spawn), keep the local counter above it. */
+    void note_authoritative_nid(u32 nid);
+    /**
+     * Assign m_NID when zero. Map-placed buildings use @p allow_on_client so clients match the host
+     * load order; robots/turrets/runtime spawns are host-only (clients get NIDs from snapshots).
+     */
+    void assign_network_id(class CMatrixMapStatic *obj, bool allow_on_client = false);
+
     Lobby lobby;
 
     // bool next_frame_requested   = false; // should simulate next physics frame

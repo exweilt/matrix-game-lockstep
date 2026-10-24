@@ -20,7 +20,9 @@
 #include "MatrixRobot.hpp"
 #include "MatrixObjectBuilding.hpp"
 #include "MatrixObjectCannon.hpp"
+#include "Effects/MatrixEffectWeapon.hpp"
 #include "MatrixSide.hpp"
+#include "MatrixMapStatic.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
@@ -98,11 +100,36 @@ CMatrixCannon *find_live_cannon_by_nid(u32 nid) {
     return nullptr;
 }
 
+bool turret_map_entry_is_live(CMatrixCannon *cannon) {
+    return cannon != nullptr && find_live_cannon_by_nid(cannon->m_NID) == cannon;
+}
+
+void drop_stale_turret_map_entry(u32 nid) {
+    if (!g_Network.turrets.contains(nid))
+        return;
+    CMatrixCannon *cannon = g_Network.turrets.at(nid);
+    if (!turret_map_entry_is_live(cannon))
+        g_Network.turrets.erase(nid);
+}
+
 void detach_cannon_from_all_build_stacks(CMatrixCannon *cannon) {
     for (CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic(); ms; ms = ms->GetNextLogic()) {
         if (ms->IsLiveBuilding())
             ms->AsBuilding()->m_BS.DetachItem(cannon);
     }
+}
+
+void stop_cannon_weapon_vfx(CMatrixCannon *cannon) {
+    if (cannon == nullptr)
+        return;
+    for (int i = 0; i < cannon->m_WeaponCnt; ++i) {
+        CMatrixEffectWeapon *weapon = cannon->m_Weapons[i];
+        if (weapon == nullptr)
+            continue;
+        weapon->StopEffects();
+        weapon->FireEnd();
+    }
+    cannon->EndFireAnimation();
 }
 
 void kill_turret_from_network_sync(CMatrixCannon *cannon) {
@@ -111,7 +138,39 @@ void kill_turret_from_network_sync(CMatrixCannon *cannon) {
     // ReleaseMe() -> DeleteItem(this) would StaticDelete while still inside Damage/ReleaseMe.
     if (g_Network.is_client())
         detach_cannon_from_all_build_stacks(cannon);
+    stop_cannon_weapon_vfx(cannon);
     cannon->Damage(WEAPON_INSTANT_DEATH, D3DXVECTOR3(0, 0, 0), D3DXVECTOR3(0, 0, 0), 0, NULL);
+}
+
+void kill_client_turrets_on_building(CMatrixBuilding *building) {
+    if (building == nullptr)
+        return;
+
+    std::vector<u32> turret_nids;
+    turret_nids.reserve(g_Network.turrets.size());
+    for (const auto &[nid, cannon] : g_Network.turrets) {
+        if (cannon != nullptr && cannon->m_ParentBuilding == building)
+            turret_nids.push_back(nid);
+    }
+
+    for (const u32 nid : turret_nids) {
+        if (!g_Network.turrets.contains(nid))
+            continue;
+        CMatrixCannon *cannon = g_Network.turrets.at(nid);
+        kill_turret_from_network_sync(cannon);
+        drop_stale_turret_map_entry(nid);
+    }
+}
+
+void purge_stale_turret_map_entries() {
+    std::vector<u32> stale;
+    stale.reserve(g_Network.turrets.size());
+    for (const auto &[nid, cannon] : g_Network.turrets) {
+        if (!turret_map_entry_is_live(cannon))
+            stale.push_back(nid);
+    }
+    for (const u32 nid : stale)
+        g_Network.turrets.erase(nid);
 }
 
 bool snapshot_turret_is_dead(const TurretSnapshot &ts) {
@@ -152,6 +211,7 @@ void apply_turret_snapshot(CMatrixCannon *cannon, const TurretSnapshot &ts, f32 
     cannon->ApplyNetworkHealth(hp, max_hp);
 
     cannon->RChange(MR_Matrix);
+    cannon->RNeed(MR_Matrix);
 }
 
 void sync_pneumatic_client_visuals(CMatrixRobotAI *r) {
@@ -270,7 +330,7 @@ void Network::handle_new_world_snapshot(WorldSnapshot ws)
         std::cout << "Snapshot for frame: " << ws.frame << " is outdated. Dropping it." << std::endl;
         return;
     }
-    interpolation_buffer.push(ws);
+    interpolation_buffer.push(std::move(ws));
 }
 
 void Network::process_incoming_message(const Message &msg)
@@ -476,13 +536,14 @@ void Network::process_playback([[maybe_unused]]int ms)
     static u32 previous_frame = 0;
     static std::chrono::steady_clock::time_point previous_snapshot_time = playback_time;
 
-    WorldSnapshot ws_from, ws_to;
-    if (g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to))
+    const WorldSnapshot *ws_from_ptr = nullptr;
+    const WorldSnapshot *ws_to_ptr = nullptr;
+    if (g_Network.interpolation_buffer.get_lerp_target_ptrs(ws_from_ptr, ws_to_ptr))
     {
         // Only resync the clock on initial startup or if the buffer overflowed and skipped frames
-        if (previous_frame != ws_from.frame)
+        if (previous_frame != ws_from_ptr->frame)
         {
-            previous_frame = ws_from.frame;
+            previous_frame = ws_from_ptr->frame;
             previous_snapshot_time = playback_time;
         }
 
@@ -492,9 +553,12 @@ void Network::process_playback([[maybe_unused]]int ms)
         {
             previous_snapshot_time += dt;
             g_Network.interpolation_buffer.pop_front();
-            g_Network.interpolation_buffer.get_lerp_targets(ws_from, ws_to);
-            previous_frame = ws_from.frame;
+            g_Network.interpolation_buffer.get_lerp_target_ptrs(ws_from_ptr, ws_to_ptr);
+            previous_frame = ws_from_ptr->frame;
         }
+
+        const WorldSnapshot ws_from = *ws_from_ptr;
+        const WorldSnapshot ws_to = *ws_to_ptr;
 
         // If the buffer ran dry (still waiting for the next packet after dt), clamp playback_time
         // to the end of the current span so we don't accumulate debt and snap when it arrives.
@@ -590,6 +654,55 @@ void Network::process_playback([[maybe_unused]]int ms)
             }
         }
 
+        purge_stale_turret_map_entries();
+
+        for (auto& [id, ts] : ws_from.turrets) {
+            if (!g_Network.turrets.contains(id)) {
+                if (snapshot_turret_is_dead(ts))
+                    continue;
+                g_Network.populate_turret(ts);
+            }
+            if (!g_Network.turrets.contains(id))
+                continue;
+
+            CMatrixCannon *c = g_Network.turrets.at(id);
+            if (!turret_map_entry_is_live(c)) {
+                drop_stale_turret_map_entry(id);
+                continue;
+            }
+
+            c->is_processed_by_network = true;
+
+            if (ws_to.turrets.contains(id))
+            {
+                const TurretSnapshot ts_from = ws_from.turrets.at(id);
+                const TurretSnapshot ts_to = ws_to.turrets.at(id);
+
+                TurretSnapshot ts_apply = ts_to;
+                ts_apply.x = LERPFLOAT(k, ts_from.x, ts_to.x);
+                ts_apply.y = LERPFLOAT(k, ts_from.y, ts_to.y);
+                if (k < 0.5f)
+                    ts_apply.cannon_state = ts_from.cannon_state;
+
+                const f32 health = LERPFLOAT(k, ts_from.health, ts_to.health);
+                const float base_angle =
+                    lerp_angle(k, unpack_rotation(ts_from.rotation), unpack_rotation(ts_to.rotation));
+                const float turret_yaw =
+                    lerp_angle(k, unpack_rotation(ts_from.turret_yaw), unpack_rotation(ts_to.turret_yaw));
+                const float pitch = lerp_angle(k, unpack_rotation(ts_from.pitch), unpack_rotation(ts_to.pitch));
+
+                if (snapshot_turret_is_dead(ts_to)) {
+                    kill_turret_from_network_sync(c);
+                    drop_stale_turret_map_entry(id);
+                } else {
+                    apply_turret_snapshot(c, ts_apply, health, base_angle, turret_yaw, pitch);
+
+                    if (event_treshold_frame - c->last_shot_frame > 20)
+                        stop_cannon_weapon_vfx(c);
+                }
+            }
+        }
+
         const int building_tick_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(modified_delta).count();
 
@@ -615,6 +728,7 @@ void Network::process_playback([[maybe_unused]]int ms)
                         {
                             if (building->IsBase())
                                 building->m_BS.SyncClientVisualFromNetwork(nullptr, 0, 0);
+                            kill_client_turrets_on_building(building);
                             building->KillFromNetworkSync();
                         }
                         else
@@ -655,6 +769,7 @@ void Network::process_playback([[maybe_unused]]int ms)
                     }
                     else if (ws_from.buildings.contains(nid) && ws_from.buildings.at(nid).health <= 0.f)
                     {
+                        kill_client_turrets_on_building(building);
                         building->KillFromNetworkSync();
                     }
                 }
@@ -694,6 +809,29 @@ void Network::process_playback([[maybe_unused]]int ms)
             return deleted;
         });
 
+        std::erase_if(turrets, [this, modified_delta](auto& pair) {
+            const u32 id = pair.first;
+            CMatrixCannon *cannon = pair.second;
+
+            if (!turret_map_entry_is_live(cannon))
+                return true;
+
+            if (!cannon->is_processed_by_network && cannon->m_CurrState != CANNON_DIP) {
+                std::cout << "Turret " << id << " is missing from the snapshot, removing it.\n";
+                delete_turret(cannon);
+            }
+            cannon->is_processed_by_network = false;
+
+            const bool deleted = static_cast<CMatrixMapStatic *>(cannon)->StaticTakt(
+                std::chrono::duration_cast<std::chrono::milliseconds>(modified_delta).count());
+            if (!deleted) {
+                cannon->RChange(MR_Matrix | MR_ShadowProjGeom | MR_ShadowProjTex | MR_ShadowStencil);
+                cannon->RNeed(MR_Matrix);
+                cannon->JoinToGroup();
+            }
+            return deleted;
+        });
+
         for (int i = 0; i < g_MatrixMap->m_SideCnt; i++) {
             if (g_MatrixMap->m_Side[i].GetStatus() != SS_NONE) {
                 g_MatrixMap->m_Side[i].RefreshRobotSupplyCount();
@@ -702,12 +840,49 @@ void Network::process_playback([[maybe_unused]]int ms)
     }
 }
 
+u32 Network::allocate_nid()
+{
+    return next_nid++;
+}
+
+void Network::note_authoritative_nid(u32 nid)
+{
+    if (nid >= next_nid)
+        next_nid = nid + 1;
+}
+
+void Network::assign_network_id(CMatrixMapStatic *obj, bool allow_on_client)
+{
+    if (obj == nullptr || obj->m_NID != 0)
+        return;
+    if (!(obj->IsBuilding() || obj->IsRobot() || obj->IsCannon()))
+        return;
+    const bool may_assign =
+        is_authority() || network_mode == NetworkMode::NONE || allow_on_client;
+    if (!may_assign)
+        return;
+    obj->m_NID = allocate_nid();
+}
+
 void Network::populate_turret(const TurretSnapshot &ts)
 {
+    if (turrets.contains(ts.nid))
+        return;
+
+    if (CMatrixCannon *existing = find_live_cannon_by_nid(ts.nid)) {
+        if (existing->m_CurrState == CANNON_DIP)
+            return;
+        apply_turret_snapshot(existing, ts, ts.health, unpack_rotation(ts.rotation),
+                              unpack_rotation(ts.turret_yaw), unpack_rotation(ts.pitch));
+        existing->RNeed(MR_Matrix | MR_Graph);
+        existing->JoinToGroup();
+        turrets.emplace(ts.nid, existing);
+        return;
+    }
+
     CMatrixCannon *c = g_MatrixMap->StaticAdd<CMatrixCannon>(true);
     c->m_NID = ts.nid;
-    if (ts.nid >= next_nid)
-        next_nid = ts.nid + 1;
+    note_authoritative_nid(ts.nid);
 
     c->UnitInit(ts.type);
     c->m_ShadowType = SHADOW_STENCIL;
@@ -742,6 +917,7 @@ void Network::populate_robot(const RobotSnapshot &rs)
     D3DXVECTOR3 pos = D3DXVECTOR3(rs.x, rs.y, 0);
     CMatrixRobotAI *r = bot.GetRobot(pos, rs.side);
     r->m_NID = rs.nid;
+    note_authoritative_nid(rs.nid);
 
     g_MatrixMap->AddObject(r, true); // should we do this?
 
@@ -769,43 +945,68 @@ void Network::clear_events_for_current_tick()
 
 void Network::play_fire_event(const EventFire &event)
 {
-    if (!robots.contains(event.nid))
-        return;
+    if (robots.contains(event.nid)) {
+        CMatrixRobotAI *robot = robots.at(event.nid);
+        robot->last_shot_frame = event.frame;
 
-    CMatrixRobotAI *robot = robots.at(event.nid);
-    robot->last_shot_frame = event.frame;
+        for (int i = 0; i < robot->m_WeaponsCnt; i++) {
+            if (robot->m_Weapons[i].GetWeaponType() != event.weapons || !robot->m_Weapons[i].m_Weapon)
+                continue;
 
-    // std::cout << "Trigger fire for: " << robot->m_NID << " at " << event.frame << std::endl;
-    for (int i = 0; i < robot->m_WeaponsCnt; i++)
-    {
-        if (robot->m_Weapons[i].GetWeaponType() == event.weapons && robot->m_Weapons[i].m_Weapon)
-        {
-            // SETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_FIRE);
-            // RESETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_FIREWAS);
-            // RESETFLAG(robot->m_Weapons[i].m_Weapon->m_Flags, WEAPFLAGS_HITWAS);
-
-            // Trigger fire event
-            D3DXMATRIX m = (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
+            D3DXMATRIX m =
+                (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;
             D3DXVECTOR3 vPos;
             D3DXVec3TransformCoord(&vPos, &vPos, &m);
             robot->m_Weapons[i].m_Weapon->m_Pos = vPos;
 
             if (robot->m_Weapons[i].GetWeaponType() == WEAPON_BOMB)
-            {
                 robot->m_Weapons[i].m_Weapon->m_Dir = event.target_pos;
-            }
-            else
-            {
+            else {
                 D3DXVECTOR3 dir = event.target_pos - robot->m_Weapons[i].m_Weapon->m_Pos;
                 D3DXVec3Normalize(&dir, &dir);
                 robot->m_Weapons[i].m_Weapon->m_Dir = dir;
             }
 
+            robot->m_Weapons[i].m_Weapon->m_Target = event.target_pos;
+            robot->m_Weapons[i].m_Weapon->m_Speed = event.target_pos;
             robot->m_Weapons[i].m_Weapon->m_Skip = robot;
-            //robot->m_Weapons[i].m_On = true;
             robot->m_Weapons[i].m_Weapon->Fire();
-            // std::cout << "Rocket launched. " << std::endl;
         }
+        return;
+    }
+
+    if (!turrets.contains(event.nid))
+        return;
+
+    CMatrixCannon *cannon = turrets.at(event.nid);
+    if (!turret_map_entry_is_live(cannon)) {
+        drop_stale_turret_map_entry(event.nid);
+        return;
+    }
+
+    cannon->last_shot_frame = event.frame;
+    cannon->RNeed(MR_Matrix);
+
+    for (int i = 0; i < cannon->m_WeaponCnt; ++i) {
+        CMatrixEffectWeapon *weapon = cannon->m_Weapons[i];
+        if (!weapon || weapon->GetWeaponType() != event.weapons)
+            continue;
+
+        weapon->Modify(cannon->m_FireFrom[i], cannon->m_FireDir[i], D3DXVECTOR3(0, 0, 0));
+        weapon->m_Pos = cannon->m_FireFrom[i];
+
+        D3DXVECTOR3 dir = event.target_pos - weapon->m_Pos;
+        if (D3DXVec3LengthSq(&dir) > 1e-4f)
+            D3DXVec3Normalize(&dir, &dir);
+        else
+            dir = cannon->m_FireDir[i];
+
+        weapon->m_Dir = dir;
+        weapon->m_Target = event.target_pos;
+        weapon->m_Speed = event.target_pos;
+        weapon->m_Skip = cannon;
+        weapon->Fire();
+        cannon->BeginFireAnimation();
     }
 }
 

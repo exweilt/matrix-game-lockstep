@@ -25,6 +25,14 @@ float CMatrixCannon::GetStrength(void) {
     return g_Config.m_CannonsProps[m_Num - 1].m_Strength * (0.4f + 0.6f * (m_HitPoint / m_HitPointMax));
 }
 
+float CMatrixCannon::turret_yaw() {
+    for (int i = 0; i < this->m_UnitCnt; ++i) {
+        if (this->m_Unit[i].m_Type == CUT_TURRET)
+            return this->m_Unit[i].u1.s1.m_Angle;
+    }
+    return 0.f;
+}
+
 void CMatrixCannon::FireHandler(
     [[maybe_unused]] CMatrixMapStatic *hit,
     [[maybe_unused]] const D3DXVECTOR3 &pos,
@@ -32,20 +40,30 @@ void CMatrixCannon::FireHandler(
     DWORD flags)
 {
     SObjectCore *oc = (SObjectCore *)user;
+    if (oc == nullptr)
+        return;
 
-    if (oc->m_Object && FLAG(flags, FEHF_DAMAGE_ROBOT)) {
+    CMatrixMapStatic *obj = oc->m_Object;
+    if (obj == nullptr || !obj->IsCannon()) {
+        if (FLAG(flags, FEHF_LASTHIT))
+            oc->Release();
+        return;
+    }
+
+    CMatrixCannon *cannon = obj->AsCannon();
+
+    if (FLAG(flags, FEHF_DAMAGE_ROBOT)) {
         // попадание!
         // обновим тайминг косой стрельбы
-        oc->m_Object->AsCannon()->m_TimeFromFire = CANNON_TIME_FROM_FIRE;
+        cannon->m_TimeFromFire = CANNON_TIME_FROM_FIRE;
     }
 
-    if (oc->m_Object && oc->m_Object->AsCannon()->IsRefProtect()) {
-        oc->m_Object->AsCannon()->SetRefProtectHit();
+    if (cannon->IsRefProtect()) {
+        cannon->SetRefProtectHit();
     }
     else {
-        if (FLAG(flags, FEHF_LASTHIT)) {
+        if (FLAG(flags, FEHF_LASTHIT))
             oc->Release();
-        }
     }
 }
 

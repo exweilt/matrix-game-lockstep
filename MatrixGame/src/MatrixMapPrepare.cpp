@@ -15,6 +15,7 @@
 #include "MatrixShadowManager.hpp"
 #include "ShadowStencil.hpp"
 #include "Interface/CConstructor.h"
+#include "Network/Network.hpp"
 
 #include <new>
 #include <algorithm>
@@ -643,6 +644,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
             else {
                 CMatrixBuilding *b;
                 b = StaticAdd<CMatrixBuilding>();
+                g_Network.assign_network_id(b, true);
 
                 b->m_Pos.x = xf[i];
                 b->m_Pos.y = yf[i];
@@ -762,6 +764,7 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
         for (int i = 0; i < n; ++i) {
             CMatrixCannon *c;
             c = StaticAdd<CMatrixCannon>();
+            g_Network.assign_network_id(c);
 
         skip_this_cannon:
 

@@ -6,6 +6,7 @@
 #include <cereal/archives/binary.hpp>
 
 #include "MatrixRobot.hpp"
+#include "MatrixObjectCannon.hpp"
 #include "Stopwatch.hpp"
 
 // #define PROFILING
@@ -250,14 +251,6 @@ TurretSnapshot TurretSnapshot::deserialize_from_bitstream(BitReader &reader)
     return result;
 }
 
-static float cannon_snapshot_turret_yaw(CMatrixCannon *cannon) {
-    for (int i = 0; i < cannon->m_UnitCnt; ++i) {
-        if (cannon->m_Unit[i].m_Type == CUT_TURRET)
-            return cannon->m_Unit[i].u1.s1.m_Angle;
-    }
-    return 0.f;
-}
-
 TurretSnapshot TurretSnapshot::from_cannon(CMatrixCannon *cannon)
 {
     TurretSnapshot result{};
@@ -272,7 +265,7 @@ TurretSnapshot TurretSnapshot::from_cannon(CMatrixCannon *cannon)
     result.parent_building_nid = cannon->m_ParentBuilding ? cannon->m_ParentBuilding->m_NID : 0u;
     result.place = cannon->m_Place;
     result.rotation = pack_rotation(cannon->m_Angle);
-    result.turret_yaw = pack_rotation(cannon_snapshot_turret_yaw(cannon));
+    result.turret_yaw = pack_rotation(cannon->turret_yaw());
     result.pitch = pack_rotation(cannon->m_AngleX);
     return result;
 }
@@ -368,25 +361,28 @@ WorldSnapshot WorldSnapshot::deserialize_from_bitstream(BitReader &reader)
 
     result.frame = reader.read_u32();
 
-    int sides_count = reader.read_u32();
-    for (int i = 0; i < sides_count; i++)
-    {
+    const u32 sides_count = clamp_snapshot_count(reader.read_u32(), kMaxSnapshotSides);
+    for (u32 i = 0; i < sides_count; i++) {
         SideSnapshot ss = SideSnapshot::deserialize_from_bitstream(reader);
         result.sides.emplace(ss.side, ss);
     }
 
-    int rob_count = reader.read_u32();
-    for (int i = 0; i < rob_count; i++)
-    {
+    const u32 rob_count = clamp_snapshot_count(reader.read_u32(), kMaxSnapshotRobots);
+    for (u32 i = 0; i < rob_count; i++) {
         RobotSnapshot rs = RobotSnapshot::deserialize_from_bitstream(reader);
         result.robots.emplace(rs.nid, rs);
     }
 
-    int b_count = reader.read_u32();
-    for (int i = 0; i < b_count; i++)
-    {
+    const u32 b_count = clamp_snapshot_count(reader.read_u32(), kMaxSnapshotBuildings);
+    for (u32 i = 0; i < b_count; i++) {
         BuildingSnapshot bs = BuildingSnapshot::deserialize_from_bitstream(reader);
         result.buildings.emplace(bs.nid, bs);
+    }
+
+    const u32 t_count = clamp_snapshot_count(reader.read_u32(), kMaxSnapshotTurrets);
+    for (u32 i = 0; i < t_count; i++) {
+        TurretSnapshot ts = TurretSnapshot::deserialize_from_bitstream(reader);
+        result.turrets.emplace(ts.nid, ts);
     }
 
     return result;

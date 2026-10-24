@@ -278,6 +278,8 @@ public:
     SObjectCore *m_Owner;
     int m_SideStorage;  // side storage (if owner will be killed)
 
+    void CallFireHandlerIfAuthority(CMatrixMapStatic *hiti, const D3DXVECTOR3 &pos, DWORD flags);
+
     CMatrixEffectWeapon(const D3DXVECTOR3 &start, const D3DXVECTOR3 &dir, uintptr_t user, FIRE_END_HANDLER handler,
                         EWeapon type, int cooldown, SBotWeapon *weapon = nullptr);
     virtual ~CMatrixEffectWeapon();

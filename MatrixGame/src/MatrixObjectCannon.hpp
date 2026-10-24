@@ -222,4 +222,6 @@ public:
     void OnOutScreen(void){};
 
     float GetStrength(void);
+
+    float turret_yaw();
 };
