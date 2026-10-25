@@ -11,6 +11,7 @@
 
 #include "CException.hpp"
 #include "MatrixGame.h"
+#include "MatrixGameDll.hpp"
 #include "MatrixLogic.hpp"
 #include "Message.hpp"
 #include "stupid_logger.hpp"
@@ -402,6 +403,17 @@ void Network::handle_new_world_snapshot(WorldSnapshot ws)
 
 void Network::process_incoming_message(const Message &msg)
 {
+    if (msg.type == MessageType::EVENTS)
+        MatrixGameDllBreadcrumbf("rx events count=%u", static_cast<unsigned>(msg.events.events.size()));
+    else if (msg.type == MessageType::DESYNC)
+        MatrixGameDllBreadcrumbf("rx desync frame=%u", msg.desync.target_frame);
+    else if (msg.type == MessageType::START)
+        MatrixGameDllBreadcrumb("rx start");
+    else if (msg.type == MessageType::COMMAND_ATTACK || msg.type == MessageType::COMMAND_BUILD ||
+             msg.type == MessageType::COMMAND_BUILD_TURRET || msg.type == MessageType::COMMAND_MOVE ||
+             msg.type == MessageType::COMMAND_CAPTURE || msg.type == MessageType::COMMAND_STOP)
+        MatrixGameDllBreadcrumbf("rx command type=%u", static_cast<unsigned>(msg.type));
+
     if (msg.type == MessageType::WORLD_SNAPSHOT)
     {
         handle_new_world_snapshot(msg.world_snapshot.ws);
@@ -1003,6 +1015,9 @@ void Network::populate_robot(const RobotSnapshot &rs)
     sync_pneumatic_client_visuals(r);
 
     robots.emplace(rs.nid, r);
+    MatrixGameDllBreadcrumbf(
+        "spawn robot nid=%u side=%u weapons=%u", rs.nid, static_cast<unsigned>(rs.side),
+        static_cast<unsigned>(rs.weapon_cnt));
 }
 
 void Network::add_event_to_current_tick(Event e)
@@ -1039,6 +1054,8 @@ void Network::play_sound_event(const Event &event)
 void Network::play_fire_event(const Event &event)
 {
     const EventFire &fire = event.fire;
+    MatrixGameDllBreadcrumbf(
+        "play fire nid=%u weapon=%u frame=%u", fire.nid, static_cast<unsigned>(fire.weapons), event.frame);
 
     if (robots.contains(fire.nid)) {
         CMatrixRobotAI *robot = robots.at(fire.nid);
@@ -1047,6 +1064,15 @@ void Network::play_fire_event(const Event &event)
         for (int i = 0; i < robot->m_WeaponsCnt; i++) {
             if (robot->m_Weapons[i].GetWeaponType() != fire.weapons || !robot->m_Weapons[i].m_Weapon)
                 continue;
+
+            const bool has_unit = robot->m_Weapons[i].m_Unit != nullptr;
+            const bool has_graph = has_unit && robot->m_Weapons[i].m_Unit->m_Graph != nullptr;
+            const bool has_matrix = has_graph && robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1) != nullptr;
+            if (!has_matrix) {
+                MatrixGameDllBreadcrumbf(
+                    "fire robot nid=%u slot=%d missing unit=%d graph=%d matrix=%d", fire.nid, i,
+                    static_cast<int>(has_unit), static_cast<int>(has_graph), static_cast<int>(has_matrix));
+            }
 
             D3DXMATRIX m =
                 (*robot->m_Weapons[i].m_Unit->m_Graph->GetMatrixById(1)) * robot->m_Weapons[i].m_Unit->m_Matrix;

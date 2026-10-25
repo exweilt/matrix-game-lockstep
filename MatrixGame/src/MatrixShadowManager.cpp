@@ -310,6 +310,8 @@ void ShadowProjBuildFull(CVOShadowProj &sp, CVectorObjectAnim &obj, int noframe,
                          const D3DXMATRIX &iobjma, D3DXVECTOR3 &light, int mapradius, int texsize, bool doclip,
                          bool render_texture, bool join_to_group) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
 
     SProjData pd;
     D3DXVECTOR3 lv;
@@ -359,6 +361,8 @@ void ShadowProjBuildFull(CVOShadowProj &sp, CVectorObjectAnim &obj, int noframe,
 void ShadowProjBuildTexture(CVOShadowProj &sp, CVectorObjectAnim &obj, int noframe, const D3DXMATRIX &iobjma,
                             D3DXVECTOR3 &light, int texsize, bool doclip) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
 
     SProjData pd;
     D3DXVECTOR3 lv;
@@ -409,6 +413,8 @@ void ShadowProjBuildTexture(CVOShadowProj &sp, CVectorObjectAnim &obj, int nofra
 void ShadowProjBuildTexture(CMatrixMapObject *mo, CVOShadowProj &sp, CVectorObjectAnim &obj, int noframe,
                             const D3DXMATRIX &iobjma, int texsize, bool doclip) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
 
     if (obj.VO()->GetFramesCnt() <= 1) {
         sp.DestroyTexture();
@@ -466,6 +472,8 @@ void ShadowProjBuildTextureList(
     int texsize)
 {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
 
     SProjData pd;
     D3DXVECTOR3 lv;
@@ -487,6 +495,8 @@ void ShadowProjBuildFullList(CVOShadowProj &sp, int cnt, CVectorObjectAnim **obj
                              const D3DXMATRIX *wm, const D3DXMATRIX &objma, const D3DXMATRIX &iobjma,
                              D3DXVECTOR3 &light, int mapradius, int texsize, bool join_to_group) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
 
     SProjData pd;
     D3DXVECTOR3 lv;

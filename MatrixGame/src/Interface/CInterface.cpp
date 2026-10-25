@@ -8,6 +8,7 @@
 #include <format>
 #include <stdexcept>
 
+#include "3g.hpp"
 #include "CIFaceButton.h"
 #include "CIFaceStatic.h"
 #include "CInterface.h"
@@ -3537,7 +3538,10 @@ void CIFaceList::LogicTakt(int ms) {
     if (g_PopupMenu) {
         g_PopupMenu->m_MenuGraphics->LogicTakt(ms);
     }
-    ShowInterface();
+    // ShowInterface locks UI textures. That access-violates inside d3d9 while
+    // another process owns the adapter, so skip it until Reset succeeds.
+    if (D3DDeviceOperational())
+        ShowInterface();
 
     CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
 
@@ -5320,6 +5324,9 @@ void SStateImages::SetStateLabelParams(int x, int y, int bound_x, int bound_y, i
     m_Color = color;
 }
 void SStateImages::SetStateText(bool copy) {
+    if (!D3DDeviceOperational() || pImage == nullptr)
+        return;
+
     CTextureManaged *texture = pImage;
     D3DLOCKED_RECT lr;
 
@@ -5339,6 +5346,11 @@ void SStateImages::SetStateText(bool copy) {
     }
 
     texture->LockRect(lr, 0);
+    if (lr.pBits == nullptr) {
+        if (g_RangersInterface)
+            g_RangersInterface->m_RangersTextClear(&it);
+        return;
+    }
 
     CBitmap bmdes;
     bmdes.CreateRGBA(Float2Int(TexWidth), Float2Int(TexHeight), lr.Pitch, lr.pBits);

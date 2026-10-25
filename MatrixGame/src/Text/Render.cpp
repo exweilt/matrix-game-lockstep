@@ -7,7 +7,7 @@
 
 #include <d3dx9tex.h>
 
-extern IDirect3DDevice9* g_D3DD;
+#include "3g.hpp"
 
 namespace {
 
@@ -176,6 +176,9 @@ void Render(
 {
     (void)wordwrap;
 
+    if (!D3DDeviceOperational())
+        return;
+
     Font& font = Text::GetFont(g_D3DD, font_name);
 
     if (!font)
@@ -269,6 +272,8 @@ void Render(
     AutoRelease<ID3DXRenderToSurface> pSurfaceRender{nullptr};
 
     D3DXCreateRenderToSurface(g_D3DD, sizex, sizey, D3DFMT_A8R8G8B8, 0, D3DFMT_UNKNOWN, pSurfaceRender);
+    if (static_cast<ID3DXRenderToSurface*>(pSurfaceRender) == nullptr)
+        return;
 
     pSurfaceRender->BeginScene(surface, NULL);
 

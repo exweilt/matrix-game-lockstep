@@ -97,6 +97,7 @@ void CMinimap::StoreTexture(void)
     }
 
     IDirect3DSurface9 *surf_to, *surf_from;
+    IDirect3DTexture9 *src_tex = nullptr;
     if (D3D_OK != g_D3DD->CreateTexture(MINIMAP_SIZE, MINIMAP_SIZE, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
                                         &m_TextureStore, NULL))
     {
@@ -110,7 +111,8 @@ void CMinimap::StoreTexture(void)
         goto really_lost;
     }
 
-    if (D3D_OK != m_Texture->Tex()->GetSurfaceLevel(0, &surf_from))
+    src_tex = m_Texture->Tex();
+    if (src_tex == nullptr || D3D_OK != src_tex->GetSurfaceLevel(0, &surf_from))
     {
         surf_to->Release();
         m_TextureStore->Release();
@@ -1241,6 +1243,9 @@ void CMinimap::RenderBackground(const std::wstring &name, DWORD uniq)
 
 void CMinimap::RenderObjectToBackground(CMatrixMapStatic *s) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return;
+
     SETFLAG(g_MatrixMap->m_Flags, MMFLAG_DISABLE_DRAW_OBJECT_LIGHTS);
 
     bool f1 = g_Config.m_ShowStencilShadows;

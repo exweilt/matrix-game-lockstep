@@ -247,7 +247,7 @@ void CFormMatrixGame::Leave(void) {
 static bool D3DDeviceStillReady(HRESULT hr) {
     if (hr == D3D_OK)
         return true;
-    if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+    if (D3DFailureFromLostDevice(hr))
         return false;
     throw CExceptionD3D(__FILE__, __LINE__, hr);
 }
@@ -266,7 +266,7 @@ void CFormMatrixGame::Draw(void) {
     g_MatrixMap->m_DI.T(L"Controllable Side", utils::format(L"%d", g_Network.controllable_side_id).c_str());
     g_MatrixMap->m_DI.T(L"game_ongoing", utils::format(L"%d", g_Network.game_ongoing).c_str());
 
-    if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY))
+    if (!FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY) || !D3DDeviceOperational())
     {
         return;
     }
@@ -1875,12 +1875,8 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
 void CFormMatrixGame::SystemEvent(ESysEvent se) {
     DTRACE();
-    if (se == SYSEV_DEACTIVATING) {
-        if (FLAG(g_MatrixMap->m_Flags, MMFLAG_VIDEO_RESOURCES_READY)) {
-            g_MatrixMap->ReleasePoolDefaultResources();
-        }
-    }
-
+    // Releasing Direct3D resources here runs inside the minimize message, while
+    // the device is already changing hands. CheckLostDevice does that between frames.
     if (se == SYSEV_ACTIVATED) {
         if (FLAG(g_Flags, GFLAG_FULLSCREEN)) {
             RECT r;

@@ -1130,6 +1130,8 @@ CTextureManaged *CVectorObject::CalcShadowTexture(int cnt, CVectorObjectAnim **o
                                                   const D3DXMATRIX *wm, const SProjData &pd, int texsize,
                                                   CVOShadowCliper *cliper, CBaseTexture *tex_to_update) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return nullptr;
 
     D3DXMATRIX mWorld;
     D3DXMATRIX mView;
@@ -1164,6 +1166,8 @@ CTextureManaged *CVectorObject::CalcShadowTextureWOMat(int cnt, CVectorObjectAni
                                                        const D3DXMATRIX *wm, int texsize, CVOShadowCliper *cliper,
                                                        CBaseTexture *tex_to_update) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return nullptr;
 
     // store old viewport
     D3DVIEWPORT9 oldViewport;

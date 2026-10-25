@@ -1025,18 +1025,21 @@ void CGame::RunGameLoop(CFormMatrixGame *formgame) {
         catch (...) {
         }
         MatrixGameDllTracef("RunGameLoop: CException: %s", info.c_str());
+        MatrixGameDllDumpContext(info.c_str());
         SETFLAG(g_Flags, GFLAG_EXITLOOP);
         g_ExitState += 100;
     }
     catch (const std::exception& ex)
     {
         MatrixGameDllTracef("RunGameLoop: std::exception: %s", ex.what());
+        MatrixGameDllDumpContext(ex.what());
         SETFLAG(g_Flags, GFLAG_EXITLOOP);
         g_ExitState += 100;
     }
     catch (...)
     {
         MatrixGameDllTrace("RunGameLoop: unknown C++ exception");
+        MatrixGameDllDumpContext("unknown C++ exception");
         SETFLAG(g_Flags, GFLAG_EXITLOOP);
         g_ExitState += 100;
     }

@@ -1972,6 +1972,17 @@ void CMatrixMap::CreatePoolDefaultResources(bool loading) {
         m_Minimap.RestoreTexture();
         m_DI.OnResetDevice();
         CBaseTexture::OnResetDevice();
+
+        // Icons rendered while the device was lost were left null. Rebuild them
+        // now that Reset has succeeded. Existing icons are managed and stay.
+        CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic();
+        while (ms != NULL) {
+            if (ms->IsLiveRobot() && ms->AsRobot()->GetBigTexture() == nullptr)
+                ms->AsRobot()->CreateTextures();
+            else if (ms->IsFlyer() && ms->AsFlyer()->GetBigTexture() == nullptr)
+                ms->AsFlyer()->CreateTextures();
+            ms = ms->GetNextLogic();
+        }
     }
 
     SETFLAG(m_Flags, MMFLAG_VIDEO_RESOURCES_READY);
@@ -2035,8 +2046,13 @@ static void RestoreLostDeviceAsWindow(void) {
     if (g_D3Dpp.Windowed)
         return;
 
-    // The other process (Space Rangers hosting the DLL) owns the adapter in exclusive
-    // fullscreen. Coming back the same way would take it away from that process.
+    // The DLL draws into Space Rangers' window. Rewriting that style when a
+    // fullscreen client is restored from the taskbar calls a null host proc.
+    // That client still owns fullscreen and must Reset with the same mode.
+    // The standalone server is the case that must not grab exclusive mode back.
+    if (g_WndExtern)
+        return;
+
     g_D3Dpp.Windowed = TRUE;
     g_D3Dpp.FullScreen_RefreshRateInHz = 0;
     RESETFLAG(g_Flags, GFLAG_FULLSCREEN);
@@ -2067,6 +2083,11 @@ bool CMatrixMap::CheckLostDevice(void) {
                 ReleasePoolDefaultResources();
             }
 
+            // Reset while minimized fails, and on the DLL it also runs in the
+            // middle of Space Rangers restoring its own window.
+            if (g_Wnd != nullptr && IsIconic(g_Wnd))
+                return true;
+
             RestoreLostDeviceAsWindow();
             //        D3DResource::Dump(D3DRESTYPE_VB);
             hr = g_D3DD->Reset(&g_D3Dpp);
@@ -2079,7 +2100,11 @@ bool CMatrixMap::CheckLostDevice(void) {
             }
 
         default:
-            break;
+            // Any other failure means this process must not touch the device.
+            if (FLAG(m_Flags, MMFLAG_VIDEO_RESOURCES_READY)) {
+                ReleasePoolDefaultResources();
+            }
+            return true;
     }
 
     return false;

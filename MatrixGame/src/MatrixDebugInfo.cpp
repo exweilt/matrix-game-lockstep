@@ -188,10 +188,12 @@ void CMatrixDebugInfo::Clear()
 
 void CMatrixDebugInfo::OnLostDevice()
 {
-    m_Font->OnLostDevice();
+    if (m_Font != nullptr)
+        m_Font->OnLostDevice();
 }
 
 void CMatrixDebugInfo::OnResetDevice()
 {
-    m_Font->OnResetDevice();
+    if (m_Font != nullptr)
+        m_Font->OnResetDevice();
 }

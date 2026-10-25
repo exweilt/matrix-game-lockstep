@@ -160,5 +160,12 @@ extern int g_ExitState;
 void MatrixGameDllTrace(const char* text);
 void MatrixGameDllTracef(const char* fmt, ...);
 
+/** Remember a short line. The last few are written to the log when the process faults. */
+void MatrixGameDllBreadcrumb(const char* text);
+void MatrixGameDllBreadcrumbf(const char* fmt, ...);
+
+/** Write the breadcrumb trail and the DTRACE stack. Used for C++ exceptions, which are not SEH faults. */
+void MatrixGameDllDumpContext(const char* reason);
+
 /** One client logic-frame delta, in milliseconds, as its own line. The file stays open and is not flushed per line. */
 void MatrixGameDllTraceFrameDelta(int delta_ms);

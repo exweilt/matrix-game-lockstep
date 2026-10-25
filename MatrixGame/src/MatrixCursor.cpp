@@ -14,7 +14,8 @@ void CMatrixCursor::SetVisible(bool flag) {
         if (FLAG(m_CursorFlags, CURSOR_VISIBLE) && !flag) {
             while (ShowCursor(false) >= 0)
                 ;
-            g_D3DD->ShowCursor(false);
+            if (D3DDeviceOperational())
+                g_D3DD->ShowCursor(false);
             SetCursor(NULL);
         }
         else if (!FLAG(m_CursorFlags, CURSOR_VISIBLE) && flag) {
@@ -35,7 +36,8 @@ void CMatrixCursor::SetVisible(bool flag) {
                 cntCursPrev = cntCurs;
                 cntCurs = ShowCursor(true);
             }
-            g_D3DD->ShowCursor(true);
+            if (D3DDeviceOperational())
+                g_D3DD->ShowCursor(true);
             ShowCursor(true);
         }
     }
@@ -49,6 +51,10 @@ void CMatrixCursor::Select(const std::wstring& name) {
     {
         return;
     }
+    // Unload releases the cursor texture. Skip the whole switch until the
+    // device is usable again; m_CurCursor stays so this retries next frame.
+    if (g_Config.m_SoftwareCursor && !D3DDeviceOperational())
+        return;
     DCP();
     m_CurCursor = name;
 

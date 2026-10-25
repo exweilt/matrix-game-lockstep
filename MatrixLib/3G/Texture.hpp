@@ -225,11 +225,14 @@ public:
         if (!m_Tex) {
             Load();
         }
-        m_Tex->PreLoad();
+        if (m_Tex != nullptr)
+            m_Tex->PreLoad();
 #endif
     }
 
     HRESULT CreateLock(D3DFORMAT fmt, int sx, int sy, int levels, D3DLOCKED_RECT &lr) {
+        if (!D3DDeviceOperational())
+            return D3DERR_DEVICELOST;
 #ifdef USE_DX_MANAGED_TEXTURES
         ASSERT(m_Tex == NULL);
 
@@ -269,23 +272,43 @@ public:
     void Ramka(int x, int y, int w, int h, DWORD c);
 
     void LockRect(D3DLOCKED_RECT &lr, DWORD Flags) {
+        lr.pBits = nullptr;
+        lr.Pitch = 0;
 #ifdef _DEBUG
         if (FLAG(g_Flags, GFLAG_RENDERINPROGRESS))
             debugbreak();
             // ASSERT(!FLAG(g_Flags, GFLAG_RENDERINPROGRESS));
 #endif
+        if (!D3DDeviceOperational())
+            return;
 #ifndef USE_DX_MANAGED_TEXTURES
-                    ASSERT_DX(TexFrom()->LockRect(0, &lr, NULL, Flags));
+        IDirect3DTexture9 *tex = TexFrom();
 #else
-        ASSERT_DX(Tex()->LockRect(0, &lr, NULL, Flags));
+        IDirect3DTexture9 *tex = Tex();
 #endif
+        if (tex == nullptr)
+            return;
+        HRESULT hr = tex->LockRect(0, &lr, NULL, Flags);
+        if (hr != D3D_OK) {
+            lr.pBits = nullptr;
+            lr.Pitch = 0;
+            if (!D3DFailureFromLostDevice(hr))
+                throw CExceptionD3D(__FILE__, __LINE__, hr);
+        }
     }
     void UnlockRect(void) {
+        if (!D3DDeviceOperational())
+            return;
 #ifndef USE_DX_MANAGED_TEXTURES
-        ASSERT_DX(TexFrom()->UnlockRect(0));
+        IDirect3DTexture9 *tex = TexFrom();
 #else
-        ASSERT_DX(Tex()->UnlockRect(0));
+        IDirect3DTexture9 *tex = Tex();
 #endif
+        if (tex == nullptr)
+            return;
+        HRESULT hr = tex->UnlockRect(0);
+        if (hr != D3D_OK && !D3DFailureFromLostDevice(hr))
+            throw CExceptionD3D(__FILE__, __LINE__, hr);
     }
 
     void LoadFromBitmap(const CBitmap &bm, bool convert_to_16bit, int levelcnt = 0);

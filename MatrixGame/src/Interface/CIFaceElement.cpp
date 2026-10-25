@@ -292,6 +292,8 @@ void CIFaceElement::Reset() {
 }
 
 bool CIFaceElement::ElementAlpha(CPoint mouse) {
+    if (!D3DDeviceOperational() || m_StateImages[GetState()].pImage == nullptr)
+        return false;
     int x = Float2Int(mouse.x - (m_PosElInX));
     int y = Float2Int(mouse.y - (m_PosElInY));
     DWORD color = m_StateImages[GetState()].pImage->GetPixelColor(Float2Int(m_StateImages[GetState()].xTexPos) + x,

@@ -38,11 +38,34 @@ extern IDirect3D9 *g_D3D;
 extern IDirect3DDevice9 *g_D3DD;
 extern D3DCAPS9 g_D3DDCaps;
 extern HWND g_Wnd;
+extern bool g_WndExtern;
 extern int g_ScreenX, g_ScreenY;
 extern int g_DrawFPS;
 extern int g_MaxFPS;
 extern int g_AvailableTexMem;
 extern D3DPRESENT_PARAMETERS g_D3Dpp;
+
+// Exclusive fullscreen in another process (a client on this machine) makes
+// TestCooperativeLevel fail. Any other call can access-violate inside d3d9.
+inline bool D3DDeviceOperational() {
+    return g_D3DD != nullptr && g_D3DD->TestCooperativeLevel() == D3D_OK;
+}
+
+// LockRect and several other calls return INVALIDCALL, not DEVICELOST, once
+// another process owns the adapter. A bad call while the device is still
+// cooperative is a real error and stays a real error.
+inline bool D3DFailureFromLostDevice(HRESULT hr) {
+    switch (hr) {
+        case D3DERR_DEVICELOST:
+        case D3DERR_DEVICENOTRESET:
+        case D3DERR_DRIVERINTERNALERROR:
+            return true;
+        case D3DERR_INVALIDCALL:
+            return !D3DDeviceOperational();
+        default:
+            return false;
+    }
+}
 
 // global config flags
 extern DWORD g_Flags;

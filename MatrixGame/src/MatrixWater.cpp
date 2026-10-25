@@ -225,8 +225,12 @@ void CMatrixWater::Init() {
     m_WaterTex1 = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bp->ParGet(PAR_SOURCE_WATER_WATER).c_str());
     m_WaterTex2 = (CTextureManaged *)g_Cache->Get(CacheClass::TextureManaged, bp->ParGet(PAR_SOURCE_WATER_MIRROR).c_str());
 
-    m_WaterTex1->Tex()->SetPriority(0xFFFFFFFF);
-    m_WaterTex2->Tex()->SetPriority(0xFFFFFFFF);
+    // A restore can fail to reload these. Calling through a null texture is
+    // the access violation at address 0 seen when a fullscreen client returns.
+    if (m_WaterTex1 != nullptr && m_WaterTex1->Tex() != nullptr)
+        m_WaterTex1->Tex()->SetPriority(0xFFFFFFFF);
+    if (m_WaterTex2 != nullptr && m_WaterTex2->Tex() != nullptr)
+        m_WaterTex2->Tex()->SetPriority(0xFFFFFFFF);
 
     const int pole = (WATER_SIZE + 1) * (WATER_SIZE + 1);
     const int one_strip_idxs = (WATER_SIZE * 2 + 2);

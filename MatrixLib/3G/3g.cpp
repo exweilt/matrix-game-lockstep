@@ -617,27 +617,23 @@ int L3GRun()
             //SRemindCore::Takt(delta); ATTENTION
             // Stopwatch sw_phys;
 
-
-            if (g_Network.is_authority())
-            {
-                g_FormCur->Takt(delta); // SUS
-            }
-            else
-            {
+            // A stolen adapter turns ordinary Direct3D calls into INVALIDCALL
+            // or DEVICELOST. Drop the rest of this frame and keep simulating.
+            try {
                 g_FormCur->Takt(delta);
-            }
-            // g_Network.lgr.debug("Physics time      : {:.3f} ms")(sw_phys.elapsed_ms());
-
-            // g_FormCur->Takt(PHYSICS_TICK_PERIOD_MS);
 #ifdef _DEBUG
-            RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+                RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
 #endif
-
-            // g_physics_tick += 1;
-
-            // TODO: maybe add back FPS limit?
-            // Stopwatch sw_draw;
-            g_FormCur->Draw();
+                g_FormCur->Draw();
+            }
+            catch (const CExceptionD3D &ex) {
+#ifdef _DEBUG
+                RESETFLAG(g_Flags, GFLAG_TAKTINPROGRESS);
+                RESETFLAG(g_Flags, GFLAG_RENDERINPROGRESS);
+#endif
+                if (D3DDeviceOperational() && !D3DFailureFromLostDevice(ex.m_Error))
+                    throw;
+            }
             // g_Network.lgr.debug("Draw time         : {:.3f} ms")(sw_draw.elapsed_ms());
 
 #if (defined _DEBUG) && !(defined _RELDEBUG)
@@ -672,7 +668,8 @@ int L3GRun()
 
         g_DrawFPS = fps.count();
 
-        g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
+        if (D3DDeviceOperational())
+            g_AvailableTexMem = g_D3DD->GetAvailableTextureMem() / (1024 * 1024);
 
     }
 
@@ -752,10 +749,40 @@ static LRESULT L3GCallPrevWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+static bool L3GBypassHostFullscreenMessage(UINT message, WPARAM wParam)
+{
+    // Exclusive fullscreen uses Space Rangers' window, but its procedure corrupts
+    // our form while handling minimize and restore. Windows itself can do those.
+    if (!g_WndExtern || !FLAG(g_Flags, GFLAG_FULLSCREEN))
+        return false;
+    if (message == WM_SYSCOMMAND) {
+        const UINT cmd = wParam & 0xFFF0;
+        return cmd == SC_MINIMIZE || cmd == SC_RESTORE || cmd == SC_MAXIMIZE;
+    }
+    switch (message) {
+        case WM_SIZE:
+        case WM_MOVE:
+        case WM_ACTIVATE:
+        case WM_ACTIVATEAPP:
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+        case WM_DISPLAYCHANGE:
+        case WM_WINDOWPOSCHANGING:
+        case WM_WINDOWPOSCHANGED:
+        case WM_NCACTIVATE:
+        case WM_ENTERSIZEMOVE:
+        case WM_EXITSIZEMOVE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static void L3GLeaveForeground(void)
 {
     // The match keeps simulating. This only stops the fullscreen window from holding the
     // mouse and from treating itself as the active app, which is what blocks Alt-Tab.
+    // Pool resources are released from CheckLostDevice, not from this message.
     RESETFLAG(g_Flags, GFLAG_APPACTIVE);
     ClipCursor(NULL);
     if (g_FormCur)
@@ -826,6 +853,8 @@ LRESULT CALLBACK L3G_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
         }
     }
 
+    if (L3GBypassHostFullscreenMessage(message, wParam))
+        return DefWindowProc(hWnd, message, wParam, lParam);
     return L3GCallPrevWndProc(hWnd, message, wParam, lParam);
 }
 

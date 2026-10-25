@@ -40,6 +40,9 @@ CBaseTexture::~CBaseTexture()
 
 LPDIRECT3DTEXTURE9 CBaseTexture::LoadTextureFromFile(bool to16, D3DPOOL pool) {
     DTRACE();
+    if (!D3DDeviceOperational())
+        return nullptr;
+
     LPDIRECT3DTEXTURE9 ret = NULL;
     ParseFlags(m_Name);
     if (to16) {
@@ -340,6 +343,9 @@ void CTexture::Load(void) {
     if (FLAG(m_Flags, TF_LOST))
         return;  // нехуй тут делать. текстура потеряна блять!
 
+    if (!D3DDeviceOperational())
+        return;
+
     ASSERT(!IsLoaded());
     // Unload();
 
@@ -364,6 +370,8 @@ void CTexture::MakeSolidTexture(int sx, int sy, DWORD color) {
 #ifdef _DEBUG
     ASSERT(!FLAG(g_Flags, GFLAG_RENDERINPROGRESS));
 #endif
+    if (!D3DDeviceOperational())
+        return;
 
     Unload();
     D3DLOCKED_RECT lr;
@@ -442,6 +450,8 @@ void CTextureManaged::Init(bool to16) {
     if (m_Tex)
         return;
     m_Tex = LoadTextureFromFile(to16, D3DPOOL_MANAGED);
+    if (m_Tex == nullptr)
+        return;
 
     D3DSURFACE_DESC desc;
     m_Tex->GetLevelDesc(0, &desc);
@@ -452,6 +462,8 @@ void CTextureManaged::Init(bool to16) {
     if (m_TexFrom)
         return;
     m_TexFrom = LoadTextureFromFile(to16, D3DPOOL_SYSTEMMEM);
+    if (m_TexFrom == nullptr)
+        return;
 
     D3DSURFACE_DESC desc;
     m_TexFrom->GetLevelDesc(0, &desc);
@@ -702,6 +714,9 @@ void CTextureManaged::LoadFromBitmap(int level, const CBitmap &bm, bool convert_
 }
 
 void CTextureManaged::LoadFromBitmap(const CBitmap &bm, D3DFORMAT fmt, int levels) {
+    if (!D3DDeviceOperational())
+        return;
+
 #ifdef USE_DX_MANAGED_TEXTURES
     if (m_Tex)
         m_Tex->Release();
@@ -1004,12 +1019,26 @@ DWORD CTextureManaged::GetPixelColor(int x, int y) {
     if (x < 0 || y < 0 || x >= m_Size.x || y >= m_Size.y)
         return 0;
 
+    // UI hit-testing reads this every logic frame. A stolen adapter makes
+    // LockRect return INVALIDCALL; that must not take the server down.
 #ifdef USE_DX_MANAGED_TEXTURES
-    ASSERT_DX(m_Tex->LockRect(0, &lr, &r, D3DLOCK_READONLY));
+    IDirect3DTexture9 *tex = m_Tex;
 #else
-    ASSERT_DX(m_TexFrom->LockRect(0, &lr, &r, D3DLOCK_READONLY));
+    IDirect3DTexture9 *tex = m_TexFrom;
 #endif
+    if (tex == nullptr || !D3DDeviceOperational())
+        return 0;
+    HRESULT hr = tex->LockRect(0, &lr, &r, D3DLOCK_READONLY);
+    if (hr != D3D_OK) {
+        if (!D3DFailureFromLostDevice(hr))
+            throw CExceptionD3D(__FILE__, __LINE__, hr);
+        return 0;
+    }
     BYTE *src = (BYTE *)lr.pBits;
+    if (src == nullptr) {
+        UnlockRect();
+        return 0;
+    }
 
     // DWORD c = *(DWORD *)(src + (lr.Pitch * y) + x * 4);
     DWORD c = *(DWORD *)(src);

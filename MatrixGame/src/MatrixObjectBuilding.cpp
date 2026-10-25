@@ -275,7 +275,7 @@ void CMatrixBuilding::RNeed(dword need) {
                     }
                 }*/
     }
-    if (need & m_RChange & (MR_MiniMap)) {
+    if ((need & m_RChange & (MR_MiniMap)) && D3DDeviceOperational()) {
         m_RChange &= ~MR_MiniMap;
         g_MatrixMap->m_Minimap.RenderObjectToBackground(this);
     }

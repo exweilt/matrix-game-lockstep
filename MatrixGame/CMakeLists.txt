@@ -60,6 +60,7 @@ target_link_libraries(
         "$<$<C_COMPILER_ID:MSVC>:legacy_stdio_definitions>"
         enet
         tomlplusplus::tomlplusplus
+        dbghelp
         # xxhash
 )
 

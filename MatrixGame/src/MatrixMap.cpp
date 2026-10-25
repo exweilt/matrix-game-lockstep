@@ -3256,6 +3256,8 @@ static void CreateConfirmation(const wchar *hint, DialogButtonHandler handler) {
     g_IFaceList->DisableMainMenuButton(HINT_EXIT);
 
     CMatrixHint *h = CMatrixHint::Build(std::wstring(hint), hint);
+    if (h == nullptr)
+        return;
     int ww = (g_ScreenX - h->m_Width) / 2;
     int hh = (g_ScreenY - h->m_Height) / 2 - Float2Int(float(g_ScreenY) * 0.09f);
     h->Show(ww, hh);
@@ -3349,6 +3351,8 @@ void CMatrixMap::EnterDialogMode(const wchar *hint_i) {
             }
 
             CMatrixHint *h = CMatrixHint::Build(templ, g_MatrixData->BlockGet(PAR_REPLACE), hint);
+            if (h == nullptr)
+                return;
 
             if (0 == wcscmp(hint, TEMPLATE_DIALOG_MENU)) {
                 h->m_PosX = (g_ScreenX - h->m_Width) / 2;

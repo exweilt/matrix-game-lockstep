@@ -416,7 +416,10 @@ CMatrixHint *CMatrixHint::Build(int border, const std::wstring &soundin, const s
     tex->MipmapOff();
 
     D3DLOCKED_RECT lr;
-    tex->CreateLock(D3DFMT_A8R8G8B8, bmpf.SizeX(), bmpf.SizeY(), 1, lr);
+    if (D3D_OK != tex->CreateLock(D3DFMT_A8R8G8B8, bmpf.SizeX(), bmpf.SizeY(), 1, lr)) {
+        CCache::Destroy(tex);
+        return nullptr;
+    }
     CBitmap bmdes;
     bmdes.CreateRGBA(bmpf.SizeX(), bmpf.SizeY(), lr.Pitch, lr.pBits);
     bmdes.Copy(CPoint(0, 0), bmpf.Size(), bmpf, CPoint(0, 0));

@@ -719,7 +719,7 @@ void CMatrixRobot::RNeed(dword need) {
             }
         }
     }
-    if (need & m_RChange & MR_ShadowProjTex) {
+    if ((need & m_RChange & MR_ShadowProjTex) && D3DDeviceOperational()) {
         m_RChange &= ~MR_ShadowProjTex;
 
         if (m_ShadowProj != NULL) {

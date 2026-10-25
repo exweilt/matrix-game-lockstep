@@ -105,20 +105,11 @@ template <class V>
 inline void SBigVBOne<V>::PrepareVB(void) {
     if (IS_VB(vb))
         return;
-    // CREATE_VBM(vbsize, V::FVF, vb);
-
-    for (;;) {
-        CREATE_VB(vbsize, V::FVF, vb);
-        if (!(IS_VB(vb))) {
-#ifdef _DEBUG
-            SETFLAG(g_Flags, GFLAG_EXTRAFREERES);  // extra free resources
-            RESETFLAG(g_Flags, GFLAG_RENDERINPROGRESS);
-#endif
-            continue;
-        }
-
-        break;
-    }
+    // A lost device makes CreateVertexBuffer fail. Retrying here spins forever
+    // and the caller keeps the part dirty so the next prepare tries again.
+    if (!D3DDeviceOperational())
+        return;
+    CREATE_VB(vbsize, V::FVF, vb);
 }
 
 template <class V>

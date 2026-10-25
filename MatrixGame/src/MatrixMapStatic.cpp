@@ -338,6 +338,9 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
     for (int i = 0; i < n; rt[i++].tex = NULL)
         ;
 
+    if (!D3DDeviceOperational())
+        return false;
+
     // A build order for the local side renders this icon immediately. The robot is not
     // queued yet, and a client playing this side can assemble one whose graph or transform
     // is not ready. Bail out before any device work so the caller can still queue it.
@@ -353,26 +356,43 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
     if (chassis_tm == nullptr)
         return false;
 
-    IDirect3DSurface9 *newTarget;
+    IDirect3DSurface9 *newTarget = nullptr;
     if (D3D_OK !=
         g_D3DD->CreateRenderTarget(RENDSZ, RENDSZ, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &newTarget, 0)) {
         return false;
     }
 
-    IDirect3DSurface9 *newZ, *oldZ;
-    bool CustomZ = (RENDSZ > g_ScreenY) || (RENDSZ > g_ScreenX);
-    if (CustomZ) {
-        D3DSURFACE_DESC d;
-        g_D3DD->GetDepthStencilSurface(&oldZ);
-        oldZ->GetDesc(&d);
-        if (D3D_OK != g_D3DD->CreateDepthStencilSurface(RENDSZ, RENDSZ, d.Format, d.MultiSampleType,
-                                                        d.MultiSampleQuality, TRUE, &newZ, NULL)) {
-            newTarget->Release();
-            return NULL;
+    // The icon target is 256x256 and not multisampled. Leaving the screen depth buffer bound makes
+    // Clear(Z|STENCIL) return D3DERR_INVALIDCALL whenever the screen is larger than the icon.
+    IDirect3DSurface9 *newZ = nullptr;
+    IDirect3DSurface9 *oldZ = nullptr;
+    IDirect3DSurface9 *oldTarget = nullptr;
+    g_D3DD->GetDepthStencilSurface(&oldZ);
+
+    bool z_has_stencil = false;
+    const D3DFORMAT z_formats[3] = {
+            FLAG(g_Flags, GFLAG_STENCILAVAILABLE) ? D3DFMT_D24S8 : D3DFMT_D24X8,
+            D3DFMT_D24X8,
+            D3DFMT_D16};
+    bool got_z = false;
+    for (D3DFORMAT fmt : z_formats) {
+        if (D3D_OK ==
+            g_D3DD->CreateDepthStencilSurface(RENDSZ, RENDSZ, fmt, D3DMULTISAMPLE_NONE, 0, TRUE, &newZ, nullptr)) {
+            z_has_stencil = fmt == D3DFMT_D24S8;
+            got_z = true;
+            break;
         }
-        g_D3DD->SetDepthStencilSurface(newZ);
-        newZ->Release();
     }
+    if (!got_z) {
+        newTarget->Release();
+        if (oldZ)
+            oldZ->Release();
+        return false;
+    }
+    g_D3DD->SetDepthStencilSurface(newZ);
+    newZ->Release();
+    const bool CustomZ = true;
+    bool ok = true;
 
     D3DLIGHT9 light;
     ZeroMemory(&light, sizeof(D3DLIGHT9));
@@ -414,16 +434,33 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
 
     ASSERT_DX(g_D3DD->SetViewport(&ViewPort));
 
-    // store old render target
-    IDirect3DSurface9 *oldTarget;
-    ASSERT_DX(g_D3DD->GetRenderTarget(0, &oldTarget));
-    ASSERT_DX(g_D3DD->SetRenderTarget(0, newTarget));
+    const auto abandon_icon = [&]() {
+        if (oldTarget) {
+            g_D3DD->SetRenderTarget(0, oldTarget);
+            oldTarget->Release();
+            oldTarget = nullptr;
+        }
+        if (newTarget) {
+            newTarget->Release();
+            newTarget = nullptr;
+        }
+        if (oldZ) {
+            g_D3DD->SetDepthStencilSurface(oldZ);
+            oldZ->Release();
+            oldZ = nullptr;
+        }
+        return false;
+    };
 
-    if (FLAG(g_Flags, GFLAG_STENCILAVAILABLE)) {
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0));
-    }
-    else {
-        ASSERT_DX(g_D3DD->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0));
+    if (g_D3DD->GetRenderTarget(0, &oldTarget) != D3D_OK || g_D3DD->SetRenderTarget(0, newTarget) != D3D_OK)
+        return abandon_icon();
+
+    {
+        DWORD clear_flags = D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER;
+        if (z_has_stencil)
+            clear_flags |= D3DCLEAR_STENCIL;
+        if (g_D3DD->Clear(0, NULL, clear_flags, 0, 1.0f, 0) != D3D_OK)
+            return abandon_icon();
     }
 
     float h = chassis_tm->_43;
@@ -542,9 +579,6 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
 
     ASSERT_DX(g_D3DD->EndScene());
 
-    ASSERT_DX(g_D3DD->SetRenderTarget(0, oldTarget));
-
-    bool ok = true;
     {
         int curt = 0;
 
@@ -593,9 +627,13 @@ bool CMatrixMapStatic::RenderToTexture(SRenderTexture *rt, int n, /*float *fff,*
     }
 
 end:;
-    newTarget->Release();
-    oldTarget->Release();
-    if (CustomZ) {
+    if (oldTarget) {
+        g_D3DD->SetRenderTarget(0, oldTarget);
+        oldTarget->Release();
+    }
+    if (newTarget)
+        newTarget->Release();
+    if (CustomZ && oldZ) {
         g_D3DD->SetDepthStencilSurface(oldZ);
         oldZ->Release();
     }

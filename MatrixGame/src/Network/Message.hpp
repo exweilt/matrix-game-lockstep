@@ -492,6 +492,7 @@ struct Message
                 return MessageGameSettingsParams::deserialize_from_bitstream(reader);
             default:
                 assert(false);
+                return Message();
         }
     }
 
