@@ -1536,6 +1536,7 @@ void CMatrixSideUnit::SelectedGroupUnselect() {
     if (!GetCurGroup())
         return;
 
+    GetCurGroup()->RemoveStaleObjects();
     CMatrixGroupObject *objs = GetCurGroup()->m_FirstObject;
     while (objs) {
         if (objs->GetObject()->GetObjectType() == OBJECT_TYPE_ROBOTAI) {
@@ -1549,11 +1550,21 @@ void CMatrixSideUnit::SelectedGroupUnselect() {
     SetCurGroup(NULL);
 }
 
+void CMatrixSideUnit::RemoveObjectFromAllGroups(CMatrixMapStatic *o) {
+    if (o == nullptr)
+        return;
+    if (m_CurSelGroup)
+        m_CurSelGroup->RemoveObject(o);
+    for (CMatrixGroup *grps = m_FirstGroup; grps != nullptr; grps = grps->m_NextGroup)
+        grps->RemoveObject(o);
+}
+
 void CMatrixSideUnit::GroupsUnselectSoft() {
     DTRACE();
     CMatrixGroup *grps = m_FirstGroup;
 
     while (grps) {
+        grps->RemoveStaleObjects();
         CMatrixGroupObject *objs = grps->m_FirstObject;
         while (objs) {
             if (objs->GetObject()->GetObjectType() == OBJECT_TYPE_ROBOTAI) {

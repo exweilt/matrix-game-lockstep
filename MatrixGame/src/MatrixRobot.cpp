@@ -5220,14 +5220,12 @@ void CMatrixRobotAI::ReleaseMe(void) {
                 }
                 go = go->m_NextObject;
             }
-
-            if (ps->GetCurGroup()->FindObject(this)) {
-                ps->GetCurGroup()->RemoveObject(this);
-                if (!ps->GetCurGroup()->GetObjectsCnt()) {
-                    ps->PLDropAllActions();
-                }
-            }
         }
+
+        const bool was_in_cur = ps->GetCurGroup() && ps->GetCurGroup()->FindObject(this);
+        ps->RemoveObjectFromAllGroups(this);
+        if (was_in_cur && ps->GetCurGroup() && !ps->GetCurGroup()->GetObjectsCnt())
+            ps->PLDropAllActions();
 
         if (ps->GetCurSelNum() == pos) {
             pos = 0;

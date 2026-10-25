@@ -71,6 +71,43 @@ void CMatrixGroup::AddObject(CMatrixMapStatic *object, int team) {
     CalcGroupSpeed();
 }
 
+static bool MapObjectStillLive(CMatrixMapStatic *obj) {
+    if (obj == nullptr)
+        return false;
+    for (CMatrixMapStatic *ms = CMatrixMapStatic::GetFirstLogic(); ms != nullptr; ms = ms->GetNextLogic()) {
+        if (ms == obj)
+            return true;
+    }
+    return false;
+}
+
+void CMatrixGroup::RemoveStaleObjects() {
+    CMatrixGroupObject *go = m_FirstObject;
+    while (go) {
+        CMatrixGroupObject *next = go->m_NextObject;
+        if (!MapObjectStillLive(go->GetObject())) {
+            LIST_DEL(go, m_FirstObject, m_LastObject, m_PrevObject, m_NextObject);
+            HDelete(CMatrixGroupObject, go, g_MatrixHeap);
+        }
+        go = next;
+    }
+
+    m_ObjectsCnt = 0;
+    m_RobotsCnt = 0;
+    m_FlyersCnt = 0;
+    m_BuildingsCnt = 0;
+    for (go = m_FirstObject; go != nullptr; go = go->m_NextObject) {
+        CMatrixMapStatic *obj = go->GetObject();
+        if (obj->GetObjectType() == OBJECT_TYPE_ROBOTAI)
+            m_RobotsCnt++;
+        else if (obj->GetObjectType() == OBJECT_TYPE_FLYER)
+            m_FlyersCnt++;
+        else if (obj->GetObjectType() == OBJECT_TYPE_BUILDING)
+            m_BuildingsCnt++;
+        m_ObjectsCnt++;
+    }
+}
+
 void CMatrixGroup::RemoveObject(CMatrixMapStatic *object) {
     CMatrixGroupObject *g_object = m_FirstObject;
     while (g_object) {

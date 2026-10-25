@@ -90,6 +90,8 @@ public:
 public:
     void AddObject(CMatrixMapStatic *object, int team);
     void RemoveObject(CMatrixMapStatic *object);
+    // Drops group entries whose map object has already been destroyed.
+    void RemoveStaleObjects();
     bool RemoveObject(int num);
     void RemoveAll();
     void RemoveBuildings();

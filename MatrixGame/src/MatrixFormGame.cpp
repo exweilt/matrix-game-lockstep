@@ -557,6 +557,9 @@ void CFormMatrixGame::MouseMove(int x, int y) {
 
 void do_selection_logic(CMatrixSideUnit *ps)
 {
+    if (ps == nullptr || ps->GetCurSelGroup() == nullptr)
+        return;
+
     if (CMultiSelection::m_GameSelection) {
             SCallback cbs;
             cbs.mp = CPoint(-1, -1);
@@ -703,12 +706,9 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
 
     if (status == B_UP && key == VK_LBUTTON) {
         DCP();
-        // CMatrixSideUnit *ps = g_MatrixMap->GetControllableSide();
-        // CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-        do_selection_logic(g_MatrixMap->GetSideById(1));
-        do_selection_logic(g_MatrixMap->GetSideById(2));
-        do_selection_logic(g_MatrixMap->GetSideById(3));
-        do_selection_logic(g_MatrixMap->GetSideById(4));
+        // One local click. Applying it to every side copies the selection into
+        // their groups, and those groups still hold robots the other client destroyed.
+        do_selection_logic(g_MatrixMap->GetControllableSide());
 
         if (CMultiSelection::m_GameSelection != NULL)
         {
@@ -737,12 +737,7 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         DCP();
         if (status == B_DOWN && key == VK_RBUTTON) {
             DCP();
-            // g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(1)->OnRButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(2)->OnRButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(3)->OnRButtonDown(CPoint(x, y));
-            g_MatrixMap->GetSideById(4)->OnRButtonDown(CPoint(x, y));
-            // g_MatrixMap->GetPlayerSide()->OnRButtonDown(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnRButtonDown(CPoint(x, y));
         }
         else if (status == B_DOWN && key == VK_LBUTTON) {
             DCP();
@@ -770,19 +765,11 @@ void CFormMatrixGame::MouseKey(ButtonStatus status, int key, int x, int y) {
         }
         else if (status == B_UP && key == VK_RBUTTON) {
             DCP();
-            // g_MatrixMap->GetControllableSide()->OnRButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(1)->OnRButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(2)->OnRButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(3)->OnRButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(4)->OnRButtonUp(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnRButtonUp(CPoint(x, y));
         }
         else if (status == B_UP && key == VK_LBUTTON) {
             DCP();
-            // g_MatrixMap->GetControllableSide()->OnLButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(1)->OnLButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(2)->OnLButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(3)->OnLButtonUp(CPoint(x, y));
-            g_MatrixMap->GetSideById(4)->OnLButtonUp(CPoint(x, y));
+            g_MatrixMap->GetControllableSide()->OnLButtonUp(CPoint(x, y));
         }
         else if (status == B_DOUBLE && key == VK_LBUTTON) {
             DCP();

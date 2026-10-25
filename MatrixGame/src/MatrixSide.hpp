@@ -522,6 +522,7 @@ public:
     void AddToCurrentGroup();
     void SelectedGroupUnselect();
     void GroupsUnselectSoft();
+    void RemoveObjectFromAllGroups(CMatrixMapStatic *o);
     void SelectedGroupBreakOrders();
     void SelectedGroupMoveTo(const D3DXVECTOR2 &pos);
     void SelectedGroupAttack(CMatrixMapStatic *victim);
