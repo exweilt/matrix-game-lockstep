@@ -1343,15 +1343,13 @@ bool CMatrixCannon::Damage(EWeapon weap, const D3DXVECTOR3 &pos, const D3DXVECTO
         }
     }
 
-    if (m_Side == g_Network.controllable_side_id && !friendly_fire) {
+    if (m_Side != 0 && !friendly_fire) {
         if (m_UnderAttackTime == 0) {
-            int ss = IRND(3);
-            if (ss == 0)
-                CSound::Play(S_SIDE_UNDER_ATTACK_1);
-            else if (ss == 1)
-                CSound::Play(S_SIDE_UNDER_ATTACK_2);
-            else if (ss == 2)
-                CSound::Play(S_SIDE_UNDER_ATTACK_3);
+            const int ss = IRND(3);
+            const ESound attacked = ss == 0   ? S_SIDE_UNDER_ATTACK_1
+                                    : ss == 1 ? S_SIDE_UNDER_ATTACK_2
+                                              : S_SIDE_UNDER_ATTACK_3;
+            g_Network.emit_side_sound(static_cast<u8>(m_Side), attacked);
         }
         m_UnderAttackTime = UNDER_ATTACK_IDLE_TIME;
     }

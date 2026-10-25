@@ -353,15 +353,13 @@ bool CMatrixBuilding::Damage(
         }
     }
 
-    if (m_Side == g_Network.controllable_side_id && !friendly_fire) {
+    if (m_Side != 0 && !friendly_fire) {
         if (m_UnderAttackTime == 0) {
-            int ss = IRND(3);
-            if (ss == 0)
-                CSound::Play(S_SIDE_UNDER_ATTACK_1);
-            else if (ss == 1)
-                CSound::Play(S_SIDE_UNDER_ATTACK_2);
-            else if (ss == 2)
-                CSound::Play(S_SIDE_UNDER_ATTACK_3);
+            const int ss = IRND(3);
+            const ESound attacked = ss == 0   ? S_SIDE_UNDER_ATTACK_1
+                                    : ss == 1 ? S_SIDE_UNDER_ATTACK_2
+                                              : S_SIDE_UNDER_ATTACK_3;
+            g_Network.emit_side_sound(static_cast<u8>(m_Side), attacked);
         }
         m_UnderAttackTime = UNDER_ATTACK_IDLE_TIME;
     }
@@ -817,7 +815,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
                 m_BaseFloor = 1.0f;
                 m_State = BASE_OPENED;
 
-                CSound::AddSound(S_PLATFORM_UP_STOP, GetGeoCenter());
+                g_Network.emit_world_sound(S_PLATFORM_UP_STOP, GetGeoCenter());
             }
         }
         if (m_State == BASE_CLOSING) {
@@ -825,7 +823,7 @@ bool CMatrixBuilding::LogicTakt(int cms) {
             if (m_BaseFloor < 0.0f) {
                 m_BaseFloor = 0.0f;
                 m_State = BASE_CLOSED;
-                CSound::AddSound(S_DOORS_CLOSE_STOP, GetGeoCenter());
+                g_Network.emit_world_sound(S_DOORS_CLOSE_STOP, GetGeoCenter());
             }
         }
 
@@ -1202,8 +1200,7 @@ ECaptureStatus CMatrixBuilding::Capture(CMatrixRobotAI *by) {
                 m_InCaptureNextTimePaint = g_MatrixMap->GetTime() + g_Config.m_CaptureTimePaint;
 
                 if (m_TrueColor.m_ColoredCnt == 0) {
-                    if (m_Side == g_Network.controllable_side_id)
-                        CSound::Play(S_PLAYER_FACTORY_CAPTURED);
+                    g_Network.emit_side_sound(static_cast<u8>(m_Side), S_PLAYER_FACTORY_CAPTURED);
 
                     m_TrueColor.m_Color = 0;
                     m_Side = 0;
@@ -1800,20 +1797,18 @@ void CBuildStack::TickTimer(int ms) {
             m_PB.KillClone(PBC_CLONE1);
         }
         if (m_Timer >= g_Config.m_Timings[UNIT_TURRET]) {
-            if (m_Top->GetSide() == g_Network.controllable_side_id) {
-                if (m_Top->AsCannon()->m_Num == 1) {
-                    CSound::Play(S_TURRET_BUILD_0, SL_ALL);
-                }
-                else if (m_Top->AsCannon()->m_Num == 2) {
-                    CSound::Play(S_TURRET_BUILD_1, SL_ALL);
-                }
-                else if (m_Top->AsCannon()->m_Num == 3) {
-                    CSound::Play(S_TURRET_BUILD_2, SL_ALL);
-                }
-                else if (m_Top->AsCannon()->m_Num == 4) {
-                    CSound::Play(S_TURRET_BUILD_3, SL_ALL);
-                }
-            }
+            const int turret_num = m_Top->AsCannon()->m_Num;
+            ESound built = S_NONE;
+            if (turret_num == 1)
+                built = S_TURRET_BUILD_0;
+            else if (turret_num == 2)
+                built = S_TURRET_BUILD_1;
+            else if (turret_num == 3)
+                built = S_TURRET_BUILD_2;
+            else if (turret_num == 4)
+                built = S_TURRET_BUILD_3;
+            if (built != S_NONE)
+                g_Network.emit_side_sound(static_cast<u8>(m_Top->GetSide()), built);
 
             m_Timer = 0;
             m_PB.KillClone(PBC_CLONE1);

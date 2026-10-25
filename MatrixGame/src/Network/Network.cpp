@@ -370,6 +370,17 @@ void Network::emit_side_sound(u8 side, int sound)
     }
 }
 
+void Network::emit_world_sound(int sound, const D3DXVECTOR3 &pos)
+{
+    if (!is_client())
+        CSound::AddSound(static_cast<ESound>(sound), pos);
+
+    if (!is_authority())
+        return;
+
+    add_event_to_current_tick(Event::SoundAt(static_cast<u16>(sound), pos, physics_frame, 1));
+}
+
 void Network::approve_final_input(u32 target_frame)
 {
     // // get_frame_record(target_frame)->set_side_inputs(controllable_side_id, current_input);
@@ -1046,7 +1057,7 @@ void Network::play_sound_event(const Event &event)
     const ESound snd = static_cast<ESound>(sound.sound);
     const ESoundLayer layer = static_cast<ESoundLayer>(sound.layer);
     if (sound.positional)
-        CSound::Play(snd, sound.pos, layer);
+        CSound::AddSound(snd, sound.pos, layer);
     else
         CSound::Play(snd, layer);
 }

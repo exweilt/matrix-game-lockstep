@@ -688,8 +688,7 @@ void CMatrixSideUnit::OnLButtonDown(const CPoint &) {
 
         m_CurrentAction = NOTHING_SPECIAL;
         m_CannonForBuild.Delete();
-        if (execute_locally)
-            CSound::Play(S_TURRET_BUILD_START, SL_ALL);
+        CSound::Play(S_TURRET_BUILD_START, SL_ALL);
         g_IFaceList->ResetBuildCaMode();
         g_MatrixMap->m_Cursor.SetVisible(true);
         return;

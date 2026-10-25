@@ -105,6 +105,8 @@ public:
     void broadcast_events();
     /** Play for the local side, and on the host send the stinger only to peers registered for @p side. */
     void emit_side_sound(u8 side, int sound);
+    /** Positional one-shot. The host plays it immediately; clients receive it on the event clock. */
+    void emit_world_sound(int sound, const D3DXVECTOR3 &pos);
     void register_side_peer(u8 side, ENetPeer *peer);
     void unregister_peer(ENetPeer *peer);
 

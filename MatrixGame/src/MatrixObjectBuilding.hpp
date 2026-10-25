@@ -275,8 +275,8 @@ public:
         if (m_State == BUILDING_DIP || m_State == BUILDING_DIP_EXPLODED)
             return;
         m_State = BASE_OPENING;
-        CSound::AddSound(S_DOORS_OPEN, GetGeoCenter());
-        CSound::AddSound(S_PLATFORM_UP, GetGeoCenter());
+        g_Network.emit_world_sound(S_DOORS_OPEN, GetGeoCenter());
+        g_Network.emit_world_sound(S_PLATFORM_UP, GetGeoCenter());
     }
     void Close(void) {
         if (m_State == BUILDING_DIP || m_State == BUILDING_DIP_EXPLODED)
@@ -284,8 +284,8 @@ public:
         if (FLAG(m_ObjectState, BUILDING_SPAWNBOT))
             return;  // cannot close while spawn
         m_State = BASE_CLOSING;
-        CSound::AddSound(S_DOORS_CLOSE, GetGeoCenter());
-        CSound::AddSound(S_PLATFORM_DOWN, GetGeoCenter());
+        g_Network.emit_world_sound(S_DOORS_CLOSE, GetGeoCenter());
+        g_Network.emit_world_sound(S_PLATFORM_DOWN, GetGeoCenter());
     }
     EBaseState State(void) const { return m_State; }
 

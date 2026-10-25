@@ -1315,9 +1315,9 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                             }
                             else if (factory->m_State == BASE_CLOSED) {
                                 g_Network.emit_side_sound(static_cast<u8>(m_Side), S_ENEMY_BASE_CAPTURED);
-                                if (m_Side != g_Network.controllable_side_id &&
-                                    factory->m_Side == g_Network.controllable_side_id)
-                                    CSound::Play(S_PLAYER_BASE_CAPTURED);
+                                if (factory->m_Side != 0 && factory->m_Side != m_Side)
+                                    g_Network.emit_side_sound(static_cast<u8>(factory->m_Side),
+                                                              S_PLAYER_BASE_CAPTURED);
 
                                 factory->m_Side = m_Side;
                                 factory->m_BS.ClearStack();
