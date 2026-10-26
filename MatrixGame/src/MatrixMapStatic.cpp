@@ -71,8 +71,8 @@ CMatrixMapStatic::~CMatrixMapStatic() {
     if (g_MatrixMap->m_TraceStopObj == this) {
         g_MatrixMap->m_TraceStopObj = NULL;
     }
-    if (g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this) {
-        g_MatrixMap->GetPlayerSide()->SetArcadedObject(NULL);
+    if (g_MatrixMap->GetArcadeObject() == this) {
+        g_MatrixMap->GetArcadeSide()->SetArcadedObject(NULL);
     }
 
     g_MatrixMap->RemoveFromAD(this);
@@ -301,7 +301,7 @@ void CMatrixMapStatic::ProceedLogic(int takts) {
     ms = m_FirstLogicTemp;
     while (ms) {
         g_MatrixMap->m_NextLogicObject = ms->m_NextLogicTemp;
-        if (ms != g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+        if (ms != g_MatrixMap->GetArcadeObject()) {
             //__int64 t1,t2;
             // EObjectType ot=ms->GetObjectType();
             // QueryPerformanceCounter((LARGE_INTEGER *)(&t1));

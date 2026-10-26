@@ -390,7 +390,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     DCP();
 
 #ifdef _SUB_BUG
-    if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+    if (this == g_MatrixMap->GetArcadeObject()) {
         g_MatrixMap->m_DI.T(L"ms", std::wstring(ms));
     }
 #endif
@@ -799,12 +799,11 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     //    GatherInfo(ms);
     //    m_Environment.LogicTakt();
 
-    // if(this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject())
+    // if(this == (CMatrixRobotAI*)g_MatrixMap->GetArcadeObject())
     //    CDText::T("Velocity", m_Speed);
     DCP();
 
-    if (m_Side == PLAYER_SIDE && this == g_MatrixMap->GetPlayerSide()->GetArcadedObject() &&
-        m_CurrState == ROBOT_SUCCESSFULLY_BUILD) {
+    if (this == g_MatrixMap->GetArcadeObject() && m_CurrState == ROBOT_SUCCESSFULLY_BUILD) {
         if (g_IFaceList->m_InFocus != INTERFACE) {
             RotateHull(g_MatrixMap->m_TraceStopPos);
         }
@@ -813,7 +812,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
     // TODO : fire while capture here!
 
-    if (g_Network.is_authority() && this != g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+    if (g_Network.is_authority() && this != g_MatrixMap->GetArcadeObject()) {
         if (m_Environment.m_Target && m_Environment.m_Target->IsRobot() &&
             m_Environment.m_Target->AsRobot()->m_CurrState == ROBOT_SUCCESSFULLY_BUILD) {
             DCP();
@@ -907,7 +906,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
             }
         }
         else {
-            if (this != (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+            if (this != (CMatrixRobotAI *)g_MatrixMap->GetArcadeObject()) {
                 StopFire();
                 RotateHull(D3DXVECTOR3(m_PosX + m_Forward.x, m_PosY + m_Forward.y, 0));
             }
@@ -918,7 +917,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
     // ORDERS PROCESSING/////////////////////////////////////////////////////
 
-    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject() /* && !Input::is_down(VK_RBUTTON)*/)
+    if (this == (CMatrixRobotAI *)g_MatrixMap->GetArcadeObject() /* && !Input::is_down(VK_RBUTTON)*/)
     {
         if (isKeyPressed(KA_UNIT_LEFT) || isKeyPressed(KA_UNIT_LEFT_ALT))
         {
@@ -968,7 +967,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     // if (FLAG(g_MatrixMap->m_Flags, MMFLAG_AUTOMATIC_MODE) || m_Side != PLAYER_SIDE)
     //     TaktCaptureCandidate(ms);
 
-    // if(this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()){
+    // if(this == g_MatrixMap->GetArcadeObject()){
     //    ASSERT(1);
     //}
 
@@ -988,7 +987,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                     DCP();
                     if (g_Network.is_authority())
                     {
-                        if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject())
+                        if (this == (CMatrixRobotAI *)g_MatrixMap->GetArcadeObject())
                         {
                             if (isKeyPressed(KA_UNIT_FORWARD) || isKeyPressed(KA_UNIT_FORWARD_ALT))
                             {
@@ -1106,7 +1105,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
                     DCP();
                     if (g_Network.is_authority())
                     {
-                        if (0 /*this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject()*/) {
+                        if (0 /*this == (CMatrixRobotAI*)g_MatrixMap->GetArcadeObject()*/) {
                             LowLevelDecelerate(ms, true, true);
                             if (m_Speed <= ZERO_VELOCITY) {
                                 LowLevelStop();
@@ -1132,7 +1131,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
                     if (g_Network.is_authority())
                     {
-                        if (g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this) {
+                        if (g_MatrixMap->GetArcadeObject() == this) {
                             m_WeaponDir.x = g_MatrixMap->m_TraceStopPos.x;
                             m_WeaponDir.y = g_MatrixMap->m_TraceStopPos.y;
                             // if(IS_TRACE_STOP_OBJECT(g_MatrixMap->m_TraceStopObj))
@@ -1352,7 +1351,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     DCP();
 
     //{
-    //    if(this == (CMatrixRobotAI*)g_MatrixMap->GetPlayerSide()->GetArcadedObject() && m_Speed == 0){
+    //    if(this == (CMatrixRobotAI*)g_MatrixMap->GetArcadeObject() && m_Speed == 0){
     //        CMatrixMapStatic* statics = CMatrixMapStatic::GetFirstLogic();
     //
     //        while(statics){
@@ -1377,7 +1376,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
     if (1 || g_Network.is_authority()){
         for (int nC = 0; nC < m_WeaponsCnt; ++nC) {
             if (m_Weapons[nC].IsEffectPresent() &&
-                (m_Weapons[nC].m_On || g_MatrixMap->GetPlayerSide()->GetArcadedObject() == this)) {
+                (m_Weapons[nC].m_On || g_MatrixMap->GetArcadeObject() == this)) {
                 //            m_WeaponDir.x = g_MatrixMap->m_TraceStopPos.x;
                 //    		m_WeaponDir.y = g_MatrixMap->m_TraceStopPos.y;
                 // m_WeaponDir.z = g_MatrixMap->m_TraceStopPos.z;
@@ -1415,7 +1414,7 @@ bool CMatrixRobotAI::LogicTakt(int ms) {
 
                 // CHECKRIDE
                 // Fire distance checkride
-                if (this != g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+                if (this != g_MatrixMap->GetArcadeObject()) {
                     auto tmp = GetGeoCenter() - m_WeaponDir;
                     if (D3DXVec3LengthSq(&tmp) > fire_dist * fire_dist) {
                         m_Weapons[nC].FireEnd();
@@ -2277,7 +2276,7 @@ void CMatrixRobotAI::RotateHull(const D3DXVECTOR3 &dest) {
     D3DXVECTOR3 destDirN(0, 0, 0), destDir(0, 0, 0);
 
     destDir = dest - D3DXVECTOR3(m_PosX, m_PosY, 0);
-    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject() &&
+    if (this == (CMatrixRobotAI *)g_MatrixMap->GetArcadeObject() &&
         D3DXVec3LengthSq(&destDir) < MIN_ROT_DIST * MIN_ROT_DIST) {
         destDirN = m_HullForward;
     }
@@ -2296,7 +2295,7 @@ void CMatrixRobotAI::RotateHull(const D3DXVECTOR3 &dest) {
     D3DXVec3Normalize(&vec, &vec);
     float cos2 = m_HullForward.x * vec.x + m_HullForward.y * vec.y;
 
-    if (this == (CMatrixRobotAI *)g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+    if (this == (CMatrixRobotAI *)g_MatrixMap->GetArcadeObject()) {
         bool dchanged = false;
         if (fabs(angle3) >= GRAD2RAD(HULL_ROT_S_ANGL)) {
             float cosmos = destDirN.x * (-m_HullForward.y) + destDirN.y * (m_HullForward.x);
@@ -2648,7 +2647,7 @@ void CMatrixRobotAI::LowLevelMove(int ms, const D3DXVECTOR3 &dest, bool robot_co
     }
 
 #ifdef _SUB_BUG
-    if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+    if (this == g_MatrixMap->GetArcadeObject()) {
         g_MatrixMap->m_DI.T(L"pos_x", std::wstring(m_PosX));
         g_MatrixMap->m_DI.T(L"pos_y", std::wstring(m_PosY));
         g_MatrixMap->m_DI.T(L"geo_x", std::wstring(m_Core->m_GeoCenter.x));
@@ -2855,7 +2854,7 @@ D3DXVECTOR3 CMatrixRobotAI::SphereRobotToAABBObstacleCollision(D3DXVECTOR3 &corr
     }
 
     //#ifdef _SUB_BUG
-    // if(this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()){
+    // if(this == g_MatrixMap->GetArcadeObject()){
     //    g_MatrixMap->m_DI.T(L"col_cnt", std::wstring(col_cnt + m_Cols));
     //}
     //#endif
@@ -3233,7 +3232,7 @@ void CMatrixRobotAI::WallAvoid(const D3DXVECTOR3 &o, const D3DXVECTOR3 &dest) {
         float cos = dest_n.x * m_CollAvoid.x + dest_n.y * m_CollAvoid.y;
         float angle = (float)acos(cos);
 
-        if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject())
+        if (this == g_MatrixMap->GetArcadeObject())
         {
             if (isKeyPressed(KA_UNIT_LEFT) || isKeyPressed(KA_UNIT_RIGHT))
             {
@@ -4769,7 +4768,7 @@ bool CMatrixRobotAI::HaveBomb(void) const {
 }
 
 void CMatrixRobotAI::MoveTo(int mx, int my) {
-    // if(this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()){
+    // if(this == g_MatrixMap->GetArcadeObject()){
     //    ASSERT(1);
     //}
 
@@ -5279,13 +5278,13 @@ void CMatrixRobotAI::ReleaseMe(void) {
         m_ZonePath = NULL;
     }
 
-    if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+    if (this == g_MatrixMap->GetArcadeObject()) {
         g_MatrixMap->GetPlayerSide()->SetArcadedObject(NULL);
     }
 }
 
 void CMatrixRobotAI::GetLost(const D3DXVECTOR3 &v) {
-    if (this == g_MatrixMap->GetPlayerSide()->GetArcadedObject())
+    if (this == g_MatrixMap->GetArcadeObject())
         return;
 
     D3DXVECTOR3 f1, f2;

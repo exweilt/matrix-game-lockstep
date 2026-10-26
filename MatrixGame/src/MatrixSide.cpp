@@ -1439,7 +1439,7 @@ void CMatrixSideUnit::SetArcadedObject(CMatrixMapStatic *o) {
         m_ArcadedP_available = 0;
     }
 
-    if (o && o->GetSide() != PLAYER_SIDE) {
+    if (o && o->GetSide() != m_Id) {
         return;
     }
     if (IsRobotMode()) {

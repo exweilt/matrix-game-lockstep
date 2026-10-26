@@ -397,7 +397,7 @@ void CFormMatrixGame::Takt(int step) {
     if (!g_Network.isCompactMode)
     {
         CPoint mp = g_MatrixMap->m_Cursor.GetPos();
-        if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode()) {
+        if (!g_MatrixMap->IsLocalArcadeMode()) {
             if (mp.x >= 0 && mp.x < g_ScreenX && mp.y >= 0 && mp.y < g_ScreenY) {
                 if (mp.x < MOUSE_BORDER)
                     g_MatrixMap->m_Camera.MoveLeft();
@@ -414,7 +414,7 @@ void CFormMatrixGame::Takt(int step) {
     if (g_MatrixMap->m_Console.IsActive())
         return;
 
-    if (!g_MatrixMap->GetPlayerSide()->IsArcadeMode())
+    if (!g_MatrixMap->IsLocalArcadeMode())
     {
         if (isKeyPressed(KA_SCROLL_LEFT) || isKeyPressed(KA_SCROLL_LEFT_ALT))
         {
@@ -486,7 +486,7 @@ void selcallback(CMatrixMapStatic *ms, uintptr_t param) {
 
 void CFormMatrixGame::MouseMove(int x, int y) {
     DTRACE();
-    CMatrixSideUnit *p_side = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *p_side = g_MatrixMap->GetArcadeSide();
 
     if (g_MatrixMap->IsMouseCam()) {
         g_MatrixMap->m_Camera.RotateByMouse(x - g_MatrixMap->m_Cursor.GetPosX(), y - g_MatrixMap->m_Cursor.GetPosY());
@@ -997,7 +997,7 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
         if (FLAG(g_MatrixMap->m_Flags, MMFLAG_DIALOG_MODE))
             return;
 
-        if (g_MatrixMap->GetPlayerSide()->GetArcadedObject()) {
+        if (g_MatrixMap->GetArcadeObject()) {
             g_IFaceList->LiveRobot();
             return;
         }
@@ -1025,11 +1025,13 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 
     if (isKeyPressed(KA_UNIT_FORWARD) || isKeyPressed(KA_UNIT_FORWARD_ALT))
     {
-        g_MatrixMap->GetPlayerSide()->OnForward(true);
+        if (CMatrixSideUnit *arcade_side = g_MatrixMap->GetArcadeSide())
+            arcade_side->OnForward(true);
     }
     if (isKeyPressed(KA_UNIT_BACKWARD) || isKeyPressed(KA_UNIT_BACKWARD_ALT))
     {
-        g_MatrixMap->GetPlayerSide()->OnBackward(true);
+        if (CMatrixSideUnit *arcade_side = g_MatrixMap->GetArcadeSide())
+            arcade_side->OnBackward(true);
     }
 
     if (down)
@@ -1040,13 +1042,13 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
             return;
         }
 
-        CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+        CMatrixSideUnit *ps = g_MatrixMap->GetArcadeSide();
         if (vk == VK_PAUSE) {
             g_MatrixMap->Pause(!g_MatrixMap->IsPaused());
             return;
         }
 
-        if (ps->IsRobotMode()) {
+        if (ps && ps->IsRobotMode()) {
             CMatrixRobotAI *robot = ps->GetArcadedObject()->AsRobot();
 
             if (isKeyPressed(KA_UNIT_BOOM))

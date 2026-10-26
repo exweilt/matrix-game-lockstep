@@ -3479,12 +3479,12 @@ void CMatrixMapLogic::physics_process(int step)
 
     DCP();
 
-    if (GetPlayerSide()->GetArcadedObject()) {
+    if (CMatrixSideUnit *arcade_side = GetArcadeSide(); arcade_side && arcade_side->GetArcadedObject()) {
         DCP();
-        GetPlayerSide()->GetArcadedObject()->StaticTakt(step);
-        if (GetPlayerSide()->GetArcadedObject()) {
-            GetPlayerSide()->GetArcadedObject()->RNeed(MR_Matrix);
-            GetPlayerSide()->InterpolateArcadedRobotArmorP(step);
+        arcade_side->GetArcadedObject()->StaticTakt(step);
+        if (arcade_side->GetArcadedObject()) {
+            arcade_side->GetArcadedObject()->RNeed(MR_Matrix);
+            arcade_side->InterpolateArcadedRobotArmorP(step);
         }
     }
     DCP();

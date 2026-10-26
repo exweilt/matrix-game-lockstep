@@ -1665,12 +1665,13 @@ void CInterface::Init(void) {
 
                 if (singlem) {
                     if (pElement->m_strName == IF_MANUAL_BG) {
-                        if (!sel_bot->IsDisableManual()) {
+                        if (g_Network.is_authority() && !sel_bot->IsDisableManual()) {
                             pElement->SetVisibility(true);
                         }
                     }
                     else if (pElement->m_strName == IF_ENTER_ROBOT) {
-                        if (!player_side->IsArcadeMode() && !sel_bot->IsDisableManual()) {
+                        if (g_Network.is_authority() && !player_side->IsArcadeMode() &&
+                            !sel_bot->IsDisableManual()) {
                             pElement->SetVisibility(true);
                         }
                     }
@@ -3942,7 +3943,7 @@ void CIFaceList::SlideFocusedInterfaceLeft() {
 }
 
 void CIFaceList::LiveRobot(void) {
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
+    CMatrixSideUnit *ps = g_MatrixMap->GetArcadeSide();
     if (ps->IsArcadeMode()) {
         CMatrixMapStatic *obj = ps->GetArcadedObject();
         ESelType type = NOTHING;
@@ -3977,24 +3978,30 @@ void CIFaceList::LiveRobot(void) {
 }
 
 void CIFaceList::EnterRobot(bool pos) {
-    return;
-    CMatrixSideUnit *ps = g_MatrixMap->GetPlayerSide();
-    if (ps->GetCurGroup() && ps->GetCurGroup()->m_FirstObject) {
-        CMatrixMapStatic *o = ps->GetCurGroup()->m_FirstObject->GetObject();
-        if (pos) {
-            o = ps->GetCurGroup()->GetObjectByN(ps->GetCurSelNum());
-        }
+    if (!g_Network.is_authority())
+        return;
 
-        ps->SetArcadedObject(o);
+    CMatrixSideUnit *ps = g_MatrixMap->GetArcadeSide();
+    if (!ps || !ps->GetCurGroup() || !ps->GetCurGroup()->m_FirstObject)
+        return;
 
-        CInterface *ifs = g_IFaceList->m_First;
-        while (ifs) {
-            if (ifs->m_strName == IF_MAIN) {
-                ifs->m_xPos = float(g_ScreenX - (1024 - (447 + 196)));
-                ifs->ReCalcElementsPos();
-            }
-            ifs = ifs->m_NextInterface;
+    CMatrixMapStatic *o = ps->GetCurGroup()->m_FirstObject->GetObject();
+    if (pos) {
+        o = ps->GetCurGroup()->GetObjectByN(ps->GetCurSelNum());
+    }
+
+    if (!o || !o->IsLiveRobot() || o->AsRobot()->IsDisableManual())
+        return;
+
+    ps->SetArcadedObject(o);
+
+    CInterface *ifs = g_IFaceList->m_First;
+    while (ifs) {
+        if (ifs->m_strName == IF_MAIN) {
+            ifs->m_xPos = float(g_ScreenX - (1024 - (447 + 196)));
+            ifs->ReCalcElementsPos();
         }
+        ifs = ifs->m_NextInterface;
     }
 }
 

@@ -587,6 +587,20 @@ public:
         // return m_Side + 1;
         return m_Side + g_Network.controllable_side_id - 1;
     };
+    /** Side whose arcade / manual-control state applies locally (SP: human side 1; MP: controllable side). */
+    [[nodiscard]] CMatrixSideUnit *GetArcadeSide() const {
+        if (g_Network.network_mode == NetworkMode::NONE)
+            return m_PlayerSide;
+        return GetControllableSide();
+    }
+    [[nodiscard]] bool IsLocalArcadeMode() const {
+        CMatrixSideUnit *side = GetArcadeSide();
+        return side && side->IsArcadeMode();
+    }
+    [[nodiscard]] CMatrixMapStatic *GetArcadeObject() const {
+        CMatrixSideUnit *side = GetArcadeSide();
+        return side ? side->GetArcadedObject() : nullptr;
+    }
 
     void WaterClear(void);
     void WaterInit(void);
