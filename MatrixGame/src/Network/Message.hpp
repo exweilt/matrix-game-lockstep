@@ -3,6 +3,7 @@
 #include <winsock2.h>
 
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -42,6 +43,7 @@ enum class MessageType : u8
     STATE_REPORT,
     EVENTS,
     GAME_SETTINGS,
+    PLAYER_LIST,
 };
 
 struct MessageGameSettingsParams
@@ -96,6 +98,40 @@ struct MessageJoinParams
 
     void serialize_to_bitstream(BitWriter &writer) const;
     static MessageJoinParams deserialize_from_bitstream(BitReader &reader);
+};
+
+constexpr u16 kPlayerPingUnknown = 0xFFFF;
+
+struct PlayerListEntry
+{
+    u8 side = 0;
+    u32 id = 0;
+    std::string name;
+    u16 ping_ms = kPlayerPingUnknown;
+};
+
+// Full roster, host included. The server is the only writer; clients replace their copy on receive.
+struct MessagePlayerListParams
+{
+    std::vector<PlayerListEntry> entries;
+
+    MessagePlayerListParams() = default;
+    explicit MessagePlayerListParams(std::vector<PlayerListEntry> list) : entries(std::move(list)) {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessagePlayerListParams deserialize_from_bitstream(BitReader &reader);
+};
+
+/** Token echoed by PONG. The server times the round trip on its own clock. */
+struct MessageTimeProbeParams
+{
+    u32 token = 0;
+
+    MessageTimeProbeParams() = default;
+    explicit MessageTimeProbeParams(u32 token) : token(token) {}
+
+    void serialize_to_bitstream(BitWriter &writer) const;
+    static MessageTimeProbeParams deserialize_from_bitstream(BitReader &reader);
 };
 
 struct MessageCommandMoveParams
@@ -366,6 +402,8 @@ struct Message
         MessageCommandStopParams command_stop;
         MessageCommandBuildTurretParams command_build_turret;
         MessageGameSettingsParams game_settings;
+        MessagePlayerListParams players;
+        MessageTimeProbeParams probe;
     };
 
     Message()                               : type(MessageType::NONE) {};
@@ -383,6 +421,8 @@ struct Message
     Message(MessageCommandStopParams x)         : type(MessageType::COMMAND_STOP),      command_stop(x)     {};
     Message(MessageCommandBuildTurretParams x)  : type(MessageType::COMMAND_BUILD_TURRET), command_build_turret(x) {};
     Message(MessageGameSettingsParams x)         : type(MessageType::GAME_SETTINGS),      game_settings(x)     {};
+    Message(MessagePlayerListParams x)          : type(MessageType::PLAYER_LIST),        players(std::move(x)) {};
+    Message(MessageType probe_type, MessageTimeProbeParams x) : type(probe_type), probe(x) {};
 
     ~Message()
     {
@@ -427,6 +467,13 @@ struct Message
             case MessageType::GAME_SETTINGS:
                 game_settings.~MessageGameSettingsParams();
                 break;
+            case MessageType::PLAYER_LIST:
+                players.~MessagePlayerListParams();
+                break;
+            case MessageType::PING:
+            case MessageType::PONG:
+                probe.~MessageTimeProbeParams();
+                break;
             default:;
         }
     }
@@ -454,6 +501,9 @@ struct Message
                 command_build_turret.serialize_to_bitstream(writer);
                 break;
             case MessageType::GAME_SETTINGS:  game_settings          .serialize_to_bitstream(writer); break;
+            case MessageType::PLAYER_LIST:      players            .serialize_to_bitstream(writer); break;
+            case MessageType::PING:
+            case MessageType::PONG:             probe           .serialize_to_bitstream(writer); break;
             default:                            assert(false);
         }
     }
@@ -490,6 +540,12 @@ struct Message
                 return MessageCommandBuildTurretParams::deserialize_from_bitstream(reader);
             case MessageType::GAME_SETTINGS:
                 return MessageGameSettingsParams::deserialize_from_bitstream(reader);
+            case MessageType::PLAYER_LIST:
+                return MessagePlayerListParams::deserialize_from_bitstream(reader);
+            case MessageType::PING:
+                return Message(MessageType::PING, MessageTimeProbeParams::deserialize_from_bitstream(reader));
+            case MessageType::PONG:
+                return Message(MessageType::PONG, MessageTimeProbeParams::deserialize_from_bitstream(reader));
             default:
                 assert(false);
                 return Message();

@@ -118,6 +118,48 @@ MessageEventsParams MessageEventsParams::deserialize_from_bitstream(BitReader &r
     return MessageEventsParams(events);
 }
 
+void MessagePlayerListParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    const size_t count = entries.size() > 255 ? 255 : entries.size();
+    writer.write_u8(static_cast<u8>(count));
+    for (size_t i = 0; i < count; ++i)
+    {
+        writer.write_u8(entries[i].side);
+        writer.write_u32(entries[i].id);
+        writer.write_u16(entries[i].ping_ms);
+        writer.write_string(entries[i].name);
+    }
+}
+
+MessagePlayerListParams MessagePlayerListParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessagePlayerListParams result;
+    const u8 count = reader.read_u8();
+    result.entries.reserve(count);
+    for (u8 i = 0; i < count; ++i)
+    {
+        PlayerListEntry entry;
+        entry.side = reader.read_u8();
+        entry.id = reader.read_u32();
+        entry.ping_ms = reader.read_u16();
+        entry.name = reader.read_string();
+        result.entries.push_back(std::move(entry));
+    }
+    return result;
+}
+
+void MessageTimeProbeParams::serialize_to_bitstream(BitWriter &writer) const
+{
+    writer.write_u32(token);
+}
+
+MessageTimeProbeParams MessageTimeProbeParams::deserialize_from_bitstream(BitReader &reader)
+{
+    MessageTimeProbeParams result;
+    result.token = reader.read_u32();
+    return result;
+}
+
 void MessageJoinParams::serialize_to_bitstream(BitWriter &writer) const
 {
     writer.write_u8(this->player_side);

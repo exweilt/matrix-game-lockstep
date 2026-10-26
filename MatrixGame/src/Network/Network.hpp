@@ -12,9 +12,12 @@
 #include <cereal/types/list.hpp>
 #include <cereal/types/vector.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <list>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <vector>
 #include <queue>
 
@@ -99,7 +102,7 @@ class Network
 {
 public:
     Network()  = default;
-    ~Network() = default;
+    ~Network();
 
     void broadcast_world_snapshot();
     void broadcast_events();
@@ -109,6 +112,14 @@ public:
     void emit_world_sound(int sound, const D3DXVECTOR3 &pos);
     void register_side_peer(u8 side, ENetPeer *peer);
     void unregister_peer(ENetPeer *peer);
+    /** Host or the client's own provisional row. Clears any previous roster. */
+    void set_local_player(u8 side, const std::string &name);
+    /** Server: remember a joined peer and send the roster to every client. */
+    void note_joined_player(ENetPeer *peer, u8 side, const std::string &name);
+    /** Server: drop a disconnected peer and send the roster again. */
+    void drop_player(ENetPeer *peer);
+    /** Client: replace the roster with the one the server just sent. */
+    void apply_player_list(const std::vector<PlayerListEntry> &entries);
 
     void delete_robot(CMatrixRobotAI * robot);
 
@@ -121,7 +132,7 @@ public:
     void play_fire_event(const Event &event);
     void play_sound_event(const Event &event);
 
-    ENetHost* host;
+    ENetHost* host = nullptr;
 
     GameState game_state;
     NetworkMode network_mode = NetworkMode::NONE;
@@ -143,6 +154,68 @@ public:
     std::vector<Event> this_tick_event_pool;
     /** Remote players, keyed by side id (1..4). The host's own side is not in this list. */
     std::vector<ENetPeer *> side_peers[5];
+    /**
+     * Joined clients. On the server, peer is the ENet peer and id is its connectID.
+     * On a client every peer is null; id is the connectID the server sent.
+     */
+    struct ConnectedPlayer
+    {
+        ENetPeer *peer = nullptr;
+        u8 side = 0;
+        u32 id = 0;
+        std::string name;
+        u16 ping_ms = kPlayerPingUnknown;
+        u32 ping_token = 0;
+        std::chrono::steady_clock::time_point ping_sent{};
+        std::chrono::steady_clock::time_point last_pong{};
+        bool ping_waiting = false;
+        bool got_pong = false;
+    };
+    std::vector<ConnectedPlayer> player_list;
+    /** This client's ENet connectID. Zero on the host and before the handshake. */
+    u32 local_connect_id = 0;
+    /** Server peer on a client. Used to echo ping probes. */
+    ENetPeer *server_peer = nullptr;
+    std::chrono::steady_clock::time_point last_ping_poll{};
+    u32 next_ping_token = 1;
+    bool player_list_dirty = false;
+
+    /**
+     * Socket events pulled by the pump thread. Ping replies are sent there, so a sample is not
+     * stuck waiting for the next 16 ms game tick.
+     */
+    struct PumpedEvent
+    {
+        ENetEventType type = ENET_EVENT_TYPE_NONE;
+        ENetPeer *peer = nullptr;
+        std::vector<u8> packet;
+        std::chrono::steady_clock::time_point received_at{};
+    };
+    /** Serialized send. The pump thread writes it to the socket so the game thread never waits on select. */
+    struct OutboundPacket
+    {
+        ENetPeer *peer = nullptr;
+        bool broadcast = false;
+        bool stamp_ping = false;
+        enet_uint32 flags = 0;
+        std::vector<u8> data;
+    };
+    struct ProbeStamp
+    {
+        ENetPeer *peer = nullptr;
+        std::chrono::steady_clock::time_point when{};
+    };
+    std::mutex enet_mu;
+    std::mutex inbox_mu;
+    std::mutex outbox_mu;
+    std::mutex probe_mu;
+    std::mutex shown_peers_mu;
+    std::vector<PumpedEvent> inbox;
+    std::vector<OutboundPacket> outbox;
+    std::vector<ProbeStamp> probe_stamps;
+    std::vector<u32> shown_connect_ids;
+    std::thread net_thread;
+    std::atomic<bool> net_pump_stop{false};
     f32 playback_speed = 1.0f;
 
     std::map<u32, CMatrixRobotAI*> robots;
@@ -215,6 +288,23 @@ public:
     void consume_input_frame(const u32 frame);
     void send_message(Message &msg);
     void send_message(Message &msg, ENetPeer *peer);
+    /** Unreliable. Used for ping probes so a lost packet is not retransmitted into the sample. */
+    void send_message_unreliable(Message &msg, ENetPeer *peer);
+    void send_unreliable_unlocked(Message &msg, ENetPeer *peer);
+    void poll_player_pings();
+    void note_player_pong(ENetPeer *peer, u32 token, std::chrono::steady_clock::time_point when);
+    void start_net_pump();
+    void stop_net_pump();
+    void net_pump_loop();
+    /** Pump thread, or this thread when the pump is not running. */
+    bool gather_net_events(std::vector<PumpedEvent> &events);
+    void send_pong_unlocked(ENetPeer *peer, u32 token);
+    void enqueue_packet(OutboundPacket pkt);
+    bool transmit_packet_unlocked(OutboundPacket &pkt);
+    void send_outbox_batch_unlocked(std::vector<OutboundPacket> &pending);
+    std::vector<OutboundPacket> take_outbox();
+    void apply_probe_stamps();
+    void publish_connected_ids_unlocked();
 
     void save_commands_journal_to_file();
 
@@ -255,7 +345,11 @@ public:
     void process_incoming_message(const Message &msg);
     void init_client_host();
     void init_server_host();
+    /** Notify the server if the link is still up, destroy the client host, and drop session state. */
     void deinit_client_host();
+    /** Disconnect every client, destroy the server host, and drop session state. */
+    void deinit_server_host();
+    void release_session();
     MessageGameSettingsParams connect_to_server(std::string ip);
     void process_server_network_frame();
     void initialize_replay_mode_with_files(std::wstring commands_filename);

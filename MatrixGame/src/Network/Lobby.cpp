@@ -117,6 +117,7 @@ void Lobby::start_game()
     MatrixGameDllTracef("Start Game: map=\"%s\"", map.c_str());
     g_Network.set_network_mode(NetworkMode::SERVER);
     g_Network.controllable_side_id = static_cast<u8>(SideID::YELLOW);
+    g_Network.player_list.clear();
     MatrixGameDllTrace("Start Game: load_map");
     CGame::load_map( std::wstring(map.begin(), map.end()) );
     MatrixGameDllTrace("Start Game: load_map done");
@@ -132,9 +133,13 @@ void Lobby::join_game()
     g_Network.set_network_mode(NetworkMode::CLIENT);
     g_Network.controllable_side_id = input_playing_side;
     g_Network.init_client_host();
+    g_Network.set_local_player(input_playing_side, input_username);
     std::string map = g_Network.connect_to_server(input_server_ip).mapname;
     if (map.empty() || FLAG(g_Flags, GFLAG_APPCLOSE) || FLAG(g_Flags, GFLAG_EXITLOOP))
+    {
+        g_Network.deinit_client_host();
         return;
+    }
     CGame::load_map( std::wstring(map.begin(), map.end()) );
     g_Network.game_state = GameState::GAME;
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;

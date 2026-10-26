@@ -508,6 +508,24 @@ bool L3GProcessWindowMessages()
 
 int L3GRun()
 {
+    struct ShutdownNetworkOnExit
+    {
+        ~ShutdownNetworkOnExit()
+        {
+            try
+            {
+                if (g_Network.is_client())
+                    g_Network.deinit_client_host();
+                else if (g_Network.is_authority())
+                    g_Network.deinit_server_host();
+                g_Network.set_network_mode(NetworkMode::NONE);
+                g_Network.game_state = GameState::LOBBY;
+            }
+            catch (...)
+            {
+            }
+        }
+    } shutdown_network_on_exit [[maybe_unused]];
     using clock = std::chrono::steady_clock;
 
     constexpr auto to_milliseconds = [](auto dur) { return std::chrono::duration_cast<std::chrono::milliseconds>(dur); };

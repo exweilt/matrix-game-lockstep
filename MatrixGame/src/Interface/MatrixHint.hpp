@@ -59,6 +59,8 @@ struct SHintElement {
 
 class CMatrixHint : public CMain
 {
+    friend class CScoreboard;
+
     std::wstring m_SoundIn;
     std::wstring m_SoundOut;
 
@@ -125,4 +127,6 @@ class CScoreboard {
 public:
     static void Toggle();
     static void Hide();
+    /** Rebuild the panel if it is currently open. */
+    static void Refresh();
 };

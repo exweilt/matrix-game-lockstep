@@ -9,6 +9,10 @@
 #include "../MatrixSampleStateManager.hpp"
 #include "../Text/Render.hpp"
 #include "3g.hpp"
+#include "MatrixMap.hpp"
+#include "Network/Network.hpp"
+
+#include <utils.hpp>
 
 #include "MatrixSoundManager.hpp"
 #include "StringConstants.hpp"
@@ -875,17 +879,89 @@ namespace {
 // header up with the name, which starts to the right of the faction icon.
 constexpr int kRowH = 33;
 constexpr int kNameX = 48;
-constexpr int kNameW = 190;
-constexpr int kSideRuleX = 246;
-constexpr int kSideX = 258;
-constexpr int kSideW = 160;
-constexpr int kPingRuleX = 426;
-constexpr int kPingX = 438;
-constexpr int kPingW = 84;
+constexpr int kNameW = 220;
+constexpr int kSideRuleX = 276;
+constexpr int kSideX = 288;
+constexpr int kSideW = 110;
+constexpr int kIdRuleX = 406;
+constexpr int kIdX = 418;
+constexpr int kIdW = 100;
+constexpr int kPingRuleX = 526;
+constexpr int kPingX = 538;
+constexpr int kPingW = 72;
 
 CMatrixHint *g_Scoreboard = nullptr;
 
-void AppendLabeledRow(std::wstring &tpl, const wchar *name, const wchar *side, const wchar *ping) {
+const wchar *IconForSide(u8 side)
+{
+    switch (side)
+    {
+        case 2: return L"stat_r";
+        case 3: return L"stat_b";
+        case 4: return L"stat_g";
+        default: return L"stat_p";
+    }
+}
+
+std::wstring SafePlayerName(const std::string &raw)
+{
+    std::string name = raw.empty() ? "Player" : raw;
+    if (name.size() > 32)
+        name.resize(32);
+    for (char &ch : name)
+    {
+        if (ch == '|' || ch == '<' || ch == '>' || ch == '[' || ch == ']' || static_cast<unsigned char>(ch) < 32)
+            ch = ' ';
+    }
+    try
+    {
+        return utils::to_wstring(name);
+    }
+    catch (...)
+    {
+        return L"Player";
+    }
+}
+
+std::wstring SideLabel(u8 side)
+{
+    std::wstring label = L"Unknown";
+    switch (side)
+    {
+        case 1: label = L"Yellow"; break;
+        case 2: label = L"Red"; break;
+        case 3: label = L"Blue"; break;
+        case 4: label = L"Green"; break;
+        default: break;
+    }
+
+    DWORD color = 0x00FFFFFF;
+    if (g_MatrixMap != nullptr && side >= 1 && side <= 4)
+        color = g_MatrixMap->GetSideColorMM(side);
+    if ((color & 0x00FFFFFF) == 0)
+        color = 0x00FFFFFF;
+
+    const int r = (color >> 16) & 255;
+    const int g = (color >> 8) & 255;
+    const int b = color & 255;
+    return L"<color=" + std::to_wstring(r) + L"," + std::to_wstring(g) + L"," + std::to_wstring(b) + L">" + label +
+           L"</color>";
+}
+
+void AppendPingColumn(std::wstring &tpl, const wchar *ping)
+{
+    tpl += L"|_BITMAP:stat_vl:T:";
+    tpl += std::to_wstring(kPingRuleX);
+    tpl += L"|_ALIGN:2:1|_WIDTH:";
+    tpl += std::to_wstring(kPingW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kPingX);
+    tpl += L"|_TEXT:";
+    tpl += ping;
+}
+
+void AppendLabeledRow(std::wstring &tpl, const wchar *name, const wchar *side, const wchar *id, const wchar *ping)
+{
     tpl += L"|_FONT:Font.2Normal|_HEIGHT:";
     tpl += std::to_wstring(kRowH);
     tpl += L"|_COLOR:FFE3DCC2|_ALIGN:0:1|_WIDTH:";
@@ -903,17 +979,20 @@ void AppendLabeledRow(std::wstring &tpl, const wchar *name, const wchar *side, c
     tpl += L"|_TEXT:";
     tpl += side;
     tpl += L"|_BITMAP:stat_vl:T:";
-    tpl += std::to_wstring(kPingRuleX);
+    tpl += std::to_wstring(kIdRuleX);
     tpl += L"|_ALIGN:2:1|_WIDTH:";
-    tpl += std::to_wstring(kPingW);
+    tpl += std::to_wstring(kIdW);
     tpl += L"|_TEXTP:T:";
-    tpl += std::to_wstring(kPingX);
+    tpl += std::to_wstring(kIdX);
     tpl += L"|_TEXT:";
-    tpl += ping;
+    tpl += id;
+    AppendPingColumn(tpl, ping);
     tpl += L"|_MOD:L|_BITMAP:stat_hl:L";
 }
 
-void AppendPlayerRow(std::wstring &tpl, const wchar *icon, const wchar *name, const wchar *side, const wchar *ping) {
+void AppendPlayerRow(std::wstring &tpl, const wchar *icon, const wchar *name, const wchar *side, const wchar *id,
+                     const wchar *ping)
+{
     tpl += L"|_BITMAP:";
     tpl += icon;
     tpl += L":B";
@@ -934,32 +1013,50 @@ void AppendPlayerRow(std::wstring &tpl, const wchar *icon, const wchar *name, co
     tpl += L"|_TEXT:";
     tpl += side;
     tpl += L"|_BITMAP:stat_vl:T:";
-    tpl += std::to_wstring(kPingRuleX);
+    tpl += std::to_wstring(kIdRuleX);
     tpl += L"|_ALIGN:2:1|_WIDTH:";
-    tpl += std::to_wstring(kPingW);
+    tpl += std::to_wstring(kIdW);
     tpl += L"|_TEXTP:T:";
-    tpl += std::to_wstring(kPingX);
+    tpl += std::to_wstring(kIdX);
     tpl += L"|_TEXT:";
-    tpl += ping;
+    tpl += id;
+    AppendPingColumn(tpl, ping);
     tpl += L"|_MOD:L|_BITMAP:stat_hl:L";
 }
 
-std::wstring ScoreboardTemplate() {
+std::wstring ScoreboardTemplate()
+{
     std::wstring tpl;
     tpl += L"3|_SOUNDIN:Formopen|_SOUNDOUT:Formclose";
     tpl += L"|_POS:-20:-19|_BITMAP:stat_h:B";
-    tpl += L"|_COLOR:FFFFF200|_FONT:Font.2Ranger|_WIDTH:520|_HEIGHT:22|_ALIGN:1:1|_DOWN:8|_TEXTP:C|_TEXT:Players|_DOWN:16";
+    tpl += L"|_COLOR:FFFFF200|_FONT:Font.2Ranger|_WIDTH:600|_HEIGHT:22|_ALIGN:1:1|_DOWN:8|_TEXTP:C|_TEXT:Players|_DOWN:16";
     tpl += L"|_BITMAP:stat_hl:L";
-    AppendLabeledRow(tpl, L"Player", L"Side", L"Ping");
-    AppendPlayerRow(tpl, L"stat_p", L"Nova", L"<color=247,195,0>Player</color>", L"18");
-    AppendPlayerRow(tpl, L"stat_r", L"Kestrel", L"<color=255,90,60>Red</color>", L"46");
-    AppendPlayerRow(tpl, L"stat_g", L"Vesper", L"<color=111,191,115>Green</color>", L"73");
-    AppendPlayerRow(tpl, L"stat_b", L"Halcyon", L"<color=90,167,255>Blue</color>", L"121");
-    AppendPlayerRow(tpl, L"stat_p", L"Sable", L"<color=196,168,255>Violet</color>", L"207");
+    AppendLabeledRow(tpl, L"Player", L"Side", L"Id", L"Ping");
+
+    for (const Network::ConnectedPlayer &player : g_Network.player_list)
+    {
+        // On the host, a null peer is the server itself. Clients store every row with a null peer.
+        if (g_Network.is_authority() && player.peer == nullptr)
+            continue;
+        if (player.side < 1 || player.side > 4)
+            continue;
+        std::wstring name = SafePlayerName(player.name);
+        if (g_Network.is_client() && player.id != 0 && player.id == g_Network.local_connect_id)
+            name += L" (you)";
+        const std::wstring side_label = SideLabel(player.side);
+        const std::wstring id = std::to_wstring(player.id);
+        const std::wstring ping = player.ping_ms == kPlayerPingUnknown ? L"-" : std::to_wstring(player.ping_ms);
+        AppendPlayerRow(tpl, IconForSide(player.side), name.c_str(), side_label.c_str(), id.c_str(), ping.c_str());
+    }
     return tpl;
 }
 
 }  // namespace
+
+CMatrixHint *BakeScoreboard()
+{
+    return CMatrixHint::Build(ScoreboardTemplate(), static_cast<CBlockPar *>(nullptr));
+}
 
 void CScoreboard::Hide() {
     if (g_Scoreboard == nullptr)
@@ -968,13 +1065,30 @@ void CScoreboard::Hide() {
     g_Scoreboard = nullptr;
 }
 
+void CScoreboard::Refresh()
+{
+    if (g_Scoreboard == nullptr)
+        return;
+
+    const int x = g_Scoreboard->m_PosX;
+    const int y = g_Scoreboard->m_PosY;
+    g_Scoreboard->m_SoundOut.clear();
+    Hide();
+    g_Scoreboard = BakeScoreboard();
+    if (g_Scoreboard != nullptr)
+    {
+        g_Scoreboard->m_SoundIn.clear();
+        g_Scoreboard->Show(x, y);
+    }
+}
+
 void CScoreboard::Toggle() {
     if (g_Scoreboard != nullptr) {
         Hide();
         return;
     }
 
-    g_Scoreboard = CMatrixHint::Build(ScoreboardTemplate(), static_cast<CBlockPar *>(nullptr));
+    g_Scoreboard = BakeScoreboard();
     if (g_Scoreboard == nullptr)
         return;
 

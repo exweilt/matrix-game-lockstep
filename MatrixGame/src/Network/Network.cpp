@@ -27,10 +27,58 @@
 #include "MatrixSide.hpp"
 #include "MatrixMapStatic.hpp"
 #include "MatrixSoundManager.hpp"
+#include "Interface/MatrixHint.hpp"
 // #include "SyncDebugger.hpp"
 // logger_type cli_lgr{"client.log"};
 
 namespace {
+
+constexpr enet_uint32 kLinkTimeoutMinMs = 3000;
+constexpr enet_uint32 kLinkTimeoutMaxMs = 8000;
+
+void arm_link_timeout(ENetPeer *peer)
+{
+    if (peer != nullptr)
+        enet_peer_timeout(peer, ENET_PEER_TIMEOUT_LIMIT, kLinkTimeoutMinMs, kLinkTimeoutMaxMs);
+}
+
+std::string NormalizePlayerName(std::string name)
+{
+    if (name.size() > 32)
+        name.resize(32);
+
+    bool blank = true;
+    for (char ch : name)
+    {
+        if (ch != ' ')
+        {
+            blank = false;
+            break;
+        }
+    }
+    if (name.empty() || blank)
+        return "Player";
+    return name;
+}
+
+void PublishPlayerList(Network &net)
+{
+    if (net.is_authority() && net.host != nullptr)
+    {
+        std::vector<PlayerListEntry> entries;
+        entries.reserve(net.player_list.size());
+        for (const Network::ConnectedPlayer &player : net.player_list)
+        {
+            if (player.peer == nullptr)
+                continue;
+            entries.push_back(PlayerListEntry{player.side, player.id, player.name, player.ping_ms});
+        }
+
+        Message msg{MessagePlayerListParams{std::move(entries)}};
+        net.send_message(msg);
+    }
+    CScoreboard::Refresh();
+}
 
 void apply_snapshot_animation(CMatrixRobotAI *r, EAnimation target_anim) {
     // Match authority LogicTakt (do_animation): call SwitchAnimation every tick, not only on
@@ -293,21 +341,20 @@ bool g_MatrixDebugOverlayVisible = false;
 //
 // }
 
+Network::~Network()
+{
+    stop_net_pump();
+}
+
 void Network::send_message(Message &msg)
 {
     BitWriter writer;
     msg.serialize_to_bitstream(writer);
 
-    // Create the packet
-    ENetPacket* packet = enet_packet_create(
-        writer.get_buffer(), writer.get_buffer_size(), 0
-    );
-
-    // Broadcast to all connected peers on Channel 0
-    enet_host_broadcast(host, 0, packet);
-
-    // Send the data immediately
-    enet_host_flush(host);
+    OutboundPacket pkt;
+    pkt.broadcast = true;
+    pkt.data.assign(writer.get_buffer(), writer.get_buffer() + writer.get_buffer_size());
+    enqueue_packet(std::move(pkt));
 }
 
 void Network::send_message(Message &msg, ENetPeer *peer)
@@ -318,16 +365,328 @@ void Network::send_message(Message &msg, ENetPeer *peer)
     BitWriter writer;
     msg.serialize_to_bitstream(writer);
 
-    ENetPacket *packet = enet_packet_create(
-        writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE);
+    OutboundPacket pkt;
+    pkt.peer = peer;
+    pkt.flags = ENET_PACKET_FLAG_RELIABLE;
+    pkt.data.assign(writer.get_buffer(), writer.get_buffer() + writer.get_buffer_size());
+    enqueue_packet(std::move(pkt));
+}
 
-    if (packet == nullptr)
+void Network::send_unreliable_unlocked(Message &msg, ENetPeer *peer)
+{
+    if (peer == nullptr || host == nullptr)
         return;
 
-    if (enet_peer_send(peer, 0, packet) < 0)
-        enet_packet_destroy(packet);
+    BitWriter writer;
+    msg.serialize_to_bitstream(writer);
 
-    enet_host_flush(host);
+    OutboundPacket pkt;
+    pkt.peer = peer;
+    pkt.flags = ENET_PACKET_FLAG_UNSEQUENCED;
+    pkt.data.assign(writer.get_buffer(), writer.get_buffer() + writer.get_buffer_size());
+    if (transmit_packet_unlocked(pkt))
+        enet_host_flush(host);
+}
+
+void Network::send_pong_unlocked(ENetPeer *peer, u32 token)
+{
+    Message pong{MessageType::PONG, MessageTimeProbeParams{token}};
+    send_unreliable_unlocked(pong, peer);
+}
+
+void Network::send_message_unreliable(Message &msg, ENetPeer *peer)
+{
+    if (peer == nullptr || host == nullptr)
+        return;
+
+    BitWriter writer;
+    msg.serialize_to_bitstream(writer);
+
+    OutboundPacket pkt;
+    pkt.peer = peer;
+    pkt.flags = ENET_PACKET_FLAG_UNSEQUENCED;
+    pkt.data.assign(writer.get_buffer(), writer.get_buffer() + writer.get_buffer_size());
+    enqueue_packet(std::move(pkt));
+}
+
+void Network::enqueue_packet(OutboundPacket pkt)
+{
+    {
+        std::lock_guard<std::mutex> lock(outbox_mu);
+        if (net_thread.joinable())
+        {
+            outbox.push_back(std::move(pkt));
+            return;
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(enet_mu);
+    if (transmit_packet_unlocked(pkt))
+        enet_host_flush(host);
+}
+
+bool Network::transmit_packet_unlocked(OutboundPacket &pkt)
+{
+    if (host == nullptr || pkt.data.empty())
+        return false;
+    if (!pkt.broadcast && (pkt.peer == nullptr || pkt.peer->state != ENET_PEER_STATE_CONNECTED))
+        return false;
+
+    ENetPacket *packet = enet_packet_create(pkt.data.data(), pkt.data.size(), pkt.flags);
+    if (packet == nullptr)
+        return false;
+
+    if (pkt.broadcast)
+        enet_host_broadcast(host, 0, packet);
+    else if (enet_peer_send(pkt.peer, 0, packet) < 0)
+    {
+        enet_packet_destroy(packet);
+        return false;
+    }
+
+    if (pkt.stamp_ping)
+    {
+        std::lock_guard<std::mutex> lock(probe_mu);
+        probe_stamps.push_back(ProbeStamp{pkt.peer, std::chrono::steady_clock::now()});
+    }
+    return true;
+}
+
+std::vector<Network::OutboundPacket> Network::take_outbox()
+{
+    std::lock_guard<std::mutex> lock(outbox_mu);
+    std::vector<OutboundPacket> pending;
+    pending.swap(outbox);
+    return pending;
+}
+
+void Network::send_outbox_batch_unlocked(std::vector<OutboundPacket> &pending)
+{
+    bool any = false;
+    for (OutboundPacket &pkt : pending)
+        any = transmit_packet_unlocked(pkt) || any;
+    if (any && host != nullptr)
+        enet_host_flush(host);
+}
+
+void Network::apply_probe_stamps()
+{
+    std::vector<ProbeStamp> stamps;
+    {
+        std::lock_guard<std::mutex> lock(probe_mu);
+        stamps.swap(probe_stamps);
+    }
+    for (const ProbeStamp &stamp : stamps)
+    {
+        for (ConnectedPlayer &player : player_list)
+        {
+            if (player.peer == stamp.peer && player.ping_waiting)
+                player.ping_sent = stamp.when;
+        }
+    }
+}
+
+void Network::publish_connected_ids_unlocked()
+{
+    std::vector<u32> ids;
+    if (host != nullptr)
+    {
+        for (size_t i = 0; i < host->peerCount; ++i)
+        {
+            ENetPeer *peer = &host->peers[i];
+            if (peer->state == ENET_PEER_STATE_CONNECTED)
+                ids.push_back(peer->connectID);
+        }
+    }
+    std::lock_guard<std::mutex> lock(shown_peers_mu);
+    shown_connect_ids.swap(ids);
+}
+
+void Network::start_net_pump()
+{
+    if (net_thread.joinable() || host == nullptr)
+        return;
+
+    net_pump_stop.store(false);
+    net_thread = std::thread([this] { net_pump_loop(); });
+}
+
+void Network::stop_net_pump()
+{
+    net_pump_stop.store(true);
+    if (net_thread.joinable())
+        net_thread.join();
+    net_pump_stop.store(false);
+
+    std::vector<OutboundPacket> pending = take_outbox();
+    if (pending.empty() || host == nullptr)
+        return;
+    std::lock_guard<std::mutex> lock(enet_mu);
+    send_outbox_batch_unlocked(pending);
+}
+
+void Network::net_pump_loop()
+{
+    auto take = [this](ENetEvent &event, std::vector<PumpedEvent> &batch) {
+        const bool ping = event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr &&
+                          event.packet->dataLength >= 5 &&
+                          event.packet->data[0] == static_cast<u8>(MessageType::PING);
+        if (ping && is_client())
+        {
+            const u8 *bytes = event.packet->data;
+            const u32 token = (u32(bytes[1]) << 24) | (u32(bytes[2]) << 16) | (u32(bytes[3]) << 8) | u32(bytes[4]);
+            send_pong_unlocked(event.peer, token);
+            enet_packet_destroy(event.packet);
+            return;
+        }
+
+        PumpedEvent queued;
+        queued.type = event.type;
+        queued.peer = event.peer;
+        queued.received_at = std::chrono::steady_clock::now();
+        if (event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr)
+        {
+            queued.packet.assign(event.packet->data, event.packet->data + event.packet->dataLength);
+            enet_packet_destroy(event.packet);
+        }
+        batch.push_back(std::move(queued));
+    };
+
+    while (!net_pump_stop.load())
+    {
+        std::vector<OutboundPacket> pending = take_outbox();
+        std::vector<PumpedEvent> batch;
+        {
+            std::lock_guard<std::mutex> lock(enet_mu);
+            if (host == nullptr)
+                break;
+
+            send_outbox_batch_unlocked(pending);
+
+            ENetEvent event;
+            // select returns as soon as a datagram arrives. The game thread does not
+            // hold this lock, so that wait cannot stall the frame.
+            if (enet_host_service(host, &event, 1) > 0)
+                take(event, batch);
+            while (enet_host_service(host, &event, 0) > 0)
+                take(event, batch);
+
+            publish_connected_ids_unlocked();
+        }
+
+        if (!batch.empty())
+        {
+            std::lock_guard<std::mutex> lock(inbox_mu);
+            inbox.insert(inbox.end(), std::make_move_iterator(batch.begin()), std::make_move_iterator(batch.end()));
+        }
+    }
+
+    std::vector<OutboundPacket> leftover = take_outbox();
+    if (!leftover.empty() && host != nullptr)
+    {
+        std::lock_guard<std::mutex> lock(enet_mu);
+        send_outbox_batch_unlocked(leftover);
+    }
+}
+
+bool Network::gather_net_events(std::vector<PumpedEvent> &events)
+{
+    events.clear();
+    if (net_thread.joinable())
+    {
+        std::lock_guard<std::mutex> lock(inbox_mu);
+        events.swap(inbox);
+        return true;
+    }
+
+    if (host == nullptr)
+        return false;
+
+    std::lock_guard<std::mutex> lock(enet_mu);
+    ENetEvent event;
+    while (enet_host_service(host, &event, 0) > 0)
+    {
+        PumpedEvent queued;
+        queued.type = event.type;
+        queued.peer = event.peer;
+        queued.received_at = std::chrono::steady_clock::now();
+        if (event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr)
+        {
+            queued.packet.assign(event.packet->data, event.packet->data + event.packet->dataLength);
+            enet_packet_destroy(event.packet);
+        }
+        events.push_back(std::move(queued));
+    }
+    return true;
+}
+
+void Network::poll_player_pings()
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (last_ping_poll.time_since_epoch().count() != 0 && now - last_ping_poll < std::chrono::seconds(1))
+        return;
+    last_ping_poll = now;
+
+    for (ConnectedPlayer &player : player_list)
+    {
+        if (player.peer == nullptr)
+            continue;
+
+        // A new probe goes out every second, so ping_sent alone never ages past the timeout.
+        if (player.got_pong && now - player.last_pong > std::chrono::seconds(3))
+        {
+            player.got_pong = false;
+            if (player.ping_ms != kPlayerPingUnknown)
+            {
+                player.ping_ms = kPlayerPingUnknown;
+                player_list_dirty = true;
+            }
+        }
+
+        player.ping_token = next_ping_token++;
+        if (player.ping_token == 0)
+            player.ping_token = next_ping_token++;
+        player.ping_waiting = true;
+
+        Message probe{MessageType::PING, MessageTimeProbeParams{player.ping_token}};
+        BitWriter writer;
+        probe.serialize_to_bitstream(writer);
+
+        OutboundPacket pkt;
+        pkt.peer = player.peer;
+        pkt.stamp_ping = true;
+        pkt.flags = ENET_PACKET_FLAG_UNSEQUENCED;
+        pkt.data.assign(writer.get_buffer(), writer.get_buffer() + writer.get_buffer_size());
+        enqueue_packet(std::move(pkt));
+    }
+}
+
+void Network::note_player_pong(ENetPeer *peer, u32 token, std::chrono::steady_clock::time_point when)
+{
+    if (peer == nullptr)
+        return;
+
+    for (ConnectedPlayer &player : player_list)
+    {
+        if (player.peer != peer || !player.ping_waiting || player.ping_token != token)
+            continue;
+
+        player.ping_waiting = false;
+        player.got_pong = true;
+        player.last_pong = when;
+        const auto rtt = std::chrono::duration_cast<std::chrono::milliseconds>(when - player.ping_sent).count();
+        u16 next = kPlayerPingUnknown;
+        if (rtt < 0)
+            next = 0;
+        else if (rtt < kPlayerPingUnknown)
+            next = static_cast<u16>(rtt);
+        if (player.ping_ms != next)
+        {
+            player.ping_ms = next;
+            player_list_dirty = true;
+        }
+        return;
+    }
 }
 
 void Network::register_side_peer(u8 side, ENetPeer *peer)
@@ -349,6 +708,85 @@ void Network::unregister_peer(ENetPeer *peer)
         std::vector<ENetPeer *> &peers = side_peers[side];
         peers.erase(std::remove(peers.begin(), peers.end(), peer), peers.end());
     }
+}
+
+void Network::set_local_player(u8 side, const std::string &name)
+{
+    player_list.clear();
+    player_list.push_back(ConnectedPlayer{nullptr, side, local_connect_id, NormalizePlayerName(name)});
+}
+
+void Network::note_joined_player(ENetPeer *peer, u8 side, const std::string &name)
+{
+    if (peer == nullptr || side < 1 || side > 4)
+        return;
+
+    const std::string clean = NormalizePlayerName(name);
+    u32 connect_id = 0;
+    {
+        std::lock_guard<std::mutex> lock(enet_mu);
+        connect_id = peer->connectID;
+    }
+    for (ConnectedPlayer &player : player_list)
+    {
+        if (player.peer == peer)
+        {
+            player.side = side;
+            player.id = connect_id;
+            player.name = clean;
+            PublishPlayerList(*this);
+            return;
+        }
+    }
+
+    player_list.push_back(ConnectedPlayer{peer, side, connect_id, clean});
+    PublishPlayerList(*this);
+}
+
+void Network::drop_player(ENetPeer *peer)
+{
+    unregister_peer(peer);
+    if (peer == nullptr)
+        return;
+
+    // ENet reuses the peer slot for the next connection. A packet still queued for this
+    // session would otherwise be sent to whoever connects into the same slot.
+    {
+        std::lock_guard<std::mutex> lock(outbox_mu);
+        outbox.erase(std::remove_if(outbox.begin(), outbox.end(),
+                                    [peer](const OutboundPacket &pkt) {
+                                        return !pkt.broadcast && pkt.peer == peer;
+                                    }),
+                     outbox.end());
+    }
+    {
+        std::lock_guard<std::mutex> lock(probe_mu);
+        probe_stamps.erase(std::remove_if(probe_stamps.begin(), probe_stamps.end(),
+                                          [peer](const ProbeStamp &stamp) { return stamp.peer == peer; }),
+                           probe_stamps.end());
+    }
+
+    const size_t before = player_list.size();
+    player_list.erase(
+        std::remove_if(player_list.begin(), player_list.end(),
+                       [peer](const ConnectedPlayer &player) { return player.peer == peer; }),
+        player_list.end());
+    if (player_list.size() != before)
+        PublishPlayerList(*this);
+}
+
+void Network::apply_player_list(const std::vector<PlayerListEntry> &entries)
+{
+    player_list.clear();
+    player_list.reserve(entries.size());
+    for (const PlayerListEntry &entry : entries)
+    {
+        if (entry.side < 1 || entry.side > 4)
+            continue;
+        player_list.push_back(
+            ConnectedPlayer{nullptr, entry.side, entry.id, NormalizePlayerName(entry.name), entry.ping_ms});
+    }
+    CScoreboard::Refresh();
 }
 
 void Network::emit_side_sound(u8 side, int sound)
@@ -425,7 +863,21 @@ void Network::process_incoming_message(const Message &msg)
              msg.type == MessageType::COMMAND_CAPTURE || msg.type == MessageType::COMMAND_STOP)
         MatrixGameDllBreadcrumbf("rx command type=%u", static_cast<unsigned>(msg.type));
 
-    if (msg.type == MessageType::WORLD_SNAPSHOT)
+    if (msg.type == MessageType::PING)
+    {
+        if (is_client() && server_peer != nullptr && server_peer->state == ENET_PEER_STATE_CONNECTED)
+        {
+            Message pong{MessageType::PONG, MessageTimeProbeParams{msg.probe.token}};
+            send_message_unreliable(pong, server_peer);
+        }
+        return;
+    }
+
+    if (msg.type == MessageType::PLAYER_LIST)
+    {
+        apply_player_list(msg.players.entries);
+    }
+    else if (msg.type == MessageType::WORLD_SNAPSHOT)
     {
         handle_new_world_snapshot(msg.world_snapshot.ws);
         // std::cout << "Got Captured world snapshot: " << msg.world_snapshot.ws.to_json_string() << std::endl;
@@ -1171,49 +1623,42 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
     // }
     if (is_client())
     {
-        ENetEvent event;
-        while (enet_host_service (host, &event, 0) > 0)
+        std::vector<PumpedEvent> events;
+        bool lost_server = false;
+        if (gather_net_events(events))
         {
-            switch (event.type)
+            for (PumpedEvent &event : events)
             {
-                case ENET_EVENT_TYPE_CONNECT:
-                    lgr.info("A new thing connected from %x:%u.\n")
-                        (event.peer->address.host, event.peer->address.port);
-
-
-                    /* Store any relevant client information here. */
-                    // event.peer->data = "Client information";
-
-                    break;
-
-                case ENET_EVENT_TYPE_RECEIVE:
-                    // printf ("A packet of length %u containing %s was received from %s on channel %u.\n",
-                    //         event.packet -> dataLength,
-                    //         reinterpret_cast<const char *>(event.packet->data),
-                    //         static_cast<const char *>(event.peer->data),
-                    //         event.channelID);
-
+                switch (event.type)
                 {
-                    // std::cout << "new data " << std::endl;
-                    BitReader reader = BitReader(event.packet->data);
-                    Message msg{Message::deserialize_from_bitstream(reader)};
-                    process_incoming_message(msg);
-                    //
-                    // /* Clean up the packet now that we're done using it. */
-                    enet_packet_destroy(event.packet);
-                    break;
+                    case ENET_EVENT_TYPE_CONNECT:
+                        lgr.info("A new thing connected from %x:%u.\n")
+                            (event.peer->address.host, event.peer->address.port);
+                        break;
 
+                    case ENET_EVENT_TYPE_RECEIVE:
+                        if (!event.packet.empty())
+                        {
+                            BitReader reader(event.packet.data());
+                            Message msg{Message::deserialize_from_bitstream(reader)};
+                            process_incoming_message(msg);
+                        }
+                        break;
+
+                    case ENET_EVENT_TYPE_DISCONNECT:
+                        std::cout << "Disconnected from the server.\n";
+                        lost_server = true;
+                        break;
+
+                    default:
+                        break;
                 }
-
-                case ENET_EVENT_TYPE_DISCONNECT:
-                    printf ("%s disconnected.\n", static_cast<const char *>(event.peer->data));
-
-                    /* Reset the peer's client information. */
-
-                    event.peer -> data = NULL;
+                if (lost_server)
                     break;
             }
         }
+        if (lost_server)
+            deinit_client_host();
     }
     else
     {
@@ -1223,72 +1668,57 @@ void Network::process_network_frame([[maybe_unused]] u32 delta_ns)
     // {
     //     g_MatrixMap->m_DI.T(utils::format(L"Connected to %d", host->peers[i].connectID).c_str(), L"");
     // }
-    for (size_t i = 0; i < host->peerCount; i++)
+    if ((is_client() || is_authority()) && host != nullptr && g_MatrixMap != nullptr)
     {
-        ENetPeer* currentPeer = &host->peers[i];
-
-        // SKIP empty slots, disconnected peers, or peers currently in the handshake phase
-        if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
+        std::vector<u32> ids;
         {
-            continue;
+            std::lock_guard<std::mutex> lock(shown_peers_mu);
+            ids = shown_connect_ids;
         }
-
-        g_MatrixMap->m_DI.T(utils::format(L"Connected to %d", currentPeer->connectID).c_str(), L"");
+        for (u32 id : ids)
+            g_MatrixMap->m_DI.T(utils::format(L"Connected to %d", id).c_str(), L"");
     }
 }
 
 void Network::process_server_network_frame()
 {
-    ENetEvent event;
-    while (enet_host_service (host, &event, 0) > 0)
+    std::vector<PumpedEvent> events;
+    if (!gather_net_events(events))
+        return;
+    apply_probe_stamps();
+
+    std::vector<ENetPeer *> dropped_peers;
+    for (PumpedEvent &event : events)
     {
         std::cout << "\nNew event: " << event.type << "\n";
         switch (event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
-            std::cout << "Connected: " << event.peer->connectID << "\n\n";
-
-            std::cout << "The full list of connected peers: " << host->connectedPeers << "\n" ;
-
-            for (int i = 0; i < host->connectedPeers; i++)
+        {
+            u32 id = 0;
             {
-                std::cout << host->peers[i].connectID << std::endl;
+                std::lock_guard<std::mutex> lock(enet_mu);
+                arm_link_timeout(event.peer);
+                id = event.peer->connectID;
+                std::cout << "Connected: " << id << "\n\n";
+                std::cout << "The full list of connected peers: " << host->connectedPeers << "\n";
+                for (int i = 0; i < host->connectedPeers; i++)
+                    std::cout << host->peers[i].connectID << std::endl;
             }
 
-            {
-                Message msg{ MessageGameSettingsParams( g_Network.lobby.get_selected_map_name() ) };
-                g_Network.send_message(msg, event.peer);
-            }
-
-            // Register the player
-            // peer_to_side.emplace(event.peer->connectID, g_server_host->connectedPeers - 1);
-
-            // Initiate the starting of the game
-            // if (g_server_host->connectedPeers == 2)
-            // {
-            //     Message msg { MessageType::START };
-            //
-            //     BitWriter writer;
-            //     msg.serialize_to_bitstream(writer);
-            //
-            //     ENetPacket* packet = enet_packet_create(
-            //         writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
-            //     );
-            //
-            //     enet_host_broadcast(g_server_host, 0, packet);
-            //     // enet_packet_destroy(packet);
-            // }
-
+            Message msg{MessageGameSettingsParams(g_Network.lobby.get_selected_map_name())};
+            g_Network.send_message(msg, event.peer);
             break;
+        }
         case ENET_EVENT_TYPE_RECEIVE: {
-            std::cout << "Got new packet from " << event.peer->connectID << ":\n";
-            // if (g_server_host->connectedPeers < 2)
-            // {
-            //     std::cerr << "Only one player...\n";
-            //     std::terminate();
-            // }
+            if (event.packet.empty())
+                break;
+            if (std::find(dropped_peers.begin(), dropped_peers.end(), event.peer) != dropped_peers.end())
+                break;
 
-            BitReader reader = BitReader(event.packet->data);
+            std::cout << "Got new packet from " << event.peer->connectID << ":\n";
+
+            BitReader reader(event.packet.data());
             Message m { Message::deserialize_from_bitstream(reader) };
 
             if (m.type == MessageType::COMMAND_MOVE)
@@ -1321,110 +1751,177 @@ void Network::process_server_network_frame()
             else if (m.type == MessageType::JOIN)
             {
                 register_side_peer(m.join.player_side, event.peer);
+                note_joined_player(event.peer, m.join.player_side, m.join.username);
+            }
+            else if (m.type == MessageType::PONG)
+            {
+                note_player_pong(event.peer, m.probe.token, event.received_at);
             }
 
-            //
-            // if (g_server_state == ServerState::BROADCASTING)
-            // {
-            //     if (m.type == MessageType::COMMAND_BATCH)
-            //     {
-            //         std::cout << "Got command batch for " << m.command_batch.target_frame << "\n";
-            //         // Find to which peer to retranslate the command_batch
-            //         ENetPeer* target = nullptr;
-            //         for (int i = 0; i < g_server_host->connectedPeers; i++)
-            //         {
-            //             if (g_server_host->peers[i].connectID != event.peer->connectID)
-            //             {
-            //                 target = g_server_host->peers + i;
-            //                 break;
-            //             }
-            //         }
-            //
-            //         if (target != nullptr)
-            //         {
-            //             std::cout << "Relaying to " << target->connectID << "\n\n";
-            //             ENetPacket* packet = enet_packet_create(nullptr, event.packet->dataLength, ENET_PACKET_FLAG_RELIABLE);
-            //             memcpy(packet->data, event.packet->data, event.packet->dataLength);
-            //             enet_peer_send(target, 0, packet);
-            //             enet_host_flush(g_server_host);
-            //             // enet_packet_destroy(packet);
-            //
-            //         }
-            //         else
-            //         {
-            //             std::cerr << "No target found.\n";
-            //         }
-            //     }
-            //     else if (m.type == MessageType::CHECKSUM)
-            //     {
-            //         std::cout << "got checksum: " << m.checksum.checksum << ", for frame: " << m.checksum.target_frame << std::endl;
-            //         register_checksum(peer_to_side[event.peer->connectID], m.checksum);
-            //         bool is_desync = check_checksums(m.checksum.target_frame);
-            //
-            //         // Panic here
-            //         if (is_desync)
-            //         {
-            //             Message msg { MessageDesyncParams {m.checksum.target_frame} };
-            //             BitWriter writer;
-            //             msg.serialize_to_bitstream(writer);
-            //
-            //             ENetPacket* packet = enet_packet_create(
-            //                 writer.get_buffer(), writer.get_buffer_size(), ENET_PACKET_FLAG_RELIABLE
-            //             );
-            //
-            //             // memcpy(packet->data, &msg, msg.get_serialized_size());
-            //             enet_host_broadcast(g_server_host, 0, packet);
-            //             enet_host_flush(g_server_host);
-            //             // enet_packet_destroy(packet);
-            //
-            //             std::cerr << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
-            //             // std::cerr << "Panicking!" << m.checksum.target_frame << "\n";
-            //             g_server_state = ServerState::DESYNC_HAPPENED;
-            //             std::cout << "\nDesync detected at frame: " << m.checksum.target_frame << "\n";
-            //             std::cout << "\nStopping broadcasting..." << "\n";
-            //             // std::terminate();
-            //         }
-            //     }
-            // }
-            // else
-            // {
-            //
-            //
-            // }
-            //     if (m.type == MessageType::STATE_REPORT)
-            //     {
-            //         if (m.report.type == ReportType::DEFAULT)
-            //         {
-            //             std::string filename = "received_report_side" + std::to_string(m.report.player_side) + ".txt";
-            //             std::ofstream file(filename, std::ios::out | std::ios::trunc);
-            //             file << m.report.data;
-            //             std::cout << "Got world snapshot from side: " << std::to_string(m.report.player_side)
-            //                         << ", saving the data to the file: " << filename << "\n";
-            //         }
-            //         else
-            //         {
-            //             std::string filename = "code_trace_report_side" + std::to_string(m.report.player_side) + ".json";
-            //             std::ofstream file(filename, std::ios::out | std::ios::trunc);
-            //             file << m.report.data;
-            //             std::cout << "Got code trace report from side: " << std::to_string(m.report.player_side)
-            //                         << ", saving the data to the file: " << filename << "\n";
-            //         }
-            //     }
-
-            enet_packet_destroy(event.packet);
             break;
         }
 
         case ENET_EVENT_TYPE_DISCONNECT:
-            unregister_peer(event.peer);
-            event.peer->data = nullptr;
+            drop_player(event.peer);
+            if (event.peer != nullptr)
+                event.peer->data = nullptr;
+            dropped_peers.push_back(event.peer);
             break;
+
+        default:
+            break;
+        }
+    }
+
+    if (is_authority() && host != nullptr)
+    {
+        poll_player_pings();
+        if (player_list_dirty)
+        {
+            player_list_dirty = false;
+            PublishPlayerList(*this);
         }
     }
 }
 
+void Network::release_session()
+{
+    server_peer = nullptr;
+    local_connect_id = 0;
+    player_list.clear();
+    player_list_dirty = false;
+    for (int side = 0; side < 5; ++side)
+        side_peers[side].clear();
+
+    {
+        std::lock_guard<std::mutex> lock(outbox_mu);
+        outbox.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(inbox_mu);
+        inbox.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(probe_mu);
+        probe_stamps.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(shown_peers_mu);
+        shown_connect_ids.clear();
+    }
+
+    CScoreboard::Hide();
+}
+
+void Network::deinit_client_host()
+{
+    stop_net_pump();
+
+    if (host != nullptr && server_peer != nullptr)
+    {
+        const ENetPeerState state = server_peer->state;
+        if (state != ENET_PEER_STATE_DISCONNECTED && state != ENET_PEER_STATE_ZOMBIE)
+        {
+            const bool wait_for_ack = state == ENET_PEER_STATE_CONNECTED ||
+                                      state == ENET_PEER_STATE_DISCONNECT_LATER;
+            enet_peer_disconnect(server_peer, 0);
+            if (wait_for_ack)
+            {
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+                while (std::chrono::steady_clock::now() < deadline &&
+                       server_peer->state != ENET_PEER_STATE_DISCONNECTED)
+                {
+                    ENetEvent event;
+                    if (enet_host_service(host, &event, 50) < 0)
+                        break;
+                    if (event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr)
+                        enet_packet_destroy(event.packet);
+                }
+            }
+            if (server_peer->state != ENET_PEER_STATE_DISCONNECTED)
+                enet_peer_reset(server_peer);
+        }
+    }
+
+    server_peer = nullptr;
+    if (host != nullptr)
+    {
+        enet_host_destroy(host);
+        host = nullptr;
+    }
+    release_session();
+}
+
+void Network::deinit_server_host()
+{
+    stop_net_pump();
+
+    if (host != nullptr)
+    {
+        bool wait = false;
+        for (size_t i = 0; i < host->peerCount; ++i)
+        {
+            ENetPeer *peer = &host->peers[i];
+            if (peer->state == ENET_PEER_STATE_CONNECTED || peer->state == ENET_PEER_STATE_DISCONNECT_LATER)
+            {
+                enet_peer_disconnect(peer, 0);
+                wait = true;
+            }
+            else if (peer->state != ENET_PEER_STATE_DISCONNECTED && peer->state != ENET_PEER_STATE_ZOMBIE)
+            {
+                enet_peer_reset(peer);
+            }
+        }
+
+        if (wait)
+        {
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+            while (std::chrono::steady_clock::now() < deadline)
+            {
+                ENetEvent event;
+                const int serviced = enet_host_service(host, &event, 50);
+                if (serviced < 0)
+                    break;
+                if (serviced > 0 && event.type == ENET_EVENT_TYPE_DISCONNECT)
+                    drop_player(event.peer);
+                else if (serviced > 0 && event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr)
+                    enet_packet_destroy(event.packet);
+
+                bool still_up = false;
+                for (size_t i = 0; i < host->peerCount; ++i)
+                {
+                    const ENetPeerState state = host->peers[i].state;
+                    if (state == ENET_PEER_STATE_CONNECTED || state == ENET_PEER_STATE_DISCONNECTING ||
+                        state == ENET_PEER_STATE_ACKNOWLEDGING_DISCONNECT ||
+                        state == ENET_PEER_STATE_DISCONNECT_LATER)
+                    {
+                        still_up = true;
+                        break;
+                    }
+                }
+                if (!still_up)
+                    break;
+            }
+        }
+
+        for (size_t i = 0; i < host->peerCount; ++i)
+        {
+            ENetPeer *peer = &host->peers[i];
+            if (peer->state != ENET_PEER_STATE_DISCONNECTED)
+                enet_peer_reset(peer);
+        }
+
+        enet_host_destroy(host);
+        host = nullptr;
+    }
+
+    release_session();
+}
+
 void Network::init_client_host()
 {
+    deinit_client_host();
+
     host = enet_host_create (NULL /* create a client host */,
                 1 /* only allow 1 outgoing connection */,
                 2 /* allow up 2 channels to be used, 0 and 1 */,
@@ -1438,45 +1935,67 @@ void Network::init_client_host()
     }
 }
 
-// TODO: actually call this function
-void Network::deinit_client_host()
-{
-    enet_host_destroy(host);
-}
-
 MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
 {
-    ENetAddress address;
-    ENetEvent event;
-    ENetPeer *peer;
+    stop_net_pump();
 
-    /* Connect to some.server.net:1234. */
-    enet_address_set_host (& address, server_ip.c_str());
+    if (host == nullptr)
+    {
+        std::cout << "Client host is not open.\n";
+        return MessageGameSettingsParams("");
+    }
+
+    ENetAddress address;
+    enet_address_set_host(&address, server_ip.c_str());
     address.port = 1234;
 
-    /* Initiate the connection, allocating the two channels 0 and 1. */
-    peer = enet_host_connect (host, &address, 2, 0);
-    if (peer == NULL)
+    auto open_peer = [&]() -> ENetPeer * {
+        ENetPeer *opened = enet_host_connect(host, &address, 2, 0);
+        if (opened == nullptr)
+            return nullptr;
+        server_peer = opened;
+        arm_link_timeout(opened);
+        return opened;
+    };
+
+    ENetPeer *peer = open_peer();
+    if (peer == nullptr)
     {
-        fprintf (stderr, "No available peers for initiating an ENet connection.\n");
-        exit (EXIT_FAILURE);
+        fprintf(stderr, "No available peers for initiating an ENet connection.\n");
+        deinit_client_host();
+        return MessageGameSettingsParams("");
     }
 
     // Short waits so WM_CLOSE is dispatched while no server is answering.
+    ENetEvent event;
     int waited_ms = 0;
     while (true)
     {
         if (L3GProcessWindowMessages())
         {
-            enet_peer_reset(peer);
+            deinit_client_host();
             return MessageGameSettingsParams("");
         }
 
-        if (enet_host_service (host, &event, 50) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+        const int serviced = enet_host_service(host, &event, 50);
+        if (serviced > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
         {
             std::cout << "Connected to the server!\n";
+            server_peer = peer;
             break;
         }
+        if (serviced > 0 && event.type == ENET_EVENT_TYPE_DISCONNECT)
+        {
+            server_peer = nullptr;
+            peer = open_peer();
+            if (peer == nullptr)
+            {
+                deinit_client_host();
+                return MessageGameSettingsParams("");
+            }
+        }
+        if (serviced > 0 && event.type == ENET_EVENT_TYPE_RECEIVE && event.packet != nullptr)
+            enet_packet_destroy(event.packet);
 
         waited_ms += 50;
         if (waited_ms >= 1000)
@@ -1487,32 +2006,58 @@ MessageGameSettingsParams Network::connect_to_server(std::string server_ip)
         }
     }
 
-    // Waiting for game settings
     while (true)
     {
         if (L3GProcessWindowMessages())
         {
-            enet_peer_reset(peer);
+            deinit_client_host();
             return MessageGameSettingsParams("");
         }
 
-        if (enet_host_service (host, &event, 50) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
-        {
-            BitReader reader = BitReader(event.packet->data);
-            Message m { Message::deserialize_from_bitstream(reader) };
+        const int serviced = enet_host_service(host, &event, 50);
+        if (serviced <= 0)
+            continue;
 
-            if (m.type == MessageType::GAME_SETTINGS)
+        if (event.type == ENET_EVENT_TYPE_DISCONNECT)
+        {
+            server_peer = nullptr;
+            peer = open_peer();
+            if (peer == nullptr)
             {
-                Message join{MessageJoinParams(controllable_side_id, std::string(lobby.input_username))};
-                send_message(join, peer);
-                return m.game_settings;
+                deinit_client_host();
+                return MessageGameSettingsParams("");
             }
+            continue;
         }
+
+        if (event.type != ENET_EVENT_TYPE_RECEIVE || event.packet == nullptr)
+            continue;
+
+        BitReader reader(event.packet->data);
+        Message m{Message::deserialize_from_bitstream(reader)};
+        enet_packet_destroy(event.packet);
+
+        if (m.type != MessageType::GAME_SETTINGS)
+            continue;
+
+        local_connect_id = peer->connectID;
+        for (ConnectedPlayer &player : player_list)
+        {
+            if (player.peer == nullptr)
+                player.id = local_connect_id;
+        }
+
+        Message join{MessageJoinParams(controllable_side_id, std::string(lobby.input_username))};
+        send_message(join, peer);
+        start_net_pump();
+        return m.game_settings;
     }
 }
 
 void Network::init_server_host()
 {
+    deinit_server_host();
+
     ENetAddress address;
     /* enet_address_set_host (& address, "x.x.x.x"); */
 
@@ -1531,6 +2076,8 @@ void Network::init_server_host()
         fprintf (stderr, "An error occurred while trying to create an ENet server host.\n");
         std::terminate();
     }
+
+    start_net_pump();
 }
 
 void Network::static_init_networking()
