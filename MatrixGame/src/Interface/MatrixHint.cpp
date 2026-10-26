@@ -8,6 +8,7 @@
 #include "../MatrixInstantDraw.hpp"
 #include "../MatrixSampleStateManager.hpp"
 #include "../Text/Render.hpp"
+#include "3g.hpp"
 
 #include "MatrixSoundManager.hpp"
 #include "StringConstants.hpp"
@@ -15,6 +16,7 @@
 
 #include <stupid_logger.hpp>
 
+#include <string>
 #include <vector>
 #include <list>
 
@@ -864,4 +866,118 @@ void CMatrixHint::DrawAll(void) {
 
 void CMatrixHint::ClearAll(void) {
     m_Bitmaps.clear();
+}
+
+namespace {
+
+// Same chrome as the battle-statistics panel: border 3, header plate, faction
+// icons, and the horizontal / vertical rules. Column x positions line the
+// header up with the name, which starts to the right of the faction icon.
+constexpr int kRowH = 33;
+constexpr int kNameX = 48;
+constexpr int kNameW = 190;
+constexpr int kSideRuleX = 246;
+constexpr int kSideX = 258;
+constexpr int kSideW = 160;
+constexpr int kPingRuleX = 426;
+constexpr int kPingX = 438;
+constexpr int kPingW = 84;
+
+CMatrixHint *g_Scoreboard = nullptr;
+
+void AppendLabeledRow(std::wstring &tpl, const wchar *name, const wchar *side, const wchar *ping) {
+    tpl += L"|_FONT:Font.2Normal|_HEIGHT:";
+    tpl += std::to_wstring(kRowH);
+    tpl += L"|_COLOR:FFE3DCC2|_ALIGN:0:1|_WIDTH:";
+    tpl += std::to_wstring(kNameW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kNameX);
+    tpl += L"|_TEXT:";
+    tpl += name;
+    tpl += L"|_BITMAP:stat_vl:T:";
+    tpl += std::to_wstring(kSideRuleX);
+    tpl += L"|_ALIGN:1:1|_WIDTH:";
+    tpl += std::to_wstring(kSideW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kSideX);
+    tpl += L"|_TEXT:";
+    tpl += side;
+    tpl += L"|_BITMAP:stat_vl:T:";
+    tpl += std::to_wstring(kPingRuleX);
+    tpl += L"|_ALIGN:2:1|_WIDTH:";
+    tpl += std::to_wstring(kPingW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kPingX);
+    tpl += L"|_TEXT:";
+    tpl += ping;
+    tpl += L"|_MOD:L|_BITMAP:stat_hl:L";
+}
+
+void AppendPlayerRow(std::wstring &tpl, const wchar *icon, const wchar *name, const wchar *side, const wchar *ping) {
+    tpl += L"|_BITMAP:";
+    tpl += icon;
+    tpl += L":B";
+    tpl += L"|_FONT:Font.2Normal|_HEIGHT:";
+    tpl += std::to_wstring(kRowH);
+    tpl += L"|_COLOR:FFFFFFFF|_ALIGN:0:1|_WIDTH:";
+    tpl += std::to_wstring(kNameW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kNameX);
+    tpl += L"|_TEXT:";
+    tpl += name;
+    tpl += L"|_BITMAP:stat_vl:T:";
+    tpl += std::to_wstring(kSideRuleX);
+    tpl += L"|_ALIGN:1:1|_WIDTH:";
+    tpl += std::to_wstring(kSideW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kSideX);
+    tpl += L"|_TEXT:";
+    tpl += side;
+    tpl += L"|_BITMAP:stat_vl:T:";
+    tpl += std::to_wstring(kPingRuleX);
+    tpl += L"|_ALIGN:2:1|_WIDTH:";
+    tpl += std::to_wstring(kPingW);
+    tpl += L"|_TEXTP:T:";
+    tpl += std::to_wstring(kPingX);
+    tpl += L"|_TEXT:";
+    tpl += ping;
+    tpl += L"|_MOD:L|_BITMAP:stat_hl:L";
+}
+
+std::wstring ScoreboardTemplate() {
+    std::wstring tpl;
+    tpl += L"3|_SOUNDIN:Formopen|_SOUNDOUT:Formclose";
+    tpl += L"|_POS:-20:-19|_BITMAP:stat_h:B";
+    tpl += L"|_COLOR:FFFFF200|_FONT:Font.2Ranger|_WIDTH:520|_HEIGHT:22|_ALIGN:1:1|_DOWN:8|_TEXTP:C|_TEXT:Players|_DOWN:16";
+    tpl += L"|_BITMAP:stat_hl:L";
+    AppendLabeledRow(tpl, L"Player", L"Side", L"Ping");
+    AppendPlayerRow(tpl, L"stat_p", L"Nova", L"<color=247,195,0>Player</color>", L"18");
+    AppendPlayerRow(tpl, L"stat_r", L"Kestrel", L"<color=255,90,60>Red</color>", L"46");
+    AppendPlayerRow(tpl, L"stat_g", L"Vesper", L"<color=111,191,115>Green</color>", L"73");
+    AppendPlayerRow(tpl, L"stat_b", L"Halcyon", L"<color=90,167,255>Blue</color>", L"121");
+    AppendPlayerRow(tpl, L"stat_p", L"Sable", L"<color=196,168,255>Violet</color>", L"207");
+    return tpl;
+}
+
+}  // namespace
+
+void CScoreboard::Hide() {
+    if (g_Scoreboard == nullptr)
+        return;
+    g_Scoreboard->Release();
+    g_Scoreboard = nullptr;
+}
+
+void CScoreboard::Toggle() {
+    if (g_Scoreboard != nullptr) {
+        Hide();
+        return;
+    }
+
+    g_Scoreboard = CMatrixHint::Build(ScoreboardTemplate(), static_cast<CBlockPar *>(nullptr));
+    if (g_Scoreboard == nullptr)
+        return;
+
+    const int x = (g_ScreenX - g_Scoreboard->m_Width) / 2;
+    g_Scoreboard->Show(x, 58);
 }

@@ -791,6 +791,9 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
 {
     DTRACE();
 
+    // Sample before onKeyDown, so a held TAB does not toggle on every repeat.
+    const bool tab_pressed = vk == VK_TAB && down && !isVKeyPressed(VK_TAB);
+
     if (down)
     {
         Input::onKeyDown(vk);
@@ -912,6 +915,14 @@ void CFormMatrixGame::Keyboard(bool down, uint8_t vk)
     if (g_MatrixMap->m_Console.IsActive())
     {
         g_MatrixMap->m_Console.Keyboard(vk, down);
+        return;
+    }
+
+    if (vk == VK_TAB && down)
+    {
+        // Alt+Tab belongs to the shell. Dialogs already own the keyboard.
+        if (tab_pressed && !isVKeyPressed(VK_MENU) && !FLAG(g_MatrixMap->m_Flags, MMFLAG_DIALOG_MODE))
+            CScoreboard::Toggle();
         return;
     }
 

@@ -119,3 +119,10 @@ public:
     static void DrawAll(void);
     static void ClearAll(void);
 };
+
+// Baked player table. Drawn with the other hints, so it stays click-through.
+class CScoreboard {
+public:
+    static void Toggle();
+    static void Hide();
+};

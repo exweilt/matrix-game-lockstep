@@ -159,6 +159,8 @@ CMatrixMap::~CMatrixMap() {
 void CMatrixMap::Clear(void) {
     DTRACE();
 
+    CScoreboard::Hide();
+
     m_RN.Clear();
 
     m_Minimap.Clear();
@@ -3313,6 +3315,7 @@ void CMatrixMap::EnterDialogMode(const wchar *hint_i) {
         m_PauseHint->Release();
         m_PauseHint = NULL;
     }
+    CScoreboard::Hide();
     LeaveDialogMode();
     Pause(true);
     SETFLAG(m_Flags, MMFLAG_DIALOG_MODE);
