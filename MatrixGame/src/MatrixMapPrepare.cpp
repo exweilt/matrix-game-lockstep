@@ -943,17 +943,18 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
 
                         D3DXVECTOR2 bup(bu->m_Pos.x - 100 * si, bu->m_Pos.y + 100 * co);
 
-                        if (ic >= 0)
-                        {
-                            auto tmp = bup - cpp;
-                            if (D3DXVec2LengthSq(&tmp) < POW2(300))
-                            {
-                                g_MatrixMap->GetControllableSide()->Select(BUILDING, ms);
-                                break;
-                            }
-
-                            continue;
-                        }
+                        // ATTENTION
+                        // if (ic >= 0)
+                        // {
+                        //     auto tmp = bup - cpp;
+                        //     if (D3DXVec2LengthSq(&tmp) < POW2(300))
+                        //     {
+                        //         g_MatrixMap->GetControllableSide()->Select(BUILDING, ms);
+                        //         break;
+                        //     }
+                        //
+                        //     continue;
+                        // }
 
                         g_MatrixMap->GetControllableSide()->Select(BUILDING, ms);
                         g_MatrixMap->m_Camera.SetXYStrategy(bup);
@@ -964,9 +965,9 @@ int CMatrixMap::ReloadDynamics(CStorage &stor, CMatrixMap::EReloadStep step, voi
             }
         }
         // ATTENTION
-        cpp.x = 3500.0;
-        cpp.y = 1650.0;
-        g_MatrixMap->m_Camera.SetXYStrategy(cpp);
+        // cpp.x = 3500.0;
+        // cpp.y = 1650.0;
+        // g_MatrixMap->m_Camera.SetXYStrategy(cpp);
 
         g_MatrixMap->m_Camera.Takt(0);
         g_MatrixMap->m_Camera.BeforeDraw();
